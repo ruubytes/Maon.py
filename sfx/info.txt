@@ -1,0 +1,2 @@
+If you have sound effect files you want to play with the bot, then you can put them here.
+You can browse the folder with the browser function of the bot in the discord chat.
