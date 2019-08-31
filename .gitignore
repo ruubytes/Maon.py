@@ -1,0 +1,12 @@
+### Python Cache ###
+__pycache__
+*.pyc
+
+### Login Token ###
+login.py
+
+### Media Folder Contents ###
+/downloads/*
+/img/*
+/music/*
+/sfx/*
