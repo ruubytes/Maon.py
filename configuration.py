@@ -1,16 +1,19 @@
-PREFIX = ["maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ",
+PREFIX = ["wmaon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ",
     "MAOn ", "mAON ", "MAON "]
-PREFIX_FAST = "maon"
+PREFIX_FAST = "wmaon"
 COLOR_HEX = 0xf8d386
 
 # Admin Configuration:
-EXTENSION_LIST = ["admin", "errorhandler", "music", "browser", "fun"]
+EXTENSION_LIST = ["admin", "errorhandler", "audio", "browser", "fun"]
 
 # Music Configuration:
 IMG_PATH = "./img/"
 MUSIC_PATH = "./music/"
 SFX_PATH = "./sfx/"
-PLAYER_TIMEOUT_VALUE = 3600
+SFX_VOLUME = 0.5
+PLAYER_TIMEOUT_VALUE = 7200
+SFX_SHORTCUT = ["oof", "oh no", "d", "c", "b", "a", "s", "ss", "sss", "hahaha",
+    "you never see it coming"]
 
 # Browser Configuration:
 CMD_REACTIONS = [
@@ -111,5 +114,5 @@ SIGNATURE = '''
 | / \/// _` |/ _ \/  \/ / _ \| '_ \ |
 |/ _  \ (_| |  __/ /\  / (_) | | | ||
 |\/ \_/\__,_|\___\_\ \/ \___/|_| |_||
-       Maon v0.3 - 2019-04-26
+       Maon v0.4 - 2019-09-06
 '''

@@ -1,8 +1,6 @@
 # Maon Discord Bot
-Maon Discord Bot was written in Python3 and tested on both Ubuntu 18.04
-and Raspian stretch 9.8.
-Maon should run on most UNIX platforms if you can install all the libraries
-listed below.
+Maon Discord Bot is written in Python3 and tested on both Ubuntu 18.04 and Raspian stretch 9.8.
+Maon should run on most UNIX platforms if you can install all the libraries listed below.
 
 # Manual Installation Instructions:
 Before doing anything:
@@ -12,24 +10,28 @@ Before doing anything:
 
 Install pip:
 
-	sudo apt install python3-pip
+	sudo apt-get install python3-pip
 
-Install discord:
+Install discord API wrapper:
 
-	python3 -m pip install -U discord.py
+	python3 -m pip install discord.py
 
-Install mp3_tagger:
+Install tinytag:
 
-	python3 -m pip install mp3_tagger
+	python3 -m pip install tinytag
 
 Install youtube-dl:
 
-	python3 -m pip install --upgrade youtube-dl
+	python3 -m pip install youtube-dl
+
+Install lxml for python3:
+
+	sudo apt-get install python3-lxml
 
 Install PyNaCl:
 
 	python3 -m pip install pynacl
-	
+
 Install FFmpeg and Opus audio library:
 
 	sudo apt-get install ffmpeg
