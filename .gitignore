@@ -5,8 +5,14 @@ __pycache__
 ### Login Token ###
 login.py
 
+### Logging ###
+log.txt
+
 ### Media Folder Contents ###
 /downloads/*
 /img/*
 /music/*
 /sfx/*
+
+### Test Files ###
+test_*

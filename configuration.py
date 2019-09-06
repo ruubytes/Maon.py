@@ -1,10 +1,10 @@
-PREFIX = ["wmaon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ",
+PREFIX = ["maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ",
     "MAOn ", "mAON ", "MAON "]
-PREFIX_FAST = "wmaon"
+PREFIX_FAST = "maon"
 COLOR_HEX = 0xf8d386
 
 # Admin Configuration:
-EXTENSION_LIST = ["admin", "errorhandler", "audio", "browser", "fun"]
+EXTENSION_LIST = ["admin", "audio", "browser", "errorhandler", "fun"]
 
 # Music Configuration:
 IMG_PATH = "./img/"
