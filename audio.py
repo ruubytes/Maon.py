@@ -227,6 +227,12 @@ class Audio(commands.Cog):
         message.guild.voice_client.resume()
         return await message.send(":arrow_forward: Continuing.")
 
+    # Resume Command ═══════════════════════════════════════════════════════════
+    @commands.command()
+    async def join(self, message):
+        if not await check_voice_connectivity(message):
+            return
+
     # Events ═══════════════════════════════════════════════════════════════════
     # SFX Shortcut Event -------------------------------------------------------
     @commands.Cog.listener()
