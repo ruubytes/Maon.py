@@ -44,12 +44,6 @@ class Fun(commands.Cog):
                     await message.channel.trigger_typing()
                     await asyncio.sleep(1)
                     return await message.channel.send(choice(dialogue.eight_ball_reply))
-        elif message.content.startswith(configuration.PREFIX_AT):
-            for question in dialogue.eight_ball_question:
-                if message.content.lower().startswith(question, (len(configuration.PREFIX_AT) + 1)):
-                    await message.channel.trigger_typing()
-                    await asyncio.sleep(1)
-                    return await message.channel.send(choice(dialogue.eight_ball_reply))
 
 def setup(client):
     client.add_cog(Fun(client))

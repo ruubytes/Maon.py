@@ -30,7 +30,7 @@ class Browser(commands.Cog):
             type = 0
         elif (type.lower() == "sfx") or (type.lower() == "sound effects") or (type.lower() == "effects"):
             type = 1
-        elif (type.lower() == "exit") or (type.lower() == "quit"):
+        elif (type.lower() == "exit") or (type.lower() == "quit") or (type.lower() == "close"):
             try:
                 if self.browsers[message.guild.id]:
                     browser_embed = discord.Embed(title = "Browser closed. (Exit)",

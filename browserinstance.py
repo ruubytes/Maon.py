@@ -15,7 +15,7 @@ from math import ceil
 class BrowserInstance:
     __slots__ = ("client", "user_message", "guild", "channel", "browser_user", "browser_message",
         "type", "home_dir", "current_dir", "dir_list", "dir_items",
-        "current_page", "max_pages", "slots_names", "slots_types", "music_cog", "browser_cog",
+        "current_page", "max_pages", "slots_names", "slots_types", "audio_cog", "browser_cog",
         "browser_cmd", "cmd_list")
     def __init__(self, message, type):
         self.client = message.bot
@@ -33,7 +33,7 @@ class BrowserInstance:
         self.max_pages = 1
         self.slots_names = []
         self.slots_types = []
-        self.music_cog = self.client.get_cog("Music")
+        self.audio_cog = self.client.get_cog("Audio")
         self.browser_cog = self.client.get_cog("Browser")
         self.browser_cmd = asyncio.Queue()
         self.cmd_list = configuration.CMD_REACTIONS
@@ -80,10 +80,10 @@ class BrowserInstance:
                 else:
                     if (self.type == 0):
                         url = "" + self.current_dir + self.slots_names[0]
-                        await self.music_cog.browser_play(self.user_message, url)
+                        await self.audio_cog.browser_play(self.user_message, url)
                     else:
                         url = "" + self.current_dir + self.slots_names[0]
-                        await self.music_cog.browser_sfx(self.user_message, url)
+                        await self.audio_cog.browser_sfx(self.user_message, url)
             except IndexError:
                 return
 
@@ -96,10 +96,10 @@ class BrowserInstance:
                 else:
                     if (self.type == 0):
                         url = "" + self.current_dir + self.slots_names[1]
-                        await self.music_cog.browser_play(self.user_message, url)
+                        await self.audio_cog.browser_play(self.user_message, url)
                     else:
                         url = "" + self.current_dir + self.slots_names[1]
-                        await self.music_cog.browser_sfx(self.user_message, url)
+                        await self.audio_cog.browser_sfx(self.user_message, url)
             except IndexError:
                 return
 
@@ -112,10 +112,10 @@ class BrowserInstance:
                 else:
                     if (self.type == 0):
                         url = "" + self.current_dir + self.slots_names[2]
-                        await self.music_cog.browser_play(self.user_message, url)
+                        await self.audio_cog.browser_play(self.user_message, url)
                     else:
                         url = "" + self.current_dir + self.slots_names[2]
-                        await self.music_cog.browser_sfx(self.user_message, url)
+                        await self.audio_cog.browser_sfx(self.user_message, url)
             except IndexError:
                 return
 
@@ -128,10 +128,10 @@ class BrowserInstance:
                 else:
                     if (self.type == 0):
                         url = "" + self.current_dir + self.slots_names[3]
-                        await self.music_cog.browser_play(self.user_message, url)
+                        await self.audio_cog.browser_play(self.user_message, url)
                     else:
                         url = "" + self.current_dir + self.slots_names[3]
-                        await self.music_cog.browser_sfx(self.user_message, url)
+                        await self.audio_cog.browser_sfx(self.user_message, url)
             except IndexError:
                 return
 
@@ -144,10 +144,10 @@ class BrowserInstance:
                 else:
                     if (self.type == 0):
                         url = "" + self.current_dir + self.slots_names[4]
-                        await self.music_cog.browser_play(self.user_message, url)
+                        await self.audio_cog.browser_play(self.user_message, url)
                     else:
                         url = "" + self.current_dir + self.slots_names[4]
-                        await self.music_cog.browser_sfx(self.user_message, url)
+                        await self.audio_cog.browser_sfx(self.user_message, url)
             except IndexError:
                 return
 
@@ -160,10 +160,10 @@ class BrowserInstance:
                 else:
                     if (self.type == 0):
                         url = "" + self.current_dir + self.slots_names[5]
-                        await self.music_cog.browser_play(self.user_message, url)
+                        await self.audio_cog.browser_play(self.user_message, url)
                     else:
                         url = "" + self.current_dir + self.slots_names[5]
-                        await self.music_cog.browser_sfx(self.user_message, url)
+                        await self.audio_cog.browser_sfx(self.user_message, url)
             except IndexError:
                 return
 
@@ -176,10 +176,10 @@ class BrowserInstance:
                 else:
                     if (self.type == 0):
                         url = "" + self.current_dir + self.slots_names[6]
-                        await self.music_cog.browser_play(self.user_message, url)
+                        await self.audio_cog.browser_play(self.user_message, url)
                     else:
                         url = "" + self.current_dir + self.slots_names[6]
-                        await self.music_cog.browser_sfx(self.user_message, url)
+                        await self.audio_cog.browser_sfx(self.user_message, url)
             except IndexError:
                 return
 
@@ -192,10 +192,10 @@ class BrowserInstance:
                 else:
                     if (self.type == 0):
                         url = "" + self.current_dir + self.slots_names[7]
-                        await self.music_cog.browser_play(self.user_message, url)
+                        await self.audio_cog.browser_play(self.user_message, url)
                     else:
                         url = "" + self.current_dir + self.slots_names[7]
-                        await self.music_cog.browser_sfx(self.user_message, url)
+                        await self.audio_cog.browser_sfx(self.user_message, url)
             except IndexError:
                 return
 
@@ -208,10 +208,10 @@ class BrowserInstance:
                 else:
                     if (self.type == 0):
                         url = "" + self.current_dir + self.slots_names[8]
-                        await self.music_cog.browser_play(self.user_message, url)
+                        await self.audio_cog.browser_play(self.user_message, url)
                     else:
                         url = "" + self.current_dir + self.slots_names[8]
-                        await self.music_cog.browser_sfx(self.user_message, url)
+                        await self.audio_cog.browser_sfx(self.user_message, url)
             except IndexError:
                 return
 
@@ -224,10 +224,10 @@ class BrowserInstance:
                 else:
                     if (self.type == 0):
                         url = "" + self.current_dir + self.slots_names[9]
-                        await self.music_cog.browser_play(self.user_message, url)
+                        await self.audio_cog.browser_play(self.user_message, url)
                     else:
                         url = "" + self.current_dir + self.slots_names[9]
-                        await self.music_cog.browser_sfx(self.user_message, url)
+                        await self.audio_cog.browser_sfx(self.user_message, url)
             except IndexError:
                 return
 
@@ -240,10 +240,10 @@ class BrowserInstance:
                 else:
                     if (self.type == 0):
                         url = "" + self.current_dir + self.slots_names[10]
-                        await self.music_cog.browser_play(self.user_message, url)
+                        await self.audio_cog.browser_play(self.user_message, url)
                     else:
                         url = "" + self.current_dir + self.slots_names[10]
-                        await self.music_cog.browser_sfx(self.user_message, url)
+                        await self.audio_cog.browser_sfx(self.user_message, url)
             except IndexError:
                 return
 
