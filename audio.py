@@ -6,6 +6,7 @@ import audioplayer
 import discord
 import urllib.request
 from time import sleep
+from itertools import islice
 from lxml import etree
 from discord.ext import commands
 from tinytag import TinyTag
@@ -227,11 +228,15 @@ class Audio(commands.Cog):
         message.guild.voice_client.resume()
         return await message.send(":arrow_forward: Continuing.")
 
-    # Resume Command ═══════════════════════════════════════════════════════════
+    # Join Command ═════════════════════════════════════════════════════════════
     @commands.command()
     async def join(self, message):
         if not await check_voice_connectivity(message):
             return
+        try:
+            player = self.players[message.guild.id]
+        except KeyError:
+            self.players[message.guild.id] = audioplayer.AudioPlayer(message)
 
     # Events ═══════════════════════════════════════════════════════════════════
     # SFX Shortcut Event -------------------------------------------------------
