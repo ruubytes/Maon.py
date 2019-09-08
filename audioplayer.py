@@ -39,7 +39,10 @@ class AudioPlayer:
                     async with timeout(self.timeout_value):
                         audio_source_raw = await self.queue.get()
                 except asyncio.TimeoutError:
-                    await self.guild.voice_client.disconnect()
+                    try:
+                        await self.guild.voice_client.disconnect()
+                    except AttributeError:
+                        pass
                     return self.audio.player_exit(self.guild)
 
                 audio_source = await prepare_audio_source(self.channel, audio_source_raw)
