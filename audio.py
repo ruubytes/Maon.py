@@ -21,7 +21,6 @@ class Audio(commands.Cog):
         self.client = client
         self.players = {}
         self.history = {}
-        self.sfx_shortcut = configuration.SFX_SHORTCUT
 
     def player_exit(self, guild):
         try:
@@ -246,26 +245,25 @@ class Audio(commands.Cog):
             if (message.author.voice.channel == message.guild.voice_client.channel):
                 if message.guild.voice_client.is_playing():
                     return
-                elif message.content.lower() in self.sfx_shortcut:
-                    url = message.content.lower()
-                    if (os.path.exists(configuration.SFX_PATH + url + ".mp3")):
-                        queue_item = {}
-                        queue_item["url"] = (configuration.SFX_PATH + url + ".mp3")
-                        queue_item["title"] = url
-                        queue_item["source_type"] = 2
-                    elif (os.path.exists(configuration.SFX_PATH + url + ".wav")):
-                        queue_item = {}
-                        queue_item["url"] = (configuration.SFX_PATH + url + ".wav")
-                        queue_item["title"] = url
-                        queue_item["source_type"] = 2
-                    else:
-                        return
+                url = message.content.lower()
+                if (os.path.exists(configuration.SFX_PATH + url + ".mp3")):
+                    queue_item = {}
+                    queue_item["url"] = (configuration.SFX_PATH + url + ".mp3")
+                    queue_item["title"] = url
+                    queue_item["source_type"] = 2
+                elif (os.path.exists(configuration.SFX_PATH + url + ".wav")):
+                    queue_item = {}
+                    queue_item["url"] = (configuration.SFX_PATH + url + ".wav")
+                    queue_item["title"] = url
+                    queue_item["source_type"] = 2
+                else:
+                    return
 
-                    try:
-                        player = self.players[message.guild.id]
-                    except KeyError:
-                        return
-                    await self.players[message.guild.id].queue.put(queue_item)
+                try:
+                    player = self.players[message.guild.id]
+                except KeyError:
+                    return
+                await self.players[message.guild.id].queue.put(queue_item)
 
             else:
                 return

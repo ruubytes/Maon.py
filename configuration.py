@@ -12,8 +12,6 @@ MUSIC_PATH = "./music/"
 SFX_PATH = "./sfx/"
 SFX_VOLUME = 0.5
 PLAYER_TIMEOUT_VALUE = 7200
-SFX_SHORTCUT = ["oof", "oh no", "d", "c", "b", "a", "s", "ss", "sss", "hahaha",
-    "you never see it coming"]
 
 # Browser Configuration:
 CMD_REACTIONS = [
