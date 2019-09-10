@@ -10,7 +10,7 @@ EXTENSION_LIST = ["admin", "audio", "browser", "errorhandler", "fun"]
 IMG_PATH = "./img/"
 MUSIC_PATH = "./music/"
 SFX_PATH = "./sfx/"
-SFX_VOLUME = 0.5
+SFX_VOLUME = 0.4
 PLAYER_TIMEOUT_VALUE = 7200
 
 # Browser Configuration:
