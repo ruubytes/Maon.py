@@ -134,6 +134,11 @@ class Audio(commands.Cog):
     # Stop Command ═════════════════════════════════════════════════════════════
     @commands.command(aliases = ["leave"])
     async def stop(self, message):
+        if message.author.voice is None:
+            return await message.send("You're not in a voice channel, silly.", delete_after = 15)
+        elif (message.author.voice.channel != message.guild.voice_client.channel):
+            return await message.send("You're not in the voice channel, silly.", delete_after = 15)
+
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
             return await message.send("I am not even playing anything. :eyes:", delete_after = 20)
 
@@ -144,6 +149,11 @@ class Audio(commands.Cog):
     # Skip Command ═════════════════════════════════════════════════════════════
     @commands.command(aliases = ["next"])
     async def skip(self, message):
+        if message.author.voice is None:
+            return await message.send("You're not in a voice channel, silly.", delete_after = 15)
+        elif (message.author.voice.channel != message.guild.voice_client.channel):
+            return await message.send("You're not in the voice channel, silly.", delete_after = 15)
+
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
             return await message.send("I'm not playing anything. :eyes:", delete_after = 20)
 
@@ -156,6 +166,11 @@ class Audio(commands.Cog):
     # Volume Command ═══════════════════════════════════════════════════════════
     @commands.command(aliases = ["vol"])
     async def volume(self, message, *, vol = None):
+        if message.author.voice is None:
+            return await message.send("You're not in a voice channel, silly.", delete_after = 15)
+        elif (message.author.voice.channel != message.guild.voice_client.channel):
+            return await message.send("You're not in the voice channel, silly.", delete_after = 15)
+
         if (message.guild.voice_client is None) or (not message.guild.voice_client.is_connected()):
             return await message.send("I'm not even playing anything. :eyes:", delete_after = 20)
         if vol is None:
@@ -171,6 +186,11 @@ class Audio(commands.Cog):
     # Loop Command ═════════════════════════════════════════════════════════════
     @commands.command()
     async def loop(self, message, *, option: str = None):
+        if message.author.voice is None:
+            return await message.send("You're not in a voice channel, silly.", delete_after = 15)
+        elif (message.author.voice.channel != message.guild.voice_client.channel):
+            return await message.send("You're not in the voice channel, silly.", delete_after = 15)
+
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
             return await message.send("I'm not playing anything. :eyes:", delete_after = 20)
         if option is None:
@@ -193,6 +213,11 @@ class Audio(commands.Cog):
     # Queue Command ════════════════════════════════════════════════════════════
     @commands.command(aliases = ["playlist"])
     async def queue(self, message):
+        if message.author.voice is None:
+            return await message.send("You're not in a voice channel, silly.", delete_after = 15)
+        elif (message.author.voice.channel != message.guild.voice_client.channel):
+            return await message.send("You're not in the voice channel, silly.", delete_after = 15)
+
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
             return await message.send("I'm not even playing anything. :eyes:", delete_after = 20)
 
@@ -208,6 +233,11 @@ class Audio(commands.Cog):
     # Pause Command ════════════════════════════════════════════════════════════
     @commands.command()
     async def pause(self, message):
+        if message.author.voice is None:
+            return await message.send("You're not in a voice channel, silly.", delete_after = 15)
+        elif (message.author.voice.channel != message.guild.voice_client.channel):
+            return await message.send("You're not in the voice channel, silly.", delete_after = 15)
+
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
             return await message.send("I'm not playing anything. :eyes:", delete_after = 20)
         elif message.guild.voice_client.is_paused():
@@ -219,6 +249,11 @@ class Audio(commands.Cog):
     # Resume Command ═══════════════════════════════════════════════════════════
     @commands.command(aliases = ["continue", "cont"])
     async def resume(self, message):
+        if message.author.voice is None:
+            return await message.send("You're not in a voice channel, silly.", delete_after = 15)
+        elif (message.author.voice.channel != message.guild.voice_client.channel):
+            return await message.send("You're not in the voice channel, silly.", delete_after = 15)
+
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
             return await message.send("I'm not playing anything. :eyes:", delete_after = 20)
         elif message.guild.voice_client.is_playing():
