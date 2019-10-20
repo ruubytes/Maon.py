@@ -18,17 +18,19 @@ class Fun(commands.Cog):
     async def activity_loop(self):
         await self.client.wait_until_ready()
         while not self.client.is_closed():
-            type_int = randint(1, 3)
-            if (type_int == 1):
-                activity_name = choice(dialogue.playing_strings)
-            elif (type_int == 2):
-                activity_name = choice(dialogue.listeningto_strings)
-            elif (type_int == 3):
-                activity_name = choice(dialogue.watching_strings)
-            else:
-                continue
+            #type_int = randint(1, 3)
+            #if (type_int == 1):
+            #    activity_name = choice(dialogue.playing_strings)
+            #elif (type_int == 2):
+            #    activity_name = choice(dialogue.listeningto_strings)
+            #elif (type_int == 3):
+            #    activity_name = choice(dialogue.watching_strings)
+            #else:
+            #    continue
+            #await self.client.change_presence(activity = discord.Activity(
+            #    type = type_int, name = activity_name))
             await self.client.change_presence(activity = discord.Activity(
-                type = type_int, name = activity_name))
+                type = 1, name = "again, freshly updated"))
             await asyncio.sleep(7200)
 
     # Events ═══════════════════════════════════════════════════════════════════
