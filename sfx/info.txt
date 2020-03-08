@@ -1,2 +1,2 @@
-If you have sound effect files you want to play with the bot, then you can put them here.
-You can browse the folder with the browser function of the bot in the discord chat.
+You can place sound effects here to play in voice channels with Maon.
+Supported file extensions are mp3 and wav so far.

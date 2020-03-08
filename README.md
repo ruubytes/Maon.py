@@ -1,23 +1,46 @@
 # Maon Discord Bot
-Maon Discord Bot is written in Python3 and tested on both Ubuntu 18.04 and Raspian stretch 9.8.
-Maon should run on most UNIX platforms if you can install all the libraries listed below.
+Maon is written in `Python3.6+` and tested on `Ubuntu 18.04`, `Windows 10`, and `Raspbian Buster`.
+Maon should run on most UNIX platforms, if you can install the required libraries below.
 
-# Manual installation of required libraries:
+## Installation:
+### Ubuntu / Debian:
 Before doing anything:
+    
+    sudo apt update
 
-	sudo apt-get update
-	sudo apt-get upgrade
+If you don't already have `pip` installed:
+    
+    sudo apt install python3-pip
+    
+For audio playback we'll need `ffmpeg` and `opus-tools`
 
-Install pip, lxml, ffmpeg and opus:
+    sudo apt install ffmpeg
+    sudo apt install opus-tools
 
-	sudo apt-get install python3-pip python3-lxml ffmpeg libopus0 opus-tools
+##### Special Case - Raspbian Buster: 
+*You will probably have to install `libxslt` for `lxml` to work:*
 
-Install discord API wrapper, tinytag, youtube-dl and PyNaCl:
+    sudo apt install libxslt-dev
 
-	python3 -m pip install discord.py tinytag youtube-dl pynacl
+Next the dependencies:
 
-# Running it:
-If the requirements are met and the login.py has all the required tokens and IDs,
-start the bot by using
+    python3 -m pip install -U discord.py youtube-dl pynacl tinytag lxml
 
-	python3 maon.py
+### Windows:
+Requires `Python 3.6+`, `pip`, and `ffmpeg` to be installed. Install instructions for
+these are on their respective websites.
+
+To install the dependencies, open a new command prompt and enter:
+
+    python -m pip install -U discord.py youtube-dl pynacl tinytag lxml
+        
+## Running Maon:
+### Ubuntu / Debian:
+To run Maon you can just start the shellscript or use:
+
+    python3 Maon.py
+    
+### Windows:
+Use the following in a command prompt from Maon's main directory:
+
+    python Maon.py

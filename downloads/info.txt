@@ -1,1 +1,1 @@
-Downloaded videos and songs will appear here if the download function is used.
+Videos and audio files downloaded with the download command will appear here.

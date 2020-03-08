@@ -1,0 +1,196 @@
+from async_timeout import timeout
+from os.path import isdir
+from os.path import isfile
+from math import ceil
+from os import walk
+import configuration as config
+import discord
+import asyncio
+
+
+# TODO Fix browser closing method, for some reason it is not getting called.
+class GuildBrowser:
+    __slots__ = ["client", "audio", "filebrowser", "browser_type", "message", "channel", "window_message", "id",
+                 "title", "home_dir", "current_dir", "dir_list", "dir_items", "current_page", "max_pages", "slot_names",
+                 "slot_types", "cmd_queue", "cmd_reaction", "cmd_slot_list", "cmd_nav_list", "emoji_list", "running",
+                 "filebrowser_task"]
+
+    def __init__(self, client, message, browser_type: int):
+        self.client = client
+        self.audio = self.client.get_cog("Audio")
+        self.filebrowser = self.client.get_cog("FileBrowser")
+        self.browser_type = browser_type
+        self.message = message
+        self.channel = message.channel
+        self.window_message = {}
+        self.id = 0
+        if browser_type == 0:
+            self.title = "Music Browser"
+            self.home_dir = config.MUSIC_PATH
+        else:
+            self.title = "Sound Effects (SFX) Browser"
+            self.home_dir = config.SFX_PATH
+        self.current_dir = self.home_dir
+        self.dir_list = []
+        self.dir_items = []
+        self.current_page = 1
+        self.max_pages = 1
+        self.slot_names = []
+        self.slot_types = []
+
+        self.cmd_queue = asyncio.Queue()
+        self.cmd_slot_list = config.CMD_SLOT_REACTIONS
+        self.cmd_nav_list = config.CMD_NAV_REACTIONS
+        self.emoji_list = config.EMOJI_LIST
+        self.running = True
+
+        print("[{}|{}] Creating file browser...".format(self.message.guild.name, self.message.guild.id))
+        self.filebrowser_task = self.client.loop.create_task(self.filebrowser_window(message))
+        print("[{}|{}] File browser created.".format(self.message.guild.name, self.message.guild.id))
+
+    async def filebrowser_window(self, message):
+        await self.client.wait_until_ready()
+        await self.set_content()
+        await self.load_navigation(message)
+        await self.display_window()
+
+        try:
+            while self.running:
+                async with timeout(900):
+                    command = await self.cmd_queue.get()
+                await self.update(command)
+
+        except asyncio.CancelledError or asyncio.TimeoutError:
+            print("[{}|{}] Cancelling file browser...".format(self.message.guild.name, self.message.guild.id))
+            browser_embed = discord.Embed(title="Media browser closed.", description="", color=config.COLOR_HEX)
+            await self.window_message.edit(content="", embed=browser_embed)
+            return self.filebrowser.browser_exit(self.message)
+
+        print("[{}|{}] Closing file browser...".format(self.message.guild.name, self.message.guild.id))
+        browser_embed = discord.Embed(title="Media browser closed.", description="", color=config.COLOR_HEX)
+        await self.window_message.edit(content="", embed=browser_embed)
+        return self.filebrowser.browser_exit(self.message)
+
+    async def update(self, command):
+        await self.execute(command)
+        if self.running:
+            await self.set_content()
+            await self.display_window()
+        return
+
+    async def execute(self, command):
+        if command.emoji in self.cmd_slot_list:         # A selection
+            try:
+                i = self.cmd_slot_list.index(command.emoji)
+                if self.slot_types[i] == 0:     # directory
+                    self.current_page = 1
+                    self.current_dir += self.slot_names[i] + "/"
+
+                else:                           # file
+                    url = "" + self.current_dir + self.slot_names[i]
+                    if self.browser_type == 0:
+                        await self.audio.fb_play(self.message, url)
+                    else:
+                        await self.audio.fb_sfx(self.message, url)
+            except IndexError:
+                return
+
+        elif command.emoji == self.cmd_nav_list[0]:     # Back
+            if self.current_dir != self.home_dir:
+                self.current_page = 1
+                self.current_dir = self.current_dir[:self.current_dir.rfind("/")]
+                cut_dir = (self.current_dir.rfind("/") + 1)
+                self.current_dir = self.current_dir[:cut_dir]
+            return
+        elif command.emoji == self.cmd_nav_list[1]:     # Previous Page
+            if self.current_page > 1:
+                self.current_page -= 1
+            else:
+                return
+
+        elif command.emoji == self.cmd_nav_list[2]:     # Next Page
+            if self.current_page < self.max_pages:
+                self.current_page += 1
+                return
+            else:
+                return
+
+        elif command.emoji == self.cmd_nav_list[3]:     # Close Browser
+            self.running = False
+            self.filebrowser_task.cancel()
+
+        else:
+            return print("{} not recognized...")
+
+    async def display_window(self):
+        content = "Directory: " + self.current_dir[1:] + "\n\n"
+        if self.current_dir != self.home_dir:
+            content += ":leftwards_arrow_with_hook: Back\n"
+
+        i = 0
+        for slot_type in self.slot_types:
+            number_emoji = self.emoji_list[i]
+            if slot_type == 0:
+                item_string = "" + number_emoji + " :file_folder: " + self.slot_names[i] + "\n"
+            else:
+                item_string = "" + number_emoji + " :musical_note: " + self.slot_names[i] + "\n"
+            content += item_string
+            i += 1
+
+        content += "\n"
+        if self.current_page > 1:
+            content += ":arrow_left: "
+        content += "{} / {} pages ".format(self.current_page, self.max_pages)
+        if self.current_page < self.max_pages:
+            content += ":arrow_right:"
+
+        browser_embed = discord.Embed(title=self.title, description=content, color=config.COLOR_HEX)
+        return await self.window_message.edit(content="", embed=browser_embed)
+
+    async def set_content(self):
+        self.dir_list.clear()
+        for (root, dirs, files) in walk(self.current_dir):
+            self.dir_list.extend(dirs)
+            self.dir_list.sort()
+            break
+        for (root, dirs, files) in walk(self.current_dir):
+            files.sort()
+            self.dir_list.extend(files)
+            break
+        self.dir_items = len(self.dir_list)
+        self.max_pages = int(ceil(float(self.dir_items) / 11))
+
+        self.slot_names.clear()
+        self.slot_types.clear()
+        diff = self.dir_items - self.max_pages * 11
+        if self.current_page == self.max_pages:
+            page_items_end = ((self.current_page * 11) - diff)
+        else:
+            page_items_end = (self.current_page * 11)
+        page_items_start = ((self.current_page * 11) - 11)
+
+        for item in self.dir_list[page_items_start:page_items_end]:
+            self.slot_names.append(item)
+            if isdir((self.current_dir + item)):
+                self.slot_types.append(0)
+            elif isfile((self.current_dir + item)):
+                self.slot_types.append(1)
+
+    async def load_navigation(self, message):
+        self.window_message = await message.send("Generating browser...")
+        self.id = self.window_message.id
+        await self.window_message.add_reaction("\u21A9")  # Back
+        await self.window_message.add_reaction("\u0030\u20E3")  # 0
+        await self.window_message.add_reaction("\u0031\u20E3")  # 1
+        await self.window_message.add_reaction("\u0032\u20E3")  # 2
+        await self.window_message.add_reaction("\u0033\u20E3")  # 3
+        await self.window_message.add_reaction("\u0034\u20E3")  # 4
+        await self.window_message.add_reaction("\u0035\u20E3")  # 5
+        await self.window_message.add_reaction("\u0036\u20E3")  # 6
+        await self.window_message.add_reaction("\u0037\u20E3")  # 7
+        await self.window_message.add_reaction("\u0038\u20E3")  # 8
+        await self.window_message.add_reaction("\u0039\u20E3")  # 9
+        await self.window_message.add_reaction("\N{KEYCAP TEN}")  # 10
+        await self.window_message.add_reaction("\u2B05")  # prev
+        await self.window_message.add_reaction("\u27A1")  # next
+        return await self.window_message.add_reaction("\u274E")  # close

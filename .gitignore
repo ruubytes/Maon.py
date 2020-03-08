@@ -1,18 +1,18 @@
+### Git ###
+.git/
+
+### IntelliJ IDEA ###
+.idea/
+
 ### Python Cache ###
 __pycache__
 *.pyc
 
-### Login Token ###
-login.py
+### Login and Configuration ###
 
-### Logging ###
-log.txt
 
 ### Media Folder Contents ###
-/downloads/*
-/img/*
-/music/*
-/sfx/*
+
 
 ### Test Files ###
 test_*
