@@ -9,7 +9,8 @@ __pycache__
 *.pyc
 
 ### Login and Configuration ###
-
+login.py
+configuration.py
 
 ### Media Folder Contents ###
 downloads/
