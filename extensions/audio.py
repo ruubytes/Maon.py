@@ -206,6 +206,16 @@ class Audio(commands.Cog):
             else:
                 await message.guild.voice_client.disconnect()
 
+    # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.guild.id in self.players:
+            if message.channel == self.players[message.guild.id].message.channel:
+                if os.path.exists(config.SFX_PATH + message.content + ".mp3"):
+                    return await self.fb_sfx(message, config.SFX_PATH + message.content + ".mp3")
+                elif os.path.exists(config.SFX_PATH + message.content + ".wav"):
+                    return await self.fb_sfx(message, config.SFX_PATH + message.content + ".wav")
+
     # ═══ Helper Methods ═══════════════════════════════════════════════════════════════════════════════════════════════
     def destroy_player(self, message):
         if message.guild.id in self.players:

@@ -6,11 +6,10 @@ import subprocess
 
 # TODO restart subprocess doesn't work
 class Admin(commands.Cog):
-    __slots__ = "client", "ownerID"
+    __slots__ = "client"
 
     def __init__(self, client):
         self.client = client
-        self.ownerID = config.OWNER_ID
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.command(aliases=["kill"])

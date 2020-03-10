@@ -10,7 +10,7 @@ class Maon:
     def __init__(self):
         print(config.SIGNATURE)
         print("Discord.py Version: {}".format(discord.__version__))
-        self.client = commands.Bot(command_prefix=config.PREFIX, case_insensitive=True, owner_id=config.OWNER_ID)
+        self.client = commands.Bot(command_prefix=config.PREFIX, case_insensitive=True, owner_id=login.OWNER_ID)
         self.client.remove_command("help")
 
     def load_extensions(self):

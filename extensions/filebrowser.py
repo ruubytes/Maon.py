@@ -1,7 +1,7 @@
 from extensions.guildbrowser import guildbrowser
 from discord.ext import commands
 import configuration as config
-import discord
+import login as login
 
 
 class FileBrowser(commands.Cog):
@@ -52,7 +52,7 @@ class FileBrowser(commands.Cog):
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
-        if not user.id == config.MAON_ID:
+        if not user.id == login.MAON_ID:
             if (reaction.emoji in config.CMD_SLOT_REACTIONS) or (reaction.emoji in config.CMD_NAV_REACTIONS):
                 if reaction.message.guild.id in self.filebrowsers:
                     if reaction.message.id == self.filebrowsers[reaction.message.guild.id].id:
@@ -62,7 +62,7 @@ class FileBrowser(commands.Cog):
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
-        if not user.id == config.MAON_ID:
+        if not user.id == login.MAON_ID:
             if (reaction.emoji in config.CMD_SLOT_REACTIONS) or (reaction.emoji in config.CMD_NAV_REACTIONS):
                 if reaction.message.guild.id in self.filebrowsers:
                     if reaction.message.id == self.filebrowsers[reaction.message.guild.id].id:

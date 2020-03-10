@@ -1,2 +1,5 @@
-# Login token. For all commands to work properly, add owner and Maon ID to configuration file.
+# Login token, your ID and Maon's ID:
 TOKEN = ""
+OWNER_ID = 0
+MAON_ID = 0
+

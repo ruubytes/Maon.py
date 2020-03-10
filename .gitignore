@@ -12,7 +12,9 @@ __pycache__
 
 
 ### Media Folder Contents ###
-
+downloads/
+music/
+sfx/
 
 ### Test Files ###
 test_*

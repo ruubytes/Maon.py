@@ -1,7 +1,3 @@
-# Owner and Maon's IDs.
-OWNER_ID = 0
-MAON_ID = 0
-
 # Prefix And Embed Color:
 PREFIX = ["maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ", "MAOn ", "mAON ", "MAON "]
 COLOR_HEX = 0xf8d386
@@ -49,7 +45,7 @@ EMOJI_LIST = [
 
 # Maon's Extensions:
 EXTENSION_PATH = "extensions." # Use . instead of / for folders as required by Discord.py
-EXTENSION_LIST = ["admin", "audio", "basic", "errormanager", "filebrowser"]
+EXTENSION_LIST = ["admin", "audio", "basic", "errormanager", "filebrowser", "fun"]
 
 # Maon Version:
 SIGNATURE = '''
