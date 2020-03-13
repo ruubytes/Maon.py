@@ -1,4 +1,6 @@
 from discord.ext import commands
+import configuration as config
+import discord
 
 
 class Basic(commands.Cog):
@@ -11,6 +13,16 @@ class Basic(commands.Cog):
     @commands.command()
     async def ping(self, message):
         return await message.send("Pong! `WebSocket: {}ms`".format(int(self.client.latency * 1000)))
+
+    @commands.command(aliases=["info", "infocard"])
+    async def help(self, message):
+        command_print = config.COMMANDLIST_EMBED_PREP_START
+        if message.author.id == self.client.owner_id:
+            command_print += "".join(config.COMMANDLIST_EMBED_ADMIN_PREP)
+        command_print += "".join(config.COMMANDLIST_EMBED_PREP)
+        help_embed = discord.Embed(title=config.VERSION, description=command_print, color=config.COLOR_HEX)
+        help_embed.set_thumbnail(url=self.client.user.avatar_url)
+        return await message.send(embed=help_embed)
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════

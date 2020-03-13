@@ -43,6 +43,23 @@ class Admin(commands.Cog):
         else:
             return await message.send("I don't think I have an extension called {}.".format(extension))
 
+    @commands.command(aliases=["clear", "delete"])
+    @commands.is_owner()
+    @commands.guild_only()
+    async def remove(self, message, *, number: int = None):
+        if number is None:
+            return await message.send("How many messages do you want me to delete? (max 50 messages)")
+        else:
+            try:
+                amount = int(number)
+                if (amount <= 50) and (amount >= 1):
+                    await message.channel.purge(limit = amount + 1)
+                    return await message.send("{} messages deleted.".format(amount), delete_after = 5)
+                else:
+                    return await message.send("How many messages do you want me to delete? (max 50 messages)")
+            except (TypeError, ValueError) as e:
+                return await message.send("How many messages do you want me to delete? (max 50 messages)")
+
     @commands.command()
     @commands.is_owner()
     async def status(self, message, *, activity: str = None):

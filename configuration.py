@@ -47,6 +47,38 @@ EMOJI_LIST = [
 EXTENSION_PATH = "extensions." # Use . instead of / for folders as required by Discord.py
 EXTENSION_LIST = ["admin", "audio", "basic", "errormanager", "filebrowser", "fun"]
 
+# Help Command Embed:
+COMMANDLIST_EMBED_PREP_START = "Prefix: Maon (case insensitive)\n\n"
+
+COMMANDLIST_EMBED_ADMIN_PREP = [
+    ":flag_kp: ***Admin Commands:*** (requires ownership)\n",
+    ":white_small_square: kill - Shuts Maon down.\n",
+    ":white_small_square: reload <extension / all> - Unloads and loads an extension, or all.\n",
+    ":white_small_square: remove <number> - Removes <number> messages in the channel.\n",
+    ":white_small_square: status <listening/playing/watching> <status> - Sets Maon's status.\n",
+    "\n"
+]
+
+COMMANDLIST_EMBED_PREP = [
+    ":beginner: ***Useful Commands:***\n",
+    ":white_small_square: ping - Maon's latency.\n",
+    ":white_small_square: help / info - What you're looking at right now.\n",
+    "\n",
+    ":notes: ***Music Commands:***\n",
+    ":white_small_square: browse <music / sfx> - Opens the file browser.\n",
+    ":white_small_square: play <link / filepath> - Plays a Youtube video or local file.\n",
+    ":white_small_square: stop / leave - Turns off the music player.\n",
+    ":white_small_square: skip - Skips the current song.\n",
+    ":white_small_square: loop <song / queue> - Loops the current song or queue.\n",
+    ":white_small_square: volume / vol <number 0 - 100> - Changes the music player volume.\n",
+    ":white_small_square: pause - Pauses the music player.\n",
+    ":white_small_square: resume / cont / continue - Resumes the music player.\n",
+    "\n",
+    ":juggling: ***Fun Commands:***\n",
+    ":white_small_square: <question> - Maon will reply to your question.\n",
+    ":white_small_square: toss - Coin toss.\n"
+]
+
 # Maon Version:
 SIGNATURE = '''
 |   __                __            |
