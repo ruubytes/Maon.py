@@ -49,6 +49,7 @@ class GuildBrowser:
         print("[{}|{}] File browser created.".format(self.message.guild.name, self.message.guild.id))
 
     async def filebrowser_window(self, message):
+        self.running = True
         await self.client.wait_until_ready()
         await self.set_content()
         await self.load_navigation(message)
@@ -60,23 +61,20 @@ class GuildBrowser:
                     command = await self.cmd_queue.get()
                 await self.update(command)
 
-        except asyncio.CancelledError or asyncio.TimeoutError:
-            print("[{}|{}] Cancelling file browser...".format(self.message.guild.name, self.message.guild.id))
+        except (asyncio.CancelledError, asyncio.TimeoutError):
+            pass
+
+        finally:
+            print("[{}|{}] Closing file browser...".format(self.message.guild.name, self.message.guild.id))
             browser_embed = discord.Embed(title="Media browser closed.", description="", color=config.COLOR_HEX)
             await self.window_message.edit(content="", embed=browser_embed)
             return self.filebrowser.browser_exit(self.message)
-
-        print("[{}|{}] Closing file browser...".format(self.message.guild.name, self.message.guild.id))
-        browser_embed = discord.Embed(title="Media browser closed.", description="", color=config.COLOR_HEX)
-        await self.window_message.edit(content="", embed=browser_embed)
-        return self.filebrowser.browser_exit(self.message)
 
     async def update(self, command):
         await self.execute(command)
         if self.running:
             await self.set_content()
             await self.display_window()
-        return
 
     async def execute(self, command):
         if command.emoji in self.cmd_slot_list:         # A selection
@@ -101,23 +99,19 @@ class GuildBrowser:
                 self.current_dir = self.current_dir[:self.current_dir.rfind("/")]
                 cut_dir = (self.current_dir.rfind("/") + 1)
                 self.current_dir = self.current_dir[:cut_dir]
-            return
+
         elif command.emoji == self.cmd_nav_list[1]:     # Previous Page
             if self.current_page > 1:
                 self.current_page -= 1
-            else:
-                return
 
         elif command.emoji == self.cmd_nav_list[2]:     # Next Page
             if self.current_page < self.max_pages:
                 self.current_page += 1
-                return
-            else:
-                return
 
         elif command.emoji == self.cmd_nav_list[3]:     # Close Browser
             self.running = False
             self.filebrowser_task.cancel()
+            return
 
         else:
             return print("{} not recognized...")
@@ -192,5 +186,5 @@ class GuildBrowser:
         await self.window_message.add_reaction("\u0039\u20E3")  # 9
         await self.window_message.add_reaction("\N{KEYCAP TEN}")  # 10
         await self.window_message.add_reaction("\u2B05")  # prev
-        await self.window_message.add_reaction("\u27A1")  # next
-        return await self.window_message.add_reaction("\u274E")  # close
+        return await self.window_message.add_reaction("\u27A1")  # next
+        # return await self.window_message.add_reaction("\u274E")  # close

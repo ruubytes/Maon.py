@@ -57,7 +57,7 @@ class Admin(commands.Cog):
                     return await message.send("{} messages deleted.".format(amount), delete_after = 5)
                 else:
                     return await message.send("How many messages do you want me to delete? (max 50 messages)")
-            except (TypeError, ValueError) as e:
+            except (TypeError, ValueError):
                 return await message.send("How many messages do you want me to delete? (max 50 messages)")
 
     @commands.command()

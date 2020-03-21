@@ -43,11 +43,11 @@ class FileBrowser(commands.Cog):
 
     # ═══ Helper Methods ═══════════════════════════════════════════════════════════════════════════════════════════════
     def browser_exit(self, message):
-        print("I'm here now")
         if message.guild.id in self.filebrowsers:
             del self.filebrowsers[message.guild.id]
             print("[{}|{}] File browser destroyed.".format(message.guild.name, message.guild.id))
-        print("Skipped something important")
+        else:
+            print("Skipped something important")
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
@@ -57,8 +57,7 @@ class FileBrowser(commands.Cog):
                 if reaction.message.guild.id in self.filebrowsers:
                     if reaction.message.id == self.filebrowsers[reaction.message.guild.id].id:
                         await self.filebrowsers[reaction.message.guild.id].cmd_queue.put(reaction)
-        else:
-            return
+
 
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
@@ -67,8 +66,7 @@ class FileBrowser(commands.Cog):
                 if reaction.message.guild.id in self.filebrowsers:
                     if reaction.message.id == self.filebrowsers[reaction.message.guild.id].id:
                         await self.filebrowsers[reaction.message.guild.id].cmd_queue.put(reaction)
-        else:
-            return
+
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════

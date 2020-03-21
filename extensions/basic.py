@@ -22,6 +22,10 @@ class Basic(commands.Cog):
         command_print += "".join(config.COMMANDLIST_EMBED_PREP)
         help_embed = discord.Embed(title=config.VERSION, description=command_print, color=config.COLOR_HEX)
         help_embed.set_thumbnail(url=self.client.user.avatar_url)
+        help_embed.set_footer(text="Owner: " + 
+                self.client.get_user(self.client.owner_id).name + "#" +
+                self.client.get_user(self.client.owner_id).discriminator, 
+            icon_url=self.client.get_user(self.client.owner_id).avatar_url)
         return await message.send(embed=help_embed)
 
 

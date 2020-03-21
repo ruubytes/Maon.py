@@ -43,6 +43,23 @@ class Audio(commands.Cog):
         if message.guild.voice_client.is_playing():
             return await message.send("{} has been added to the queue.".format(track.get("title")), delete_after=20)
 
+    async def fb_play(self, message, url):
+        try:
+            tag = TinyTag.get(url)
+        except TinyTagException:
+            return
+        
+        if not await check_voice_state(message):
+            return
+        
+        if tag.title is None:
+            tag.title = url[url.rfind("/") + 1:]
+        track = {"title": tag.title, "url": url, "track_type": "music"}
+
+        if message.guild.id not in self.players:
+            self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+        await self.players[message.guild.id].queue.put(track)
+
     @commands.command(aliases=["s"])
     @commands.guild_only()
     async def sfx(self, message, *, url: str = None):
@@ -256,7 +273,7 @@ async def check_volume(vol):
             return True
         else:
             return False
-    except (TypeError, ValueError) as e:
+    except (TypeError, ValueError):
         return False
 
 

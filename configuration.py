@@ -53,8 +53,8 @@ COMMANDLIST_EMBED_PREP_START = "Prefix: Maon (case insensitive)\n\n"
 COMMANDLIST_EMBED_ADMIN_PREP = [
     ":flag_kp: ***Admin Commands:*** (requires ownership)\n",
     ":white_small_square: kill - Shuts Maon down.\n",
-    ":white_small_square: reload <extension / all> - Unloads and loads an extension, or all.\n",
-    ":white_small_square: remove <number> - Removes <number> messages in the channel.\n",
+    ":white_small_square: reload <extension / all> - Unloads and loads extensions.\n",
+    ":white_small_square: remove <number> - Removes messages in the channel.\n",
     ":white_small_square: status <listening/playing/watching> <status> - Sets Maon's status.\n",
     "\n"
 ]
@@ -86,7 +86,6 @@ SIGNATURE = '''
 | / \/// _` |/ _ \/  \/ / _ \| '_ \ |
 |/ _  \ (_| |  __/ /\  / (_) | | | ||
 |\/ \_/\__,_|\___\_\ \/ \___/|_| |_||
-       Maon v0.5 - 2020-03-08
+       Maon v0.6 - 2020-03-21
 '''
-VERSION = "Maon v0.5 - 2020-03-08"
-AUTHOR_ID = 0
+VERSION = "Maon v0.6 - 2020-03-21"
