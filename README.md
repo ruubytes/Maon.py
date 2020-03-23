@@ -9,12 +9,12 @@ of mine.
 
 # Table of Contents:
 - [Installation](#installation)
-    - [Ubuntu / Debian](##ubuntu-/-debian)
-        - [Special Case - Raspbian Buster](###special-case---raspbian-buster)
-    - [Windows](##windows)
+    - [Ubuntu / Debian](#ubuntu-/-debian)
+        - [Special Case - Raspbian Buster](#special-case---raspbian-buster)
+    - [Windows](#windows)
 - [Running Maon](#running-maon)
-    - [Ubuntu / Debian](##ubuntu-/-debian)
-    - [Windows](##windows)
+    - [Ubuntu / Debian](#ubuntu-/-debian)
+    - [Windows](#windows)
 
 # Installation:
 ## Ubuntu / Debian:
