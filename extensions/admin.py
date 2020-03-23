@@ -1,15 +1,19 @@
-import discord
+from asyncio import sleep
+from asyncio import CancelledError
 from discord.ext import commands
+from random import choice
 import configuration as config
 import subprocess
+import discord
 
 
 # TODO restart subprocess doesn't work
 class Admin(commands.Cog):
-    __slots__ = "client"
+    __slots__ = ["client", "status_task", "running"]
 
     def __init__(self, client):
         self.client = client
+        self.running = True
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.command(aliases=["kill"])
@@ -67,6 +71,11 @@ class Admin(commands.Cog):
             return await message.send("Usage: <prefix> status `listening`/`playing`/`watching` <text>")
 
         try:
+            if activity.lower().startswith("cancel"):
+                print("[{}|{}] Cancelling status loop...".format(message.guild.name, message.guild.id))
+                self.status_task.cancel()
+                return await message.send("Cancelled my status update loop.")
+
             text = activity.split(" ", 1)[1]
             if activity.lower().startswith("listening"):
                 if text.lower().startswith("to "):
@@ -92,12 +101,35 @@ class Admin(commands.Cog):
     async def emojiname(self, message, emoji):
         return await message.send(emoji.encode('ascii', 'namereplace'))
 
+    async def status_loop(self):
+        while self.running:
+            activity = choice(["listening", "watching", "playing"])
+            if activity == "listening":
+                text = choice(config.STATUS_TEXT_LISTENING_TO)
+                await self.client.change_presence(activity=discord.Activity(
+                    type=discord.ActivityType.listening, name=text))
+
+            elif activity == "watching":
+                text = choice(config.STATUS_TEXT_WATCHING)
+                await self.client.change_presence(activity=discord.Activity(
+                    type=discord.ActivityType.watching, name=text))
+
+            else:
+                text = choice(config.STATUS_TEXT_PLAYING)
+                await self.client.change_presence(activity=discord.Activity(
+                    type=discord.ActivityType.playing, name=text))
+
+            try:
+                await sleep(3600)
+            except CancelledError:
+                self.running = False
+                return
+
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
     async def on_ready(self):
         print("\tI'm ready!\n")
-        await self.client.change_presence(activity=discord.Activity(
-            type=discord.ActivityType.listening, name="chillhop"))
+        self.status_task = self.client.loop.create_task(self.status_loop())
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════

@@ -26,6 +26,30 @@ ytdl_format_options = {
     'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
+# Activity Texts:
+STATUS_TEXT_LISTENING_TO = [
+    "chillhop",
+    "the flushing toilet",
+    "the cats outside",
+    "toilet paper ASMR"
+]
+
+STATUS_TEXT_WATCHING = [
+    "the invisible people", 
+    "the server",
+    "the clock",
+    "boring late night shows",
+    "animu and mango",
+    "Rudel's shenanigans",
+    "the toilet paper cache"
+]
+
+STATUS_TEXT_PLAYING = [
+    "with fire",
+    "with the server settings",
+    "with toilet paper"
+]
+
 # Browser Configuration:
 CMD_SLOT_REACTIONS = [
     "0\N{COMBINING ENCLOSING KEYCAP}", "1\N{COMBINING ENCLOSING KEYCAP}",
@@ -56,6 +80,7 @@ COMMANDLIST_EMBED_ADMIN_PREP = [
     ":white_small_square: reload <extension / all> - Unloads and loads extensions.\n",
     ":white_small_square: remove <number> - Removes messages in the channel.\n",
     ":white_small_square: status <listening/playing/watching> <status> - Sets Maon's status.\n",
+    ":white_small_square: status cancel - Cancels Maon's looping status updates.\n",
     "\n"
 ]
 
@@ -67,6 +92,7 @@ COMMANDLIST_EMBED_PREP = [
     ":notes: ***Music Commands:***\n",
     ":white_small_square: browse <music / sfx> - Opens the file browser.\n",
     ":white_small_square: play <link / filepath> - Plays a Youtube video or local file.\n",
+    ":white_small_square: sfx <link / filepath> - Plays a local sound effect.\n",
     ":white_small_square: stop / leave - Turns off the music player.\n",
     ":white_small_square: skip - Skips the current song.\n",
     ":white_small_square: loop <song / queue> - Loops the current song or queue.\n",
@@ -76,7 +102,8 @@ COMMANDLIST_EMBED_PREP = [
     "\n",
     ":juggling: ***Fun Commands:***\n",
     ":white_small_square: <question> - Maon will reply to your question.\n",
-    ":white_small_square: toss - Coin toss.\n"
+    ":white_small_square: toss - Coin toss.\n",
+    ":white_small_square: roll / rng / dice <number> - Roll a number.\n"
 ]
 
 # Maon Version:
@@ -86,6 +113,6 @@ SIGNATURE = '''
 | / \/// _` |/ _ \/  \/ / _ \| '_ \ |
 |/ _  \ (_| |  __/ /\  / (_) | | | ||
 |\/ \_/\__,_|\___\_\ \/ \___/|_| |_||
-       Maon v0.6 - 2020-03-21
+       Maon v0.07 - 2020-03-23
 '''
-VERSION = "Maon v0.6 - 2020-03-21"
+VERSION = "Maon v0.07 - 2020-03-23"

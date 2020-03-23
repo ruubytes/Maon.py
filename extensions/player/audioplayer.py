@@ -70,7 +70,7 @@ class AudioPlayer:
                 if self.looping == "playlist" and track["track_type"] != "sfx":
                     await self.queue.put(track)
 
-        except asyncio.CancelledError or asyncio.TimeoutError:
+        except (asyncio.CancelledError, asyncio.TimeoutError):
             print("[{}|{}] Cancelling audioplayer...".format(self.message.guild.name, self.message.guild.id))
             self.running = False
             await self.voice_client.disconnect()
