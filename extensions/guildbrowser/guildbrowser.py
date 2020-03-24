@@ -8,7 +8,6 @@ import discord
 import asyncio
 
 
-# TODO Fix browser closing method, for some reason it is not getting called.
 class GuildBrowser:
     __slots__ = ["client", "audio", "filebrowser", "browser_type", "message", "channel", "window_message", "id",
                  "title", "home_dir", "current_dir", "dir_list", "dir_items", "current_page", "max_pages", "slot_names",

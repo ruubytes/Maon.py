@@ -1,5 +1,6 @@
 # Prefix And Embed Color:
 PREFIX = ["maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ", "MAOn ", "mAON ", "MAON "]
+PREFIX_FAST = "maon"
 COLOR_HEX = 0xf8d386
 
 # Media Paths:
@@ -48,6 +49,23 @@ STATUS_TEXT_PLAYING = [
     "with fire",
     "with the server settings",
     "with toilet paper"
+]
+
+# Dialogue Texts:
+QUESTION_TRIGGER = [
+    "what", "wanna", "how", "may", "has", "have", "will", "should",
+    "do", "can", "am", "is", "are", "did", "could", "would"
+]
+
+QUESTION_REPLY = [
+    "Uhh... I don't know.",
+    "Yes.", "Mhm.", "Yah.", "Sure.",
+    "No.", "I don't think so.", "Ah... no.", "Eeh... no.",
+    "...maybe?", "Probably.", "Not sure."
+]
+
+DEFAULT_REPLY = [
+    "Hm?", "What?", "...?", "Huh?", "Nani?"
 ]
 
 # Browser Configuration:
@@ -113,6 +131,6 @@ SIGNATURE = '''
 | / \/// _` |/ _ \/  \/ / _ \| '_ \ |
 |/ _  \ (_| |  __/ /\  / (_) | | | ||
 |\/ \_/\__,_|\___\_\ \/ \___/|_| |_||
-       Maon v0.07 - 2020-03-23
+       Maon v0.08 - 2020-03-23
 '''
-VERSION = "Maon v0.07 - 2020-03-23"
+VERSION = "Maon v0.08 - 2020-03-23"

@@ -4,8 +4,7 @@
 Maon is written in `Python3.6+` and tested on `Ubuntu 18.04`, `Windows 10`, and `Raspbian Buster`.
 Maon should run on most UNIX platforms, if you can install the required libraries below. The most notable
 functionality of Maon is its chat integrated media browser to browse media files and play them by navigating
-the browser with emojis that have been added to the media browser embed message. Maon is a study project 
-of mine.
+the browser with emojis that have been added to the media browser embed message. Maon is a study and hobby project.
 
 # Table of Contents:
 - [Installation](#installation)
