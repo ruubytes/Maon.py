@@ -33,6 +33,8 @@ class Fun(commands.Cog):
         if question is None:
             return await message.send(choice(config.DEFAULT_REPLY))
         else:
+            if "why" in message.invoked_with:
+                return await message.send(choice(config.QUESTION_REPLY_WHY))
             return await message.send(choice(config.QUESTION_REPLY))
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════

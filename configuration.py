@@ -11,21 +11,6 @@ DOWNLOADS_PATH = "./downloads/"
 # Audio Settings:
 SFX_VOLUME = 0.4
 PLAYER_TIMEOUT = 7200
-before_args = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
-ffmpeg_options = {'options': '-vn'}
-ytdl_format_options = {
-    'format': 'bestaudio/best',
-    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-    'restrictfilenames': True,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
-    'quiet': True,
-    'no_warnings': True,
-    'default_search': 'auto',
-    'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
-}
 
 # Activity Texts:
 STATUS_TEXT_LISTENING_TO = [
@@ -54,7 +39,8 @@ STATUS_TEXT_PLAYING = [
 # Dialogue Texts:
 QUESTION_TRIGGER = [
     "what", "wanna", "how", "may", "has", "have", "will", "should",
-    "do", "can", "am", "is", "are", "did", "could", "would"
+    "do", "does", "can", "am", "is", "are", "did", "could", "would",
+    "why"
 ]
 
 QUESTION_REPLY = [
@@ -64,9 +50,55 @@ QUESTION_REPLY = [
     "...maybe?", "Probably.", "Not sure."
 ]
 
+QUESTION_REPLY_WHY = [
+    "Because I can.", "haha maon go beep boop", 
+    "I don't need a reason, because I can't reason. :point_right::point_right:"
+]
+
 DEFAULT_REPLY = [
     "Hm?", "What?", "...?", "Huh?", "Nani?"
 ]
+
+# Audioplayer Settings:
+BEFORE_ARGS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+FFMPEG_OPTIONS = {'options': '-vn'}
+YTDL_PLAY_OPTIONS = {
+    'format': 'bestaudio/best',
+    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+    'restrictfilenames': True,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'ignoreerrors': False,
+    'logtostderr': False,
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
+}
+
+YTDL_DOWNLOAD_AUDIO_OPTIONS = {
+    'format': 'bestaudio',
+    'outtmpl': './music/%(title)s.%(ext)s',
+    'restrictfilenames': False,
+    'noplaylist': True,
+    'quiet': True,
+    'no_warnings': True,
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '320'
+    }]
+}
+
+YTDL_DOWNLOAD_VIDEO_OPTIONS = {
+    'format': 'best',
+    'outtmpl': './downloads/%(title)s.%(ext)s',
+    'restrictfilenames': False,
+    'noplaylist': True,
+    'nocheckcertificate': True,
+    'quiet': True,
+    'no_warnings': True
+}
 
 # Browser Configuration:
 CMD_SLOT_REACTIONS = [
@@ -99,6 +131,7 @@ COMMANDLIST_EMBED_ADMIN_PREP = [
     ":white_small_square: remove <number> - Removes messages in the channel.\n",
     ":white_small_square: status <listening/playing/watching> <status> - Sets Maon's status.\n",
     ":white_small_square: status cancel - Cancels Maon's looping status updates.\n",
+    ":white_small_square: download <audio/video> <url> - Downloads a full Youtube video or just the audio.\n",
     "\n"
 ]
 
@@ -131,6 +164,6 @@ SIGNATURE = '''
 | / \/// _` |/ _ \/  \/ / _ \| '_ \ |
 |/ _  \ (_| |  __/ /\  / (_) | | | ||
 |\/ \_/\__,_|\___\_\ \/ \___/|_| |_||
-       Maon v0.08 - 2020-03-23
+       Maon v0.10 - 2020-03-26
 '''
-VERSION = "Maon v0.08 - 2020-03-23"
+VERSION = "Maon v0.10 - 2020-03-26"

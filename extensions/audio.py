@@ -1,6 +1,7 @@
 from urllib import request
 from discord.ext import commands
 from extensions.player import audioplayer
+from youtube_dl import YoutubeDL
 from tinytag import TinyTag, TinyTagException
 from lxml import etree
 from time import sleep
@@ -8,7 +9,6 @@ import configuration as config
 import os.path
 
 
-# TODO remove player when stopping
 class Audio(commands.Cog):
     __slots__ = ["client", "players"]
 
@@ -222,6 +222,28 @@ class Audio(commands.Cog):
                 self.players[message.guild.id].player_task.cancel()
             else:
                 await message.guild.voice_client.disconnect()
+
+    @commands.command(aliases=["d"])
+    @commands.is_owner()
+    async def download(self, message, media_type:str = None, *, url:str = None):
+        if media_type is None:
+            return await message.send("Do you want me to download a full `video` or just the `audio`?")
+        elif url is None:
+            return await message.send("I need a Youtube link to download from.")
+        elif not url.startswith("https://www.youtube.com/") and not url.startswith("https://youtu.be/"):
+            return await message.send("I need a Youtube link to download from.")
+        elif (media_type != "audio") and (media_type != "video"):
+            return await message.send("Do you want me to download a full `video` or just the `audio`?")
+
+        youtube_feed = etree.HTML(request.urlopen(url).read())
+        title = "".join(youtube_feed.xpath("//span[@id='eow-title']/@title"))
+
+        await message.send("Downloading {}...".format(title))
+        if media_type == "audio":
+            YoutubeDL(config.YTDL_DOWNLOAD_AUDIO_OPTIONS).download([url])
+        else:
+            YoutubeDL(config.YTDL_DOWNLOAD_VIDEO_OPTIONS).download([url])
+        return await message.send("Finished downloading {}!".format(title))
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()

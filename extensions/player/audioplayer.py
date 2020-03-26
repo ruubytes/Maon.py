@@ -1,12 +1,10 @@
 from async_timeout import timeout
 from discord import PCMVolumeTransformer
 from discord import FFmpegPCMAudio
+from youtube_dl import YoutubeDL
+from youtube_dl import DownloadError
 import configuration as config
-import youtube_dl
 import asyncio
-
-ytdl = youtube_dl.YoutubeDL(config.ytdl_format_options)
-youtube_dl.utils.bug_reports_message = lambda: ''  # Suppress noise about console usage from errors
 
 
 class AudioPlayer:
@@ -49,13 +47,13 @@ class AudioPlayer:
                 if track["track_type"] == "link":  # link / music / sfx
                     self.voice_client.play(PCMVolumeTransformer(
                         FFmpegPCMAudio(track.get("url"),
-                                       before_options=config.before_args,
-                                       options=config.ffmpeg_options)),
+                                       before_options=config.BEFORE_ARGS,
+                                       options=config.FFMPEG_OPTIONS)),
                         after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set))
 
                 else:
                     self.voice_client.play(PCMVolumeTransformer(
-                        FFmpegPCMAudio(track.get("url"), options=config.ffmpeg_options)),
+                        FFmpegPCMAudio(track.get("url"), options=config.FFMPEG_OPTIONS)),
                         after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set))
 
                 if track["track_type"] != "sfx":
@@ -91,7 +89,7 @@ class AudioPlayer:
         track_old = track
         if track["track_type"] == "link":
             try:
-                track = ytdl.extract_info(track["url"], download=False)
+                track = YoutubeDL(config.YTDL_PLAY_OPTIONS).extract_info(track["url"], download=False)
                 if track is None:
                     await self.message.send("Youtube link machine broke.")
                     return track
@@ -105,7 +103,7 @@ class AudioPlayer:
                 track["original_url"] = track_old["url"]
                 return track
 
-            except youtube_dl.DownloadError:
+            except DownloadError:
                 await self.message.send("Something went wrong with that Youtube link.")
                 return None
         else:
