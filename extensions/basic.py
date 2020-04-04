@@ -1,4 +1,6 @@
 from discord.ext import commands
+from lxml import etree
+from urllib import request
 import configuration as config
 import discord
 
@@ -27,6 +29,19 @@ class Basic(commands.Cog):
                 self.client.get_user(self.client.owner_id).discriminator, 
             icon_url=self.client.get_user(self.client.owner_id).avatar_url)
         return await message.send(embed=help_embed)
+
+    @commands.command()
+    async def corona(self, message):
+        sozial_feed = etree.HTML(request
+            .urlopen("https://www.sozialministerium.at/Informationen-zum-Coronavirus/Neuartiges-Coronavirus-(2019-nCov).html")
+            .read())
+        cases_item = sozial_feed.xpath("//strong")
+        cases_string = etree.tostring(cases_item[1], encoding="unicode")
+
+        cases_string = cases_string.replace("<strong>Bestätigte Fälle, ", "")
+        cases_string = cases_string.replace("</strong>", "")
+
+        return await message.send(cases_string)
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
