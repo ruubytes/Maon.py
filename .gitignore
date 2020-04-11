@@ -16,6 +16,7 @@ configuration.py
 downloads/
 music/
 sfx/
+temp/
 
 ### Test Files ###
 test_*

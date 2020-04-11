@@ -90,6 +90,20 @@ YTDL_DOWNLOAD_AUDIO_OPTIONS = {
     }]
 }
 
+YTDL_DOWNLOAD_TEMP_OPTIONS = {
+    'format': 'bestaudio',
+    'outtmpl': './temp/%(id)s.%(ext)s',
+    'restrictfilenames': False,
+    'noplaylist': True,
+    'quiet': True,
+    'no_warnings': True,
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '320'
+    }]
+}
+
 YTDL_DOWNLOAD_VIDEO_OPTIONS = {
     'format': 'best',
     'outtmpl': './downloads/%(title)s.%(ext)s',
@@ -164,6 +178,6 @@ SIGNATURE = '''
 | / \/// _` |/ _ \/  \/ / _ \| '_ \ |
 |/ _  \ (_| |  __/ /\  / (_) | | | ||
 |\/ \_/\__,_|\___\_\ \/ \___/|_| |_||
-       Maon v0.10 - 2020-03-26
+       Maon v0.12 - 2020-04-12
 '''
-VERSION = "Maon v0.10 - 2020-03-26"
+VERSION = "Maon v0.12 - 2020-04-12"

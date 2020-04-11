@@ -2,9 +2,11 @@ from asyncio import sleep
 from asyncio import CancelledError
 from discord.ext import commands
 from random import choice
+from shutil import rmtree
+from os import path
 import configuration as config
-import subprocess
 import discord
+
 
 
 # TODO restart subprocess doesn't work
@@ -23,11 +25,11 @@ class Admin(commands.Cog):
         await self.client.close()
         raise SystemExit
 
+    """ Work in progress """
     @commands.command()
     @commands.is_owner()
     async def restart(self, message):
         await self.client.close()
-        subprocess.call(["./run.sh"])
         raise SystemExit
 
     @commands.command()
@@ -129,6 +131,8 @@ class Admin(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("\tI'm ready!\n")
+        if path.exists("./temp"):
+            rmtree("./temp")
         self.status_task = self.client.loop.create_task(self.status_loop())
 
 

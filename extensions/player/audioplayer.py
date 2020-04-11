@@ -42,15 +42,21 @@ class AudioPlayer:
                     track = None
                     async with timeout(self.player_timeout):
                         track = await self.queue.get()
-                track = await self.prepare_audio_track(track)
+                #track = await self.prepare_audio_track(track)
 
                 if track["track_type"] == "link":  # link / music / sfx
+                    self.voice_client.play(PCMVolumeTransformer(
+                        FFmpegPCMAudio(track.get("url"), options=config.FFMPEG_OPTIONS)),
+                        after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set))
+
+                    """ Old streaming functionality, but since YT doesn't want streamed songs to finish,
+                        a downloaded version is needed.
                     self.voice_client.play(PCMVolumeTransformer(
                         FFmpegPCMAudio(track.get("url"),
                                        before_options=config.BEFORE_ARGS,
                                        options=config.FFMPEG_OPTIONS)),
                         after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set))
-
+                    """
                 else:
                     self.voice_client.play(PCMVolumeTransformer(
                         FFmpegPCMAudio(track.get("url"), options=config.FFMPEG_OPTIONS)),

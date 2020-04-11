@@ -20,11 +20,14 @@ class Audio(commands.Cog):
     @commands.command(aliases=["p"])
     @commands.guild_only()
     async def play(self, message, *, url: str = None):
+        if not await check_voice_state(message):
+            return
+
         if url is None:
             return await message.send(
                 "You can browse the music folder with `browse music`, if you're looking for something specific.")
         elif url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/"):
-            track = await prepare_link_track(url)
+            track = await prepare_link_track(message, url)
         elif os.path.exists(config.MUSIC_PATH + url + ".mp3"):
             track = await prepare_local_track(url + ".mp3")
         elif os.path.exists(config.MUSIC_PATH + url + ".wav"):
@@ -33,9 +36,6 @@ class Audio(commands.Cog):
             return await message.send("I need a Youtube link or file path to play.")
         if track is None:
             return await message.send("The provided link is invalid.")
-
-        if not await check_voice_state(message):
-            return
 
         if message.guild.id not in self.players:
             self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
@@ -59,6 +59,8 @@ class Audio(commands.Cog):
         if message.guild.id not in self.players:
             self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
         await self.players[message.guild.id].queue.put(track)
+        if message.guild.voice_client.is_playing():
+            return await message.send("{} has been added to the queue.".format(track.get("title")), delete_after=20)
 
     @commands.command(aliases=["s"])
     @commands.guild_only()
@@ -240,9 +242,13 @@ class Audio(commands.Cog):
 
         await message.send("Downloading {}...".format(title))
         if media_type == "audio":
+            print("[{}|{}] Downloading audio {}...".format(message.guild.name, message.guild.id, title))
             YoutubeDL(config.YTDL_DOWNLOAD_AUDIO_OPTIONS).download([url])
+            print("[{}|{}] Finished downloading audio {}.".format(message.guild.name, message.guild.id, title))
         else:
+            print("[{}|{}] Downloading video {}...".format(message.guild.name, message.guild.id, title))
             YoutubeDL(config.YTDL_DOWNLOAD_VIDEO_OPTIONS).download([url])
+            print("[{}|{}] Finished downloading video {}.".format(message.guild.name, message.guild.id, title))
         return await message.send("Finished downloading {}!".format(title))
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -313,13 +319,34 @@ async def check_voice_state(message):
     return True
 
 
-async def prepare_link_track(url: str):
+async def prepare_link_track(message, url: str):
+    youtube_feed = etree.HTML(request.urlopen(url).read())
+    title = "".join(youtube_feed.xpath("//span[@id='eow-title']/@title"))
+    if len(title) == 0:
+        return None
+    
+    """ New downloaded audio functionality for streaming """
+    if os.path.exists("./temp/" + url[len(url)-11:] + ".mp3"):
+        print("[{}|{}] Found in temp folder: {}.".format(message.guild.name, message.guild.id, title))
+        url = "./temp/" + url[len(url)-11:] + ".mp3"
+        track = {"title": title, "url": url, "track_type": "link"}
+    else:
+        await message.send("Preparing {}...".format(title))
+        print("[{}|{}] Could not find {} in temp folder, downloading now...".format(message.guild.name, message.guild.id, title))
+        YoutubeDL(config.YTDL_DOWNLOAD_TEMP_OPTIONS).download([url])
+        url = "./temp/" + url[len(url)-11:] + ".mp3"
+        track = {"title": title, "url": url, "track_type": "link"}
+    
+    return track
+
+    """ Old streaming functionality, was just a title look up but now a fully downloaded file is needed.
     youtube_feed = etree.HTML(request.urlopen(url).read())
     title = "".join(youtube_feed.xpath("//span[@id='eow-title']/@title"))
     if len(title) != 0:
         track = {"title": title, "url": url, "track_type": "link"}
         return track
     return None
+    """
 
 
 async def prepare_local_track(url: str):

@@ -1,15 +1,19 @@
 from discord.ext import commands
 from lxml import etree
 from urllib import request
+from asyncio import sleep
 import configuration as config
 import discord
+import schedule
 
 
 class Basic(commands.Cog):
-    __slots__ = "client"
+    __slots__ = ["client"]
 
     def __init__(self, client):
         self.client = client
+        self.corona_last_message = ""
+        self.running = True
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.command()
@@ -31,13 +35,12 @@ class Basic(commands.Cog):
         return await message.send(embed=help_embed)
 
     @commands.command()
-    async def corona(self, message):
+    async def corona(self, message, *, args = None):
         sozial_feed = etree.HTML(request
-            .urlopen("https://www.sozialministerium.at/Informationen-zum-Coronavirus/Neuartiges-Coronavirus-(2019-nCov).html")
-            .read())
+                .urlopen("https://www.sozialministerium.at/Informationen-zum-Coronavirus/Neuartiges-Coronavirus-(2019-nCov).html")
+                .read())
         cases_item = sozial_feed.xpath("//strong")
         cases_string = etree.tostring(cases_item[1], encoding="unicode")
-
         cases_string = cases_string.replace("<strong>Bestätigte Fälle, ", "")
         cases_string = cases_string.replace("</strong>", "")
 
