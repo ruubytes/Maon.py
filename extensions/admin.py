@@ -37,17 +37,74 @@ class Admin(commands.Cog):
     async def reload(self, message, *, extension: str = None):
         if extension is None:
             return await message.send("Do you want me to reload a specific extension or `all`?")
-        elif extension in config.EXTENSION_LIST:
-            print("Reloading {} extension...".format(extension))
-            self.client.reload_extension(config.EXTENSION_PATH + extension)
-            return await message.send("{} extension reloaded!".format(extension))
-        elif extension == "all":
+        elif extension.lower() in config.EXTENSION_LIST:
+            try:
+                print("Reloading {} extension...".format(extension.lower()))
+                self.client.reload_extension(config.EXTENSION_PATH + extension.lower())
+                return await message.send("{} extension reloaded!".format(extension.lower()))
+            except discord.ext.commands.errors.ExtensionNotLoaded:
+                return await message.send("Cannot reload {} because it is disabled. Did you want to `enable` it?".format(extension.lower()))
+        elif extension.lower() == "all":
             for ext in config.EXTENSION_LIST:
-                print("Reloading {} extension...".format(ext))
-                self.client.reload_extension(config.EXTENSION_PATH + ext)
+                try:
+                    print("Reloading {} extension...".format(ext))
+                    self.client.reload_extension(config.EXTENSION_PATH + ext)
+                except discord.ext.commands.errors.ExtensionNotLoaded:
+                    pass
             return await message.send("All extensions reloaded!")
         else:
-            return await message.send("I don't think I have an extension called {}.".format(extension))
+            return await message.send("I don't think I have an extension called {}.".format(extension.lower()))
+
+    @commands.command()
+    @commands.is_owner()
+    async def disable(self, message, *, extension: str = None):
+        if extension is None:
+            return await message.send("Do you want me to disable a specific extension or `all`?")
+        elif extension.lower() in config.EXTENSION_LIST:
+            try:
+                print("Disabling {} extension...".format(extension.lower()))
+                self.client.unload_extension(config.EXTENSION_PATH + extension.lower())
+                return await message.send("{} extension disabled!".format(extension.lower()))
+            except discord.ext.commands.errors.ExtensionNotLoaded:
+                return await message.send("{} extension is already disabled!".format(extension.lower()))
+
+        elif extension.lower() == "all":
+            for ext in config.EXTENSION_LIST:
+                try:
+                    print("Disabling {} extension...".format(ext))
+                    self.client.reload_extension(config.EXTENSION_PATH + ext)
+                except discord.ext.commands.errors.ExtensionNotLoaded:
+                    pass
+            return await message.send("All extensions disabled, I is small brain now and need to be restarted...")
+
+        else:
+            return await message.send("I don't think I have an extension called {}.".format(extension.lower()))
+        
+    @commands.command()
+    @commands.is_owner()
+    async def enable(self, message, *, extension: str = None):
+        if extension is None:
+            return await message.send("Do you want me to enable a specific extension or `all`?")
+
+        elif extension.lower() in config.EXTENSION_LIST:
+            try:
+                print("Enabling {} extension...".format(extension.lower()))
+                self.client.load_extension(config.EXTENSION_PATH + extension.lower())
+                return await message.send("{} extension enabled!".format(extension.lower()))
+            except discord.ext.commands.errors.ExtensionAlreadyLoaded:
+                return await message.send("{} extension is already enabled!".format(extension.lower()))
+
+        elif extension.lower() == "all":
+            for ext in config.EXTENSION_LIST:
+                try:
+                    print("Enabling {} extension...".format(ext))
+                    self.client.load_extension(config.EXTENSION_PATH + ext)
+                except discord.ext.commands.errors.ExtensionAlreadyLoaded:
+                    pass
+            return await message.send("All disabled extensions are now enabled!")
+
+        else:
+            return await message.send("I don't think I have an extension called {}.".format(extension.lower()))
 
     @commands.command(aliases=["clear", "delete"])
     @commands.is_owner()
@@ -131,8 +188,6 @@ class Admin(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("\tI'm ready!\n")
-        if path.exists("./temp"):
-            rmtree("./temp")
         self.status_task = self.client.loop.create_task(self.status_loop())
 
 

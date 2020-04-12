@@ -32,7 +32,7 @@ class AudioPlayer:
         await self.client.wait_until_ready()
 
         # To close the player if the channel is empty
-        self.client.loop.create_task(self.active_loop())
+        self.active_task = self.client.loop.create_task(self.active_loop())
         track = None
         try:
             while self.running:
@@ -77,19 +77,23 @@ class AudioPlayer:
         except (asyncio.CancelledError, asyncio.TimeoutError):
             print("[{}|{}] Cancelling audioplayer...".format(self.message.guild.name, self.message.guild.id))
             self.running = False
+            self.active_task.cancel()
             await self.voice_client.disconnect()
             return self.audio.destroy_player(self.message)
 
     async def active_loop(self):
-        while self.running:
-            if len(self.message.guild.voice_client.channel.members) < 2:
-                print("[{}|{}] Users left the voice channel, destroying audioplayer.".format(self.message.guild.name,
-                                                                                             self.message.guild.id))
-                self.running = False
-                await self.voice_client.disconnect()
-                return self.audio.destroy_player(self.message)
-            else:
-                await asyncio.sleep(10)
+        try:
+            while self.running:
+                if len(self.message.guild.voice_client.channel.members) < 2:
+                    print("[{}|{}] Users left the voice channel, destroying audioplayer.".format(self.message.guild.name,
+                                                                                                self.message.guild.id))
+                    self.running = False
+                    await self.voice_client.disconnect()
+                    return self.audio.destroy_player(self.message)
+                else:
+                    await asyncio.sleep(10)
+        except asyncio.CancelledError:
+            pass
 
     async def prepare_audio_track(self, track):
         track_old = track

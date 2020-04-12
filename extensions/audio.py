@@ -336,8 +336,6 @@ async def prepare_link_track(message, url: str):
         YoutubeDL(config.YTDL_DOWNLOAD_TEMP_OPTIONS).download([url])
         url = "./temp/" + url[len(url)-11:] + ".mp3"
         track = {"title": title, "url": url, "track_type": "link"}
-    
-    return track
 
     """ Old streaming functionality, was just a title look up but now a fully downloaded file is needed.
     youtube_feed = etree.HTML(request.urlopen(url).read())
@@ -347,6 +345,7 @@ async def prepare_link_track(message, url: str):
         return track
     return None
     """
+    return track
 
 
 async def prepare_local_track(url: str):
