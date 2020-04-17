@@ -1,5 +1,7 @@
 # Prefix And Embed Color:
-PREFIX = ["maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ", "MAOn ", "mAON ", "MAON "]
+PREFIX = [
+    "m ", "maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ", "MAOn ", "mAON ", "MAON "
+]
 PREFIX_FAST = "maon"
 COLOR_HEX = 0xf8d386
 
@@ -178,6 +180,6 @@ SIGNATURE = '''
 | / \/// _` |/ _ \/  \/ / _ \| '_ \ |
 |/ _  \ (_| |  __/ /\  / (_) | | | ||
 |\/ \_/\__,_|\___\_\ \/ \___/|_| |_||
-       Maon v0.13 - 2020-04-12
+       Maon v0.14 - 2020-04-17
 '''
-VERSION = "Maon v0.13 - 2020-04-12"
+VERSION = "Maon v0.14 - 2020-04-17"

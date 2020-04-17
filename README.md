@@ -1,10 +1,11 @@
 # Maon Discord Bot
 [![Issues][issues-shield]][issues-url]
 
+Maon is a study and hobby project, as well as a project to get to know the Git workflow.
 Maon is written in `Python3.6+` and tested on `Ubuntu 18.04`, `Windows 10`, and `Raspbian Buster`.
 Maon should run on most UNIX platforms, if you can install the required libraries below. The most notable
 functionality of Maon is its chat integrated media browser to browse media files and play them by navigating
-the browser with emojis that have been added to the media browser embed message. Maon is a study and hobby project.
+the browser with emojis that have been added to the media browser embed message. 
 
 # Table of Contents:
 - [Installation](#installation)
@@ -57,6 +58,6 @@ To run Maon you can just start the shellscript or use the following from Maon's 
 Use the following in a command prompt from Maon's main directory:
 
     python Maon.py
-
+	
 [issues-shield]: https://img.shields.io/github/issues/RaeNon/Maon.py?style=flat-square
 [issues-url]: https://github.com/RaeNon/Maon.py/issues

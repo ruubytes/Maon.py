@@ -39,12 +39,16 @@ class Basic(commands.Cog):
         sozial_feed = etree.HTML(request
                 .urlopen("https://www.sozialministerium.at/Informationen-zum-Coronavirus/Neuartiges-Coronavirus-(2019-nCov).html")
                 .read())
-        cases_item = sozial_feed.xpath("//strong")
-        cases_string = etree.tostring(cases_item[1], encoding="unicode")
-        cases_string = cases_string.replace("<strong>Bestätigte Fälle, ", "")
-        cases_string = cases_string.replace("</strong>", "")
+        date_item = sozial_feed.xpath("//th")
+        date_string = etree.tostring(date_item[11], encoding="unicode")
+        cases_item = sozial_feed.xpath("//td")
+        cases_string = etree.tostring(cases_item[9], encoding="unicode")
 
-        return await message.send(cases_string)
+        date = date_string[date_string.find("Stand") + 6 : date_string.find("/th") - 6]
+        value = cases_string[4 : cases_string.find("/td") - 1]
+        report = "Austria has `" + value + "` confirmed cases. (`" + date + "`)"
+
+        return await message.send(report)
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
