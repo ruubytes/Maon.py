@@ -14,8 +14,6 @@ class Maon:
         print("Discord.py Version: {}".format(discord.__version__))
         self.client = commands.Bot(command_prefix=config.PREFIX, case_insensitive=True, owner_id=login.OWNER_ID)
         self.client.remove_command("help")
-        if path.exists("./temp"):
-            rmtree("./temp")
 
     def load_extensions(self):
         for ext in config.EXTENSION_LIST:

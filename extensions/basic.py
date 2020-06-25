@@ -36,6 +36,8 @@ class Basic(commands.Cog):
 
     @commands.command()
     async def corona(self, message, *, args = None):
+        return await message.send("Corona is over, I've disabled this command.")
+        """
         sozial_feed = etree.HTML(request
                 .urlopen("https://www.sozialministerium.at/Informationen-zum-Coronavirus/Neuartiges-Coronavirus-(2019-nCov).html")
                 .read())
@@ -49,6 +51,7 @@ class Basic(commands.Cog):
         report = "Austria has `" + value + "` confirmed cases. (`" + date + "`)"
 
         return await message.send(report)
+        """ 
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════

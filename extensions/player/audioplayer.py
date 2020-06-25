@@ -2,7 +2,7 @@ from async_timeout import timeout
 from discord import PCMVolumeTransformer
 from discord import FFmpegPCMAudio
 from youtube_dl import YoutubeDL
-from youtube_dl import DownloadError
+from youtube_dl.utils import DownloadError
 import configuration as config
 import asyncio
 
