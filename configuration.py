@@ -22,7 +22,9 @@ STATUS_TEXT_LISTENING_TO = [
     "the flushing toilet",
     "the cats outside",
     "toilet paper ASMR",
-    "botcasts haha"
+    "botcasts haha",
+    "the song of my people",
+    "medieval core music"
 ]
 
 STATUS_TEXT_WATCHING = [
@@ -31,14 +33,18 @@ STATUS_TEXT_WATCHING = [
     "the clock",
     "boring late night shows",
     "animu and mango",
-    "Rudel's shenanigans",
-    "the toilet paper cache"
+    "Wudel's shenanigans",
+    "the toilet paper cache",
+    "humans wearing weird masks"
 ]
 
 STATUS_TEXT_PLAYING = [
     "with fire",
     "with the server settings",
-    "with toilet paper"
+    "with toilet paper",
+    "with the lan cord",
+    "with the wifi cable",
+    "dead"
 ]
 
 # Dialogue Texts:
@@ -183,6 +189,6 @@ SIGNATURE = '''
 | / \/// _` |/ _ \/  \/ / _ \| '_ \ |
 |/ _  \ (_| |  __/ /\  / (_) | | | ||
 |\/ \_/\__,_|\___\_\ \/ \___/|_| |_||
-           Maon v20.06.25
+           Maon v20.08.06
 '''
-VERSION = "Maon v20.06.25"
+VERSION = "Maon v20.08.06"
