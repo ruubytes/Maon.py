@@ -1,5 +1,5 @@
 # Prefix And Embed Color:
-PREFIX = [
+PREFIX = [ 
     "m ", "maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ", "MAOn ", "mAON ", "MAON "
 ]
 PREFIX_FAST = "maon"
@@ -10,6 +10,8 @@ MUSIC_PATH = "./music/"
 SFX_PATH = "./sfx/"
 DOWNLOADS_PATH = "./downloads/"
 
+TEMP_FOLDER_MAX_SIZE_IN_MB = 512
+
 # Audio Settings:
 SFX_VOLUME = 0.4
 PLAYER_TIMEOUT = 7200
@@ -19,7 +21,10 @@ STATUS_TEXT_LISTENING_TO = [
     "chillhop",
     "the flushing toilet",
     "the cats outside",
-    "toilet paper ASMR"
+    "toilet paper ASMR",
+    "botcasts haha",
+    "the song of my people",
+    "medieval core music"
 ]
 
 STATUS_TEXT_WATCHING = [
@@ -28,14 +33,18 @@ STATUS_TEXT_WATCHING = [
     "the clock",
     "boring late night shows",
     "animu and mango",
-    "Rudel's shenanigans",
-    "the toilet paper cache"
+    "Wudel's shenanigans",
+    "the toilet paper cache",
+    "humans wearing weird masks"
 ]
 
 STATUS_TEXT_PLAYING = [
     "with fire",
     "with the server settings",
-    "with toilet paper"
+    "with toilet paper",
+    "with the lan cord",
+    "with the wifi cable",
+    "dead"
 ]
 
 # Dialogue Texts:
@@ -180,6 +189,6 @@ SIGNATURE = '''
 | / \/// _` |/ _ \/  \/ / _ \| '_ \ |
 |/ _  \ (_| |  __/ /\  / (_) | | | ||
 |\/ \_/\__,_|\___\_\ \/ \___/|_| |_||
-       Maon v0.14 - 2020-04-17
+           Maon v20.08.06
 '''
-VERSION = "Maon v0.14 - 2020-04-17"
+VERSION = "Maon v20.08.06"

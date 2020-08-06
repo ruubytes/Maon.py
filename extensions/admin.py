@@ -157,6 +157,15 @@ class Admin(commands.Cog):
             return await message.send("Usage: <prefix> status `listening`/`playing`/`watching` <text>")
 
     @commands.command()
+    @commands.is_owner()
+    async def scrub(self, message):
+        """
+        Empty the temp folder.
+        """
+        if path.exists("./temp"):
+            rmtree("./temp")
+
+    @commands.command()
     async def emojiname(self, message, emoji):
         return await message.send(emoji.encode('ascii', 'namereplace'))
 

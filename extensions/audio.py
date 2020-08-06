@@ -1,10 +1,14 @@
 from urllib import request
+from urllib.error import HTTPError
 from discord.ext import commands
 from extensions.player import audioplayer
 from youtube_dl import YoutubeDL
+from youtube_dl.utils import DownloadError
 from tinytag import TinyTag, TinyTagException
 from lxml import etree
 from time import sleep
+from pathlib import Path
+from os import listdir
 import configuration as config
 import os.path
 
@@ -26,7 +30,7 @@ class Audio(commands.Cog):
         if url is None:
             return await message.send(
                 "You can browse the music folder with `browse music`, if you're looking for something specific.")
-        elif url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/"):
+        elif url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/") or url.startswith("https://m.youtube.com/"):
             track = await prepare_link_track(message, url)
         elif os.path.exists(config.MUSIC_PATH + url + ".mp3"):
             track = await prepare_local_track(url + ".mp3")
@@ -35,7 +39,8 @@ class Audio(commands.Cog):
         else:
             return await message.send("I need a Youtube link or file path to play.")
         if track is None:
-            return await message.send("The provided link is invalid.")
+            #return await message.send("The provided link is invalid.")
+            return
 
         if message.guild.id not in self.players:
             self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
@@ -320,31 +325,40 @@ async def check_voice_state(message):
 
 
 async def prepare_link_track(message, url: str):
-    youtube_feed = etree.HTML(request.urlopen(url).read())
-    title = "".join(youtube_feed.xpath("//span[@id='eow-title']/@title"))
-    if len(title) == 0:
+    youtube_feed = {}
+    title = ""
+    video_id = await get_video_id(url)
+    if video_id is None:
+        await message.send("That link looks invalid to me.")
+        return None
+
+    try:
+        video_info = YoutubeDL().extract_info(url, download=False)
+        title = video_info["title"]
+    except DownloadError:
+        await message.send("Could not fetch video data... try again in a few seconds.")
         return None
     
     """ New downloaded audio functionality for streaming """
-    if os.path.exists("./temp/" + url[len(url)-11:] + ".mp3"):
+    if os.path.exists("./temp/" + video_id + ".mp3"):
         print("[{}|{}] Found in temp folder: {}.".format(message.guild.name, message.guild.id, title))
-        url = "./temp/" + url[len(url)-11:] + ".mp3"
+        url = "./temp/" + video_id + ".mp3"
         track = {"title": title, "url": url, "track_type": "link"}
     else:
         await message.send("Preparing {}...".format(title))
         print("[{}|{}] Could not find {} in temp folder, downloading now...".format(message.guild.name, message.guild.id, title))
-        YoutubeDL(config.YTDL_DOWNLOAD_TEMP_OPTIONS).download([url])
-        url = "./temp/" + url[len(url)-11:] + ".mp3"
-        track = {"title": title, "url": url, "track_type": "link"}
+        
+        try:
+            ## TODO: Substitude this with a subprocess command later
+            YoutubeDL(config.YTDL_DOWNLOAD_TEMP_OPTIONS).download([url])
+        except DownloadError as e:
+            await message.send("I've been blocked from downloading Youtube videos...")
+            return None
 
-    """ Old streaming functionality, was just a title look up but now a fully downloaded file is needed.
-    youtube_feed = etree.HTML(request.urlopen(url).read())
-    title = "".join(youtube_feed.xpath("//span[@id='eow-title']/@title"))
-    if len(title) != 0:
+        url = "./temp/" + video_id + ".mp3"
         track = {"title": title, "url": url, "track_type": "link"}
-        return track
-    return None
-    """
+        await clean_up_temp()
+
     return track
 
 
@@ -354,6 +368,33 @@ async def prepare_local_track(url: str):
         tag.title = url
     track = {"title": tag.title, "url": config.MUSIC_PATH + url, "track_type": "music"}
     return track
+
+async def get_video_id(url: str):
+    if url.find("?v=") > 0:
+        return url[url.find("?v=") + 3 : url.find("?v=") + 14] 
+    elif url.find("&v=") > 0:
+        return url[url.find("&v=") + 3 : url.find("&v=") + 14]
+    elif url.find(".be/") > 0:
+        return url[url.find(".be/") + 4 : url.find(".be/") + 15]
+    else:
+        return None
+
+async def clean_up_temp():
+    """
+    Will remove files from the temp folder in FIFO fashion if folder size is exceeded as defined in config file.
+    Maybe create its own class at some point to manage temp folder content.
+    """
+    size_in_mb = (sum(f.stat().st_size for f in Path('./temp/').glob('**/*') if f.is_file())) / (1024 * 1024)
+    while (config.TEMP_FOLDER_MAX_SIZE_IN_MB < size_in_mb):
+        print("[INFO] Temp folder size reached, removing oldest file...")
+        try:
+            first_file = min(Path('./temp/').glob('**/*'), key=os.path.getmtime)
+            size_first_file = os.path.getsize(first_file)
+            os.remove(first_file)
+            size_in_mb -= size_first_file
+            print("[INFO] " + str(first_file)[5:] + " removed.")
+        except ValueError as e:
+            print("[Error] Temp folder empty, but clean up still executed...")
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
