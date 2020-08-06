@@ -331,22 +331,13 @@ async def prepare_link_track(message, url: str):
     if video_id is None:
         await message.send("That link looks invalid to me.")
         return None
-    try:
-        youtube_feed = etree.HTML(request.urlopen(url).read())
-        title = "".join(youtube_feed.xpath("//span[@id='eow-title']/@title"))
-    except HTTPError as e:
-        await message.send("My Youtube access has been blocked...")
-        return None
 
-    if len(title) == 0:
-        ## etree.HTML sometimes returns an empty title, try again if that's the case:
-        youtube_feed = etree.HTML(request.urlopen(url).read())
-        title = "".join(youtube_feed.xpath("//span[@id='eow-title']/@title"))
-        if len(title) == 0:
-            print("[{}|{}] ERROR: Title not found.".format(message.guild.name, message.guild.id))
-            await message.send("Could not fetch video data... try again in a few seconds.")
-            return None
-        
+    try:
+        video_info = YoutubeDL().extract_info(url, download=False)
+        title = video_info["title"]
+    except DownloadError:
+        await message.send("Could not fetch video data... try again in a few seconds.")
+        return None
     
     """ New downloaded audio functionality for streaming """
     if os.path.exists("./temp/" + video_id + ".mp3"):
@@ -368,14 +359,6 @@ async def prepare_link_track(message, url: str):
         track = {"title": title, "url": url, "track_type": "link"}
         await clean_up_temp()
 
-    """ Old streaming functionality, was just a title look up but now a fully downloaded file is needed.
-    youtube_feed = etree.HTML(request.urlopen(url).read())
-    title = "".join(youtube_feed.xpath("//span[@id='eow-title']/@title"))
-    if len(title) != 0:
-        track = {"title": title, "url": url, "track_type": "link"}
-        return track
-    return None
-    """
     return track
 
 
