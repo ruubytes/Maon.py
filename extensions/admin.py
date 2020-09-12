@@ -21,14 +21,17 @@ class Admin(commands.Cog):
     @commands.command(aliases=["kill"])
     @commands.is_owner()
     async def shutdown(self, message):
-        print("\tI stopped myself from taking over the world.\n")
+        await self.client.logout()
         await self.client.close()
-        raise SystemExit
+        try:
+            raise SystemExit
+        except SystemExit:
+            print("\nI'm shutting myself down, one moment please...\n")
 
-    """ Work in progress """
     @commands.command()
     @commands.is_owner()
     async def restart(self, message):
+        """ Work in progress """
         await self.client.close()
         raise SystemExit
 
@@ -164,6 +167,7 @@ class Admin(commands.Cog):
         """
         if path.exists("./temp"):
             rmtree("./temp")
+        return await message.send("Temp folder has been scrubbed.")
 
     @commands.command()
     async def emojiname(self, message, emoji):

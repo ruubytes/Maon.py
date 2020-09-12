@@ -1,5 +1,5 @@
 # Prefix And Embed Color:
-PREFIX = [ 
+PREFIX = [
     "m ", "maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ", "MAOn ", "mAON ", "MAON "
 ]
 PREFIX_FAST = "maon"
@@ -13,7 +13,7 @@ DOWNLOADS_PATH = "./downloads/"
 TEMP_FOLDER_MAX_SIZE_IN_MB = 512
 
 # Audio Settings:
-SFX_VOLUME = 0.4
+SFX_VOLUME = 0.3
 PLAYER_TIMEOUT = 7200
 
 # Activity Texts:
@@ -21,30 +21,23 @@ STATUS_TEXT_LISTENING_TO = [
     "chillhop",
     "the flushing toilet",
     "the cats outside",
-    "toilet paper ASMR",
-    "botcasts haha",
-    "the song of my people",
-    "medieval core music"
+    "botcasts haha"
 ]
 
 STATUS_TEXT_WATCHING = [
     "the invisible people", 
     "the server",
-    "the clock",
     "boring late night shows",
     "animu and mango",
     "Wudel's shenanigans",
-    "the toilet paper cache",
-    "humans wearing weird masks"
+    "the toilet paper cache"
 ]
 
 STATUS_TEXT_PLAYING = [
+    "on new hardware",
     "with fire",
     "with the server settings",
-    "with toilet paper",
-    "with the lan cord",
-    "with the wifi cable",
-    "dead"
+    "with toilet paper"
 ]
 
 # Dialogue Texts:
@@ -63,7 +56,7 @@ QUESTION_REPLY = [
 
 QUESTION_REPLY_WHY = [
     "Because I can.", "haha maon go beep boop", 
-    "I don't need a reason, because I can't reason. :point_right::point_right:"
+    "I don't know why, because I can't reason. :point_right::point_right:"
 ]
 
 DEFAULT_REPLY = [
@@ -71,6 +64,21 @@ DEFAULT_REPLY = [
 ]
 
 # Audioplayer Settings:
+AUDIO_DOWNLOAD_CMD_DEFAULT = [
+    "youtube-dl", 
+    "--extract-audio", 
+    "--audio-format",
+    "mp3", 
+    "--audio-quality",
+    "192K",
+    "--prefer-ffmpeg",
+    "-o",
+    "temp/%(title)s-%(id)s.%(ext)s",
+    "-f",
+    "format id goes into 10",
+    "url goes into 11"
+]
+
 BEFORE_ARGS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
 FFMPEG_OPTIONS = {'options': '-vn'}
 YTDL_PLAY_OPTIONS = {
@@ -123,6 +131,13 @@ YTDL_DOWNLOAD_VIDEO_OPTIONS = {
     'nocheckcertificate': True,
     'quiet': True,
     'no_warnings': True
+}
+
+YTDL_INFO_OPTIONS = {
+    'quiet': True,
+    'no_warnings': True,
+    'default_search': 'auto',
+    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
 # Browser Configuration:
@@ -184,11 +199,11 @@ COMMANDLIST_EMBED_PREP = [
 
 # Maon Version:
 SIGNATURE = '''
-|   __                __            |
-|  /__\ __ _  ___  /\ \ \___  _ __  |
-| / \/// _` |/ _ \/  \/ / _ \| '_ \ |
-|/ _  \ (_| |  __/ /\  / (_) | | | ||
-|\/ \_/\__,_|\___\_\ \/ \___/|_| |_||
-           Maon v20.08.06
+   __                __            
+  /__\ __ _  ___  /\ \ \___  _ __  
+ / \/// _` |/ _ \/  \/ / _ \| '_ \ 
+/ _  \ (_| |  __/ /\  / (_) | | | |
+\/ \_/\__,_|\___\_\ \/ \___/|_| |_|
+          Maon v20.09.12
 '''
-VERSION = "Maon v20.08.06"
+VERSION = "Maon v20.09.12"
