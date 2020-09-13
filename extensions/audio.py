@@ -8,6 +8,7 @@ from youtube_dl import YoutubeDL
 from youtube_dl.utils import DownloadError
 from tinytag import TinyTag, TinyTagException
 from time import sleep
+from time import time
 from pathlib import Path
 from os import listdir
 
@@ -75,7 +76,7 @@ class Audio(commands.Cog):
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
                 await self.players[message.guild.id].queue.put(track)
                 if message.guild.voice_client.is_playing():
-                    await message.channel.send("{} has been added to the queue.".format(track.get("title")), delete_after=20)
+                    await message.channel.send("{} has been added to the queue.".format(track.get("title")))
         
         except (asyncio.CancelledError, asyncio.TimeoutError):
             pass
@@ -93,21 +94,33 @@ class Audio(commands.Cog):
                 try:
                     video_info = await self.client.loop.run_in_executor(
                         None, lambda: YoutubeDL(config.YTDL_INFO_OPTIONS).extract_info(req["url"], download=False))
-                    await message.channel.send("Preparing {}...".format(video_info.get("title")))
                 except DownloadError:
                     await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
                     continue
 
-                if video_info.get("protocol"):
-                    # It's a live stream
-                    await message.channel.send("Live streams are not supported yet.")
-                    continue
-                else:
-                    # It's a normal video
-                    # Find out if the video is 15 minutes or shorter (maybe make this one configurable)
-                    #if video_info.get("duration") < 900:
+                # Find out if the video is a live stream or is longer than 10 minutes (maybe make this one configurable)
+                # Stream it if yes, preload would take too long.
+                if video_info.get("protocol") or (video_info.get("duration") > 600):
+                    track = {
+                        "title": video_info.get("title"), 
+                        "url": video_info.get("url"), 
+                        "track_type": "stream", 
+                        "message": message, 
+                        "original_url": req.get("url"), 
+                        "video_info": video_info,
+                        "time_stamp": time()
+                    }
+                    if (video_info.get("duration") > 600):
+                        formats = video_info.get("formats", [video_info])
+                        for f in formats:
+                            if f["format_id"] == "251":
+                                track["url"] = f.get("url")
+                    await self.track_queue.put(track)
 
+                else:
+                    # It's a normal short video
                     # Get the best audio format id and attach it to the request
+                    await message.channel.send("Preparing {}...".format(video_info.get("title")))
                     formats = video_info.get("formats", [video_info])
                     format_ids = []
                     for f in formats:
@@ -479,15 +492,6 @@ async def check_voice_state(message):
         await message.send("Come in here if you want me to play something. :eyes:")
         return False
     return True
-
-
-async def prepare_local_track(url: str):
-    """ DEPRECATED """
-    tag = TinyTag.get(config.MUSIC_PATH + url)
-    if tag.title is None:
-        tag.title = url
-    track = {"title": tag.title, "url": config.MUSIC_PATH + url, "track_type": "music"}
-    return track
 
 
 async def get_video_id(url: str):

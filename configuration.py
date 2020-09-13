@@ -1,6 +1,6 @@
 # Prefix And Embed Color:
 PREFIX = [
-    "m ", "maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ", "MAOn ", "mAON ", "MAON "
+    "m ", "M ", "maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ", "MAOn ", "mAON ", "MAON "
 ]
 PREFIX_FAST = "maon"
 COLOR_HEX = 0xf8d386
@@ -19,6 +19,7 @@ PLAYER_TIMEOUT = 7200
 # Activity Texts:
 STATUS_TEXT_LISTENING_TO = [
     "chillhop",
+    "city pop",
     "the flushing toilet",
     "the cats outside",
     "botcasts haha"
@@ -79,60 +80,8 @@ AUDIO_DOWNLOAD_CMD_DEFAULT = [
     "url goes into 11"
 ]
 
-BEFORE_ARGS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+BEFORE_ARGS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10"
 FFMPEG_OPTIONS = {'options': '-vn'}
-YTDL_PLAY_OPTIONS = {
-    'format': 'bestaudio/best',
-    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-    'restrictfilenames': True,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
-    'quiet': True,
-    'no_warnings': True,
-    'default_search': 'auto',
-    'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
-}
-
-YTDL_DOWNLOAD_AUDIO_OPTIONS = {
-    'format': 'bestaudio',
-    'outtmpl': './music/%(title)s.%(ext)s',
-    'restrictfilenames': False,
-    'noplaylist': True,
-    'quiet': True,
-    'no_warnings': True,
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '320'
-    }]
-}
-
-YTDL_DOWNLOAD_TEMP_OPTIONS = {
-    'format': 'bestaudio',
-    'outtmpl': './temp/%(id)s.%(ext)s',
-    'restrictfilenames': False,
-    'noplaylist': True,
-    'quiet': True,
-    'no_warnings': True,
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '320'
-    }]
-}
-
-YTDL_DOWNLOAD_VIDEO_OPTIONS = {
-    'format': 'best',
-    'outtmpl': './downloads/%(title)s.%(ext)s',
-    'restrictfilenames': False,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'quiet': True,
-    'no_warnings': True
-}
-
 YTDL_INFO_OPTIONS = {
     'quiet': True,
     'no_warnings': True,
@@ -200,10 +149,10 @@ COMMANDLIST_EMBED_PREP = [
 # Maon Version:
 SIGNATURE = '''
    __                __            
-  /__\ __ _  ___  /\ \ \___  _ __  
- / \/// _` |/ _ \/  \/ / _ \| '_ \ 
+  /__ \__ _  ___  /\ \ \___  _ __  
+ / \/ / _` |/ _ \/  \/ / _ \| '_ \ 
 / _  \ (_| |  __/ /\  / (_) | | | |
 \/ \_/\__,_|\___\_\ \/ \___/|_| |_|
-          Maon v20.09.12
+          Maon v20.09.13
 '''
-VERSION = "Maon v20.09.12"
+VERSION = "Maon v20.09.13"
