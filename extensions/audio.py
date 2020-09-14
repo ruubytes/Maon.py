@@ -73,7 +73,7 @@ class Audio(commands.Cog):
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
                 await self.players[message.guild.id].queue.put(track)
-                if message.guild.voice_client.is_playing():
+                if message.guild.voice_client.is_playing() or message.guild.voice_client.is_paused():
                     await message.channel.send("{} has been added to the queue.".format(track.get("title")))
         
         except (asyncio.CancelledError, asyncio.TimeoutError):
