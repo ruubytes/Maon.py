@@ -87,6 +87,7 @@ class AudioPlayer:
             return self.audio.destroy_player(self.message)
 
     async def active_loop(self):
+        """ Periodically checks if Maon is alone in a voice channel and disconnects if True """
         try:
             while self.running:
                 if len(self.message.guild.voice_client.channel.members) < 2:
@@ -101,6 +102,7 @@ class AudioPlayer:
             pass
 
     async def refresh_url(self, track):
+        """ Refreshes the stream url of a track """
         message = track.get("message")
         try:
             video_info = await self.client.loop.run_in_executor(

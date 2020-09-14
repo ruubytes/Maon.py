@@ -9,12 +9,14 @@ COLOR_HEX = 0xf8d386
 MUSIC_PATH = "./music/"
 SFX_PATH = "./sfx/"
 DOWNLOADS_PATH = "./downloads/"
+TEMP_PATH = "./music/cached songs/"
 
 TEMP_FOLDER_MAX_SIZE_IN_MB = 512
 
 # Audio Settings:
-SFX_VOLUME = 0.3
-PLAYER_TIMEOUT = 7200
+SFX_VOLUME = 0.3            # Volume of special effects
+PLAYER_TIMEOUT = 7200       # Seconds until Maon disconnects from a voice channel without any interaction
+SONG_DURATION_MAX = 600     # How long songs can be in seconds to be downloaded and stored locally
 
 # Activity Texts:
 STATUS_TEXT_LISTENING_TO = [
@@ -74,7 +76,7 @@ AUDIO_DOWNLOAD_CMD_DEFAULT = [
     "192K",
     "--prefer-ffmpeg",
     "-o",
-    "temp/%(title)s-%(id)s.%(ext)s",
+    TEMP_PATH[2:] + "%(title)s-%(id)s.%(ext)s",
     "-f",
     "format id goes into 10",
     "url goes into 11"
@@ -153,6 +155,6 @@ SIGNATURE = '''
  / \/ / _` |/ _ \/  \/ / _ \| '_ \ 
 / _  \ (_| |  __/ /\  / (_) | | | |
 \/ \_/\__,_|\___\_\ \/ \___/|_| |_|
-          Maon v20.09.13
+          Maon v20.09.14
 '''
-VERSION = "Maon v20.09.13"
+VERSION = "Maon v20.09.14"

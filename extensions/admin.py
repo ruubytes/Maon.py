@@ -8,8 +8,6 @@ import configuration as config
 import discord
 
 
-
-# TODO restart subprocess doesn't work
 class Admin(commands.Cog):
     __slots__ = ["client", "status_task", "running"]
 
@@ -26,14 +24,13 @@ class Admin(commands.Cog):
         try:
             raise SystemExit
         except SystemExit:
-            print("\nI'm shutting myself down, one moment please...\n")
+            print("\nMaybe I'll take over the world some other time.\n")
 
     @commands.command()
     @commands.is_owner()
     async def restart(self, message):
         """ Work in progress """
-        await self.client.close()
-        raise SystemExit
+        return await message.send("WIP")
 
     @commands.command()
     @commands.is_owner()
@@ -162,11 +159,9 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def scrub(self, message):
-        """
-        Empty the temp folder.
-        """
-        if path.exists("./temp"):
-            rmtree("./temp")
+        """ Empty the temp folder. """
+        if path.exists(config.TEMP_PATH):
+            rmtree(config.TEMP_PATH)
         return await message.send("Temp folder has been scrubbed.")
 
     @commands.command()

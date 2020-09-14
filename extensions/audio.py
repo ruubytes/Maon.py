@@ -33,10 +33,8 @@ class Audio(commands.Cog):
         self.track_task = self.client.loop.create_task(self.track_loop())
 
     async def prep_link_track(self, message, url: str):
-        """
-        Looks up the requested url in the cached_songs dictionary to see if the track exists in the
-        temp folder. If not, starts the download / streaming process.
-        """
+        """ Looks up the requested url in the cached_songs dictionary to see if the track exists in the
+        temp folder. If not, starts the download / streaming process. """
         # All we know at this point is the url and who requested it. Get the video_id from the url.
         video_id = await get_video_id(url)
         if video_id is None:
@@ -46,7 +44,7 @@ class Audio(commands.Cog):
         filename = self.cached_songs.get(video_id)
         if filename is not None:
             track_title = filename[:len(filename) - 16]
-            track_url = "./temp/" + filename
+            track_url = config.TEMP_PATH + filename
             track = {"title": track_title, "url": track_url, "track_type": "music", "message": message}
 
             await self.track_queue.put(track)
@@ -93,14 +91,14 @@ class Audio(commands.Cog):
                 video_info = {}
                 try:
                     video_info = await self.client.loop.run_in_executor(
-                        None, lambda: YoutubeDL(config.YTDL_INFO_OPTIONS).extract_info(req["url"], download=False))
+                        None, lambda: YoutubeDL(config.YTDL_INFO_OPTIONS).extract_info(req.get("url"), download=False))
                 except DownloadError:
                     await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
                     continue
 
-                # Find out if the video is a live stream or is longer than 10 minutes (maybe make this one configurable)
+                # Find out if the video is a live stream or is longer than n seconds (config)
                 # Stream it if yes, preload would take too long.
-                if video_info.get("protocol") or (video_info.get("duration") > 600):
+                if video_info.get("protocol") or (video_info.get("duration") > config.SONG_DURATION_MAX):
                     track = {
                         "title": video_info.get("title"), 
                         "url": video_info.get("url"), 
@@ -110,7 +108,7 @@ class Audio(commands.Cog):
                         "video_info": video_info,
                         "time_stamp": time()
                     }
-                    if (video_info.get("duration") > 600):
+                    if (video_info.get("duration") > config.SONG_DURATION_MAX):
                         formats = video_info.get("formats", [video_info])
                         for f in formats:
                             if f["format_id"] == "251":
@@ -120,20 +118,74 @@ class Audio(commands.Cog):
                 else:
                     # It's a normal short video
                     # Get the best audio format id and attach it to the request
-                    await message.channel.send("Preparing {}...".format(video_info.get("title")))
                     formats = video_info.get("formats", [video_info])
+                    req["formats"] = formats
                     format_ids = []
                     for f in formats:
                         format_ids.append(f['format_id'])
                     if "251" in format_ids:
                         req["format_id"] = "251"
+                        try:
+                            await self.manage_temp_size(req)
+                        except OSError as e:
+                            print(e)
+                            await message.channel.send("The requested download is larger than what I'm allowed to have, defaulting to stream.")
+                            await self.track_rescue(req, video_info)
+                            continue
                     else:
                         req["format_id"] = "140"
+                        try:
+                            await self.manage_temp_size(req)
+                        except OSError as e:
+                            print(e)
+                            await message.channel.send("The requested download is larger than what I'm allowed to have, defaulting to stream.")
+                            await self.track_rescue(req, video_info)
+                            continue
 
+                    await message.channel.send("Preparing {}...".format(video_info.get("title")))
                     await self.download_queue.put(req)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
             pass
+
+    async def track_rescue(self, req, video_info):
+        """ Creates a track of streaming type for the player """
+        message = req.get("message")
+        track = {
+            "title": video_info.get("title"), 
+            "url": video_info.get("url"), 
+            "track_type": "stream", 
+            "message": message, 
+            "original_url": req.get("url"), 
+            "video_info": video_info,
+            "time_stamp": time()
+        }
+        formats = video_info.get("formats", [video_info])
+        for f in formats:
+            if f["format_id"] == "251":
+                track["url"] = f.get("url")
+        await self.track_queue.put(track)
+
+    async def manage_temp_size(self, req):
+        """ Removes items from the temp folder in FIFO order if a new addition would go over the 
+        max-size stated in the configuration file """
+        try:
+            size_in_mb = (sum(f.stat().st_size for f in Path(config.TEMP_PATH).glob('**/*') if f.is_file())) / (1024 * 1024)
+            filesize_in_mb = 0
+            for f in req.get("formats"):
+                if f["format_id"] == req.get("format_id"):
+                    filesize_in_mb = (f.get("filesize") / (1024 * 1024))
+                    if filesize_in_mb > config.TEMP_FOLDER_MAX_SIZE_IN_MB:
+                        raise OSError("[Audio Ext] Requested download is larger than the allowed size of the temp folder. ({} > {})".format(filesize_in_mb, config.TEMP_FOLDER_MAX_SIZE_IN_MB))
+                    break
+            size_in_mb += filesize_in_mb
+            while (config.TEMP_FOLDER_MAX_SIZE_IN_MB < size_in_mb):
+                first_file = min(Path(config.TEMP_PATH).glob('**/*'), key=os.path.getmtime)
+                size_first_file = os.path.getsize(first_file)
+                os.remove(first_file)
+                size_in_mb -= size_first_file
+        except ValueError:
+            print("[Audio Ext] Temp folder is empty or does not exist.")
 
     async def download_loop(self):
         """ Downloads a requested song and stores it in the temp folder for ease of access and replayability """ 
@@ -157,11 +209,11 @@ class Audio(commands.Cog):
             pass
 
     async def cache_loop(self):
-        """ Keeps track of files in the temp folder and cleans it up if necessary """
+        """ Keeps track of files in the temp folder """
         # Load the cache first
         temp_list = {}
         try:
-            temp_list = listdir("./temp/")
+            temp_list = listdir(config.TEMP_PATH)
             for filename in temp_list:
                 if filename.endswith(".mp3"):
                     video_id = filename[len(filename) - 15 : len(filename) - 4]
@@ -175,12 +227,12 @@ class Audio(commands.Cog):
                 video_id = req.get("video_id")
                 
                 # Find file by video_id because the ytdl library filters chars out, title != filename
-                temp_list = listdir("./temp/")
+                temp_list = listdir(config.TEMP_PATH)
                 for filename in temp_list:
                     if filename.endswith(video_id + ".mp3"):
                         self.cached_songs[video_id] = filename
                         track_title = filename[:len(filename) - 16]
-                        track_url = "./temp/" + filename
+                        track_url = config.TEMP_PATH + filename
 
                 track = {"title": track_title, "url": track_url, "track_type": "music", "message": req.get("message")}
 
@@ -194,7 +246,7 @@ class Audio(commands.Cog):
     # Used invocations:
     # play p sfx s volume v vol j next ...
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
-    @commands.command(aliases=["p"])
+    @commands.command(aliases=["p", "stream", "yt"])
     @commands.guild_only()
     async def play(self, message, *, url: str = None):
         if not await check_voice_state(message):
@@ -213,25 +265,31 @@ class Audio(commands.Cog):
             return await message.send("I need a Youtube link or file path to play.")
 
     async def fb_play(self, message, url):
-        try:
-            tag = TinyTag.get(url)
-        except TinyTagException:
-            return
+        """ Play command for the filebrowser """
+        # Check if the requested track is within the cache folder or not because cached mp3s
+        # should not have meta data. The track title is in the filename, though.
+        track_title = ""
+        if url[:url.rfind("/") + 1] == config.TEMP_PATH:
+            track_title = url[url.rfind("/") + 1 : len(url) - 16]
+
+        else:
+            # Try to extract meta data with tinytag, most normal mp3 files should have at least a title
+            try:
+                tag = TinyTag.get(url)
+                if tag.title is None:
+                    track_title = url[url.rfind("/") + 1 : len(url) - 4]
+                else:
+                    track_title = tag.title
+            except TinyTagException:
+                return
+        
+        track = {"title": track_title, "url": url, "track_type": "music", "message": message}
         
         if not await check_voice_state(message):
             return
-        
-        if tag.title is None:
-            tag.title = url[url.rfind("/") + 1:]
-        track = {"title": tag.title, "url": url, "track_type": "music"}
+        await self.track_queue.put(track)
 
-        if message.guild.id not in self.players:
-            self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
-        await self.players[message.guild.id].queue.put(track)
-        if message.guild.voice_client.is_playing():
-            return await message.send("{} has been added to the queue.".format(track.get("title")), delete_after=20)
-
-    @commands.command(aliases=["s"])
+    @commands.command(aliases=["s", "effects", "effect"])
     @commands.guild_only()
     async def sfx(self, message, *, url: str = None):
         track = {}
@@ -303,7 +361,7 @@ class Audio(commands.Cog):
         elif message.author.voice.channel != message.guild.voice_client.channel:
             return await message.guild.voice_client.move_to(message.author.voice.channel)
 
-    @commands.command(aliases=["next"])
+    @commands.command(aliases=["next", "n", "ne", "nxt", "nx", "sk", "skp"])
     @commands.guild_only()
     async def skip(self, message):
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
@@ -358,13 +416,15 @@ class Audio(commands.Cog):
             return await message.send("You're not in a voice channel~")
         elif message.author.voice.channel != message.guild.voice_client.channel:
             return await message.send("I'm not taking orders from someone outside of our voice channel.")
+        elif message.guild.voice_client.is_paused():
+            return await message.send(":pause_button: I'm paused right now.")
         elif not message.guild.voice_client.is_playing():
             return
         else:
             message.guild.voice_client.pause()
             return await message.send(":pause_button: Paused.")
 
-    @commands.command(aliases=["res", "cont", "continue"])
+    @commands.command(aliases=["res", "cont", "continue", "re", "co"])
     @commands.guild_only()
     async def resume(self, message):
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
@@ -375,9 +435,11 @@ class Audio(commands.Cog):
             return await message.send("I'm not taking orders from someone outside of our voice channel.")
         elif message.guild.voice_client.is_playing():
             return
-        elif message.guild.id in self.players:
+        elif message.guild.id in self.players and message.guild.voice_client.is_paused():
             message.guild.voice_client.resume()
             return await message.send(":arrow_forward: Continuing...")
+        else:
+            return await message.send("I'm not playing anything right now.")
 
     @commands.command(aliases=["leave", "l"])
     @commands.guild_only()
@@ -393,38 +455,6 @@ class Audio(commands.Cog):
                 self.players[message.guild.id].player_task.cancel()
             else:
                 await message.guild.voice_client.disconnect()
-
-    @commands.command()
-    @commands.is_owner()
-    async def download_depr(self, message, media_type:str = None, *, url:str = None):
-        """
-        DEPRECATED
-        
-        This be gone and switched out with a better method when I gots the motivation
-        """
-        if media_type is None:
-            return await message.send("Do you want me to download a full `video` or just the `audio`?")
-        elif url is None:
-            return await message.send("I need a Youtube link to download from.")
-        elif not url.startswith("https://www.youtube.com/") and not url.startswith("https://youtu.be/"):
-            return await message.send("I need a Youtube link to download from.")
-        elif (media_type != "audio") and (media_type != "video"):
-            return await message.send("Do you want me to download a full `video` or just the `audio`?")
-
-        #youtube_feed = etree.HTML(request.urlopen(url).read())
-        #title = "".join(youtube_feed.xpath("//span[@id='eow-title']/@title"))
-        title = ""
-
-        await message.send("Downloading {}...".format(title))
-        if media_type == "audio":
-            print("[{}|{}] Downloading audio {}...".format(message.guild.name, message.guild.id, title))
-            YoutubeDL(config.YTDL_DOWNLOAD_AUDIO_OPTIONS).download([url])
-            print("[{}|{}] Finished downloading audio {}.".format(message.guild.name, message.guild.id, title))
-        else:
-            print("[{}|{}] Downloading video {}...".format(message.guild.name, message.guild.id, title))
-            YoutubeDL(config.YTDL_DOWNLOAD_VIDEO_OPTIONS).download([url])
-            print("[{}|{}] Finished downloading video {}.".format(message.guild.name, message.guild.id, title))
-        return await message.send("Finished downloading {}!".format(title))
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
