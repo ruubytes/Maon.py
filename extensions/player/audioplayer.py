@@ -3,6 +3,7 @@ from discord import PCMVolumeTransformer
 from discord import FFmpegPCMAudio
 from youtube_dl import YoutubeDL
 from youtube_dl.utils import DownloadError
+from time import time
 import configuration as config
 import asyncio
 
@@ -42,21 +43,24 @@ class AudioPlayer:
                     track = None
                     async with timeout(self.player_timeout):
                         track = await self.queue.get()
-                #track = await self.prepare_audio_track(track)
 
-                if track["track_type"] == "link":  # link / music / sfx
-                    self.voice_client.play(PCMVolumeTransformer(
-                        FFmpegPCMAudio(track.get("url"), options=config.FFMPEG_OPTIONS)),
-                        after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set))
+                if track["track_type"] == "stream":     # stream / music / sfx
+                    # Refresh the streaming url if the track has been too long in the Q and is in danger of expiring
+                    if (time() - track.get("time_stamp")) >  600:
+                        track = await self.refresh_url(track)
+                        if track is None: continue
 
-                    """ Old streaming functionality, but since YT doesn't want streamed songs to finish,
-                        a downloaded version is needed.
-                    self.voice_client.play(PCMVolumeTransformer(
-                        FFmpegPCMAudio(track.get("url"),
-                                       before_options=config.BEFORE_ARGS,
-                                       options=config.FFMPEG_OPTIONS)),
-                        after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set))
-                    """
+                    self.voice_client.play(
+                        PCMVolumeTransformer(
+                            FFmpegPCMAudio(
+                                track.get("url"),
+                                before_options=config.BEFORE_ARGS,
+                                options=config.FFMPEG_OPTIONS
+                            )
+                        ),
+                        after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set)
+                    )
+                    
                 else:
                     self.voice_client.play(PCMVolumeTransformer(
                         FFmpegPCMAudio(track.get("url"), options=config.FFMPEG_OPTIONS)),
@@ -70,6 +74,7 @@ class AudioPlayer:
                     self.voice_client.source.volume = self.sfx_volume
 
                 await self.next.wait()
+
                 # Playlist loop
                 if self.looping == "playlist" and track["track_type"] != "sfx":
                     await self.queue.put(track)
@@ -82,6 +87,7 @@ class AudioPlayer:
             return self.audio.destroy_player(self.message)
 
     async def active_loop(self):
+        """ Periodically checks if Maon is alone in a voice channel and disconnects if True """
         try:
             while self.running:
                 if len(self.message.guild.voice_client.channel.members) < 2:
@@ -95,26 +101,23 @@ class AudioPlayer:
         except asyncio.CancelledError:
             pass
 
-    async def prepare_audio_track(self, track):
-        track_old = track
-        if track["track_type"] == "link":
-            try:
-                track = YoutubeDL(config.YTDL_PLAY_OPTIONS).extract_info(track["url"], download=False)
-                if track is None:
-                    await self.message.send("Youtube link machine broke.")
-                    return track
-                elif track["protocol"] == "m3u8":
-                    await self.message.send("Streams are not supported yet, sorry! :pray:")
-                    return None
-                if "entries" in track:
-                    track = track["entries"][0]
-                track["track_type"] = 1
-                track["title"] = track_old["title"]
-                track["original_url"] = track_old["url"]
-                return track
+    async def refresh_url(self, track):
+        """ Refreshes the stream url of a track """
+        message = track.get("message")
+        try:
+            video_info = await self.client.loop.run_in_executor(
+                None, lambda: YoutubeDL(config.YTDL_INFO_OPTIONS).extract_info(track.get("original_url"), download=False))
 
-            except DownloadError:
-                await self.message.send("Something went wrong with that Youtube link.")
-                return None
-        else:
+            if video_info.get("protocol"):
+                track["url"] = video_info.get("url")
+            else:
+                formats = video_info.get("formats", [video_info])
+                for f in formats:
+                    if f["format_id"] == "251":
+                        track["url"] = f.get("url")
+            track["time_stamp"] = time()
+
             return track
+        except DownloadError:
+            await message.channel.send("{}'s streaming link probably expired and I ran into an error.".format(track.get("title")))
+            return None
