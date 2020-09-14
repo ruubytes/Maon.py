@@ -15,8 +15,10 @@ class Basic(commands.Cog):
     async def ping(self, message):
         return await message.send("Pong! `WebSocket: {}ms`".format(int(self.client.latency * 1000)))
 
-    @commands.command(aliases=["info", "infocard"])
+    @commands.command(aliases=["info", "infocard", "version"])
     async def help(self, message):
+        if "version" in message.invoked_with:
+            return await message.send("`{}`".format(config.VERSION))
         command_print = config.COMMANDLIST_EMBED_PREP_START
         if message.author.id == self.client.owner_id:
             command_print += "".join(config.COMMANDLIST_EMBED_ADMIN_PREP)

@@ -1,6 +1,6 @@
 # Prefix And Embed Color:
-PREFIX = [ 
-    "m ", "maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ", "MAOn ", "mAON ", "MAON "
+PREFIX = [
+    "m ", "M ", "maon ", "Maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ", "MAOn ", "mAON ", "MAON "
 ]
 PREFIX_FAST = "maon"
 COLOR_HEX = 0xf8d386
@@ -9,42 +9,38 @@ COLOR_HEX = 0xf8d386
 MUSIC_PATH = "./music/"
 SFX_PATH = "./sfx/"
 DOWNLOADS_PATH = "./downloads/"
+TEMP_PATH = "./music/cached songs/"
 
 TEMP_FOLDER_MAX_SIZE_IN_MB = 512
 
 # Audio Settings:
-SFX_VOLUME = 0.4
-PLAYER_TIMEOUT = 7200
+SFX_VOLUME = 0.3            # Volume of special effects
+PLAYER_TIMEOUT = 7200       # Seconds until Maon disconnects from a voice channel without any interaction
+SONG_DURATION_MAX = 600     # How long songs can be in seconds to be downloaded and stored locally
 
 # Activity Texts:
 STATUS_TEXT_LISTENING_TO = [
     "chillhop",
+    "city pop",
     "the flushing toilet",
     "the cats outside",
-    "toilet paper ASMR",
-    "botcasts haha",
-    "the song of my people",
-    "medieval core music"
+    "botcasts haha"
 ]
 
 STATUS_TEXT_WATCHING = [
     "the invisible people", 
     "the server",
-    "the clock",
     "boring late night shows",
     "animu and mango",
     "Wudel's shenanigans",
-    "the toilet paper cache",
-    "humans wearing weird masks"
+    "the toilet paper cache"
 ]
 
 STATUS_TEXT_PLAYING = [
+    "on new hardware",
     "with fire",
     "with the server settings",
-    "with toilet paper",
-    "with the lan cord",
-    "with the wifi cable",
-    "dead"
+    "with toilet paper"
 ]
 
 # Dialogue Texts:
@@ -63,7 +59,7 @@ QUESTION_REPLY = [
 
 QUESTION_REPLY_WHY = [
     "Because I can.", "haha maon go beep boop", 
-    "I don't need a reason, because I can't reason. :point_right::point_right:"
+    "I don't know why, because I can't reason. :point_right::point_right:"
 ]
 
 DEFAULT_REPLY = [
@@ -71,58 +67,28 @@ DEFAULT_REPLY = [
 ]
 
 # Audioplayer Settings:
-BEFORE_ARGS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+AUDIO_DOWNLOAD_CMD_DEFAULT = [
+    "youtube-dl", 
+    "--extract-audio", 
+    "--audio-format",
+    "mp3", 
+    "--audio-quality",
+    "192K",
+    "--prefer-ffmpeg",
+    "-o",
+    TEMP_PATH[2:] + "%(title)s-%(id)s.%(ext)s",
+    "-f",
+    "format id goes into 10",
+    "url goes into 11"
+]
+
+BEFORE_ARGS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10"
 FFMPEG_OPTIONS = {'options': '-vn'}
-YTDL_PLAY_OPTIONS = {
-    'format': 'bestaudio/best',
-    'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
-    'restrictfilenames': True,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
+YTDL_INFO_OPTIONS = {
     'quiet': True,
     'no_warnings': True,
     'default_search': 'auto',
-    'source_address': '0.0.0.0'  # bind to ipv4 since ipv6 addresses cause issues sometimes
-}
-
-YTDL_DOWNLOAD_AUDIO_OPTIONS = {
-    'format': 'bestaudio',
-    'outtmpl': './music/%(title)s.%(ext)s',
-    'restrictfilenames': False,
-    'noplaylist': True,
-    'quiet': True,
-    'no_warnings': True,
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '320'
-    }]
-}
-
-YTDL_DOWNLOAD_TEMP_OPTIONS = {
-    'format': 'bestaudio',
-    'outtmpl': './temp/%(id)s.%(ext)s',
-    'restrictfilenames': False,
-    'noplaylist': True,
-    'quiet': True,
-    'no_warnings': True,
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '320'
-    }]
-}
-
-YTDL_DOWNLOAD_VIDEO_OPTIONS = {
-    'format': 'best',
-    'outtmpl': './downloads/%(title)s.%(ext)s',
-    'restrictfilenames': False,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'quiet': True,
-    'no_warnings': True
+    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
 # Browser Configuration:
@@ -184,11 +150,11 @@ COMMANDLIST_EMBED_PREP = [
 
 # Maon Version:
 SIGNATURE = '''
-|   __                __            |
-|  /__\ __ _  ___  /\ \ \___  _ __  |
-| / \/// _` |/ _ \/  \/ / _ \| '_ \ |
-|/ _  \ (_| |  __/ /\  / (_) | | | ||
-|\/ \_/\__,_|\___\_\ \/ \___/|_| |_||
-           Maon v20.08.06
+   __                __            
+  /__ \__ _  ___  /\ \ \___  _ __  
+ / \/ / _` |/ _ \/  \/ / _ \| '_ \ 
+/ _  \ (_| |  __/ /\  / (_) | | | |
+\/ \_/\__,_|\___\_\ \/ \___/|_| |_|
+          Maon v20.09.14
 '''
-VERSION = "Maon v20.08.06"
+VERSION = "Maon v20.09.14"
