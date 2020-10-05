@@ -90,14 +90,16 @@ class AudioPlayer:
         """ Periodically checks if Maon is alone in a voice channel and disconnects if True """
         try:
             while self.running:
-                if len(self.message.guild.voice_client.channel.members) < 2:
+                if len(self.message.guild.voice_client.channel.voice_states) < 2:
                     print("[{}|{}] Users left the voice channel, destroying audioplayer.".format(self.message.guild.name,
                                                                                                 self.message.guild.id))
                     self.running = False
                     await self.voice_client.disconnect()
                     return self.audio.destroy_player(self.message)
+                
                 else:
                     await asyncio.sleep(10)
+
         except asyncio.CancelledError:
             pass
 
