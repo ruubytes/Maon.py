@@ -42,7 +42,7 @@ class Audio(commands.Cog):
         
         # Look up video_id in cached_songs dictionary and build a track if an entry exists.
         filename = self.cached_songs.get(video_id)
-        if filename is not None:
+        if (filename is not None) and (os.path.exists(config.TEMP_PATH + filename)):
             track_title = filename[:len(filename) - 16]
             track_url = config.TEMP_PATH + filename
             track = {"title": track_title, "url": track_url, "track_type": "music", "message": message}
@@ -174,10 +174,13 @@ class Audio(commands.Cog):
             filesize_in_mb = 0
             for f in req.get("formats"):
                 if f["format_id"] == req.get("format_id"):
-                    filesize_in_mb = (f.get("filesize") / (1024 * 1024))
-                    if filesize_in_mb > config.TEMP_FOLDER_MAX_SIZE_IN_MB:
-                        raise OSError("[Audio Ext] Requested download is larger than the allowed size of the temp folder. ({} > {})".format(filesize_in_mb, config.TEMP_FOLDER_MAX_SIZE_IN_MB))
-                    break
+                    if f.get("filesize"):
+                        filesize_in_mb = (f.get("filesize") / (1024 * 1024))
+                        if filesize_in_mb > config.TEMP_FOLDER_MAX_SIZE_IN_MB:
+                            raise OSError("[Audio Ext] Requested download is larger than the allowed size of the temp folder. ({} > {})".format(filesize_in_mb, config.TEMP_FOLDER_MAX_SIZE_IN_MB))
+                        break
+                    else:
+                        break
             size_in_mb += filesize_in_mb
             while (config.TEMP_FOLDER_MAX_SIZE_IN_MB < size_in_mb):
                 first_file = min(Path(config.TEMP_PATH).glob('**/*'), key=os.path.getmtime)
