@@ -62,10 +62,23 @@ class FileBrowser(commands.Cog):
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
         if not user.id == login.MAON_ID:
-            if (reaction.emoji in config.CMD_SLOT_REACTIONS) or (reaction.emoji in config.CMD_NAV_REACTIONS):
-                if reaction.message.guild.id in self.filebrowsers:
+            if reaction.message.guild.id in self.filebrowsers:
+                if (reaction.emoji in config.CMD_SLOT_REACTIONS) or (reaction.emoji in config.CMD_NAV_REACTIONS):
                     if reaction.message.id == self.filebrowsers[reaction.message.guild.id].id:
                         await self.filebrowsers[reaction.message.guild.id].cmd_queue.put(reaction)
+
+    @commands.Cog.listener()
+    async def on_message_delete(self, message):
+        if message.guild.id in self.filebrowsers:
+            if message.id == self.filebrowsers[message.guild.id].id:
+                self.filebrowsers[message.guild.id].filebrowser_task.cancel()
+    
+    @commands.Cog.listener()
+    async def on_bulk_message_delete(self, messages):
+        for m in messages:
+            if m.guild.id in self.filebrowsers:
+                if m.id == self.filebrowsers[m.guild.id].id:
+                    self.filebrowsers[m.guild.id].filebrowser_task.cancel()
 
 
 

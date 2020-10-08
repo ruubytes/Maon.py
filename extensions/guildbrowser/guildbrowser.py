@@ -66,14 +66,19 @@ class GuildBrowser:
         finally:
             print("[{}|{}] Closing file browser...".format(self.message.guild.name, self.message.guild.id))
             browser_embed = discord.Embed(title="Media browser closed.", description="", color=config.COLOR_HEX)
-            await self.window_message.edit(content="", embed=browser_embed)
+            try:
+                await self.window_message.edit(content="", embed=browser_embed)
+            except discord.NotFound:
+                pass
             return self.filebrowser.browser_exit(self.message)
 
     async def update(self, command):
-        await self.execute(command)
         if self.running:
+            await self.execute(command)
             await self.set_content()
             await self.display_window()
+        else:
+            self.filebrowser_task.cancel()
 
     async def execute(self, command):
         if command.emoji in self.cmd_slot_list:         # A selection
