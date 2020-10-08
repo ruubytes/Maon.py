@@ -338,10 +338,10 @@ class Audio(commands.Cog):
     async def volume(self, message, *, vol=None):
         if message.author.voice is None:
             return await message.send("You're not in a voice channel, silly.")
-        elif message.author.voice.channel != message.guild.voice_client.channel:
-            return await message.send("You're not in the voice channel, silly.")
         elif message.guild.voice_client is None:
             return await message.send("I'm not even playing anything. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.send("You're not in the voice channel, silly.")
         elif message.guild.id not in self.players:
             return await message.send("I'm not even playing anything. :eyes:")
         elif vol is None:
