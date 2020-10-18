@@ -482,12 +482,11 @@ class Audio(commands.Cog):
                     playlist_description += "**Up Next:**\n"
                     
                     for item in q_list:
-                        if item.get("track_type") != "sfx":
-                            playlist_description += "  `" + str(i).zfill(2) + "`: " + item.get("title") + "\n"
-                            i += 1
-                            if i > 15:
-                                playlist_description += "  •\n  •\n  •"
-                                break
+                        playlist_description += "  `" + str(i).zfill(2) + "`: " + item.get("title") + "\n"
+                        i += 1
+                        if i > 15:
+                            playlist_description += "  •\n  •\n  •"
+                            break
 
                 playlist_embed = Embed(title=now_playing_entry, description=playlist_description, color=config.COLOR_HEX)
                 return await message.send(embed=playlist_embed)
