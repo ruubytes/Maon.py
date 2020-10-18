@@ -10,7 +10,7 @@ import asyncio
 
 class AudioPlayer:
     __slots__ = ["client", "audio", "message", "voice_client", "volume", "looping", "sfx_volume", "player_timeout",
-                 "queue", "next", "running", "player_task", "active_task"]
+                 "now_playing", "queue", "next", "running", "player_task", "active_task"]
 
     def __init__(self, client, message):
         self.client = client
@@ -21,6 +21,7 @@ class AudioPlayer:
         self.looping = "off"  # off / song / playlist
         self.sfx_volume = config.SFX_VOLUME
         self.player_timeout = config.PLAYER_TIMEOUT
+        self.now_playing = ""
         self.queue = asyncio.Queue()
         self.next = asyncio.Event()
         self.running = True
@@ -70,13 +71,15 @@ class AudioPlayer:
                     self.voice_client.source.volume = self.volume
                     await self.message.send(":cd: Now playing: {}, at {}% volume.".format(
                         track.get("title"), (int(self.volume * 100))))
+                    self.now_playing = track.get("title")
                 else:
                     self.voice_client.source.volume = self.sfx_volume
 
                 await self.next.wait()
+                self.now_playing = ""
 
                 # Playlist loop
-                if self.looping == "playlist" and track["track_type"] != "sfx":
+                if self.looping == "playlist" and track["track_type"] != "sfx" and track["track_type"] != "playlist insert":
                     await self.queue.put(track)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
@@ -94,8 +97,9 @@ class AudioPlayer:
                     print("[{}|{}] Users left the voice channel, destroying audioplayer.".format(self.message.guild.name,
                                                                                                 self.message.guild.id))
                     self.running = False
-                    await self.voice_client.disconnect()
-                    return self.audio.destroy_player(self.message)
+                    return await self.player_task.cancel()
+                    #await self.voice_client.disconnect()
+                    #return self.audio.destroy_player(self.message)
                 
                 else:
                     await asyncio.sleep(10)

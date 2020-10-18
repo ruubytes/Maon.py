@@ -2,6 +2,7 @@ import os.path
 import asyncio
 import subprocess
 import configuration as config
+from discord import Embed
 from discord.ext import commands
 from extensions.player import audioplayer
 from youtube_dl import YoutubeDL
@@ -458,6 +459,56 @@ class Audio(commands.Cog):
                 self.players[message.guild.id].player_task.cancel()
             else:
                 await message.guild.voice_client.disconnect()
+
+    @commands.command(aliases=["queue", "q"])
+    @commands.guild_only()
+    async def playlist(self, message, *, pos = None):
+        if not message.guild.voice_client or not message.guild.voice_client.is_connected():
+            return
+        
+        elif message.guild.id in self.players:
+            q_list = list(self.players[message.guild.id].queue._queue)
+            if not self.players[message.guild.id].now_playing and (len(q_list) == 0):
+                return await message.send("I'm not playing anything right now.")
+
+            if pos is None:
+                q_list = list(self.players[message.guild.id].queue._queue)
+
+                now_playing_entry = ":cd: Now Playing:\n    " + self.players[message.guild.id].now_playing
+                playlist_description = ""
+
+                if len(q_list) > 0:
+                    i = 1
+                    playlist_description += "**Up Next:**\n"
+                    
+                    for item in q_list:
+                        if item.get("track_type") != "sfx":
+                            playlist_description += "  `" + str(i).zfill(2) + "`: " + item.get("title") + "\n"
+                            i += 1
+                            if i > 15:
+                                playlist_description += "  •\n  •\n  •"
+                                break
+
+                playlist_embed = Embed(title=now_playing_entry, description=playlist_description, color=config.COLOR_HEX)
+                return await message.send(embed=playlist_embed)
+            else:
+                try:
+                    pos = int(pos)
+                    if (pos < 16) and (pos > 0) and (pos <= len(q_list)):
+                        new_queue = asyncio.Queue()
+                        priority_item = q_list[pos - 1]
+                        priority_item["track_type"] = "playlist insert"
+                        await new_queue.put(priority_item)
+                        for item in q_list:
+                            await new_queue.put(item)
+                        
+                        self.players[message.guild.id].queue = new_queue
+                        return await message.send("Next up: " + priority_item.get("title"))
+
+                except (TypeError, ValueError):
+                    return
+            
+                
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
