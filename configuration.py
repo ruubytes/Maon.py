@@ -9,7 +9,7 @@ COLOR_HEX = 0xf8d386
 MUSIC_PATH = "./music/"
 SFX_PATH = "./sfx/"
 DOWNLOADS_PATH = "./downloads/"
-TEMP_PATH = "./music/cached songs/"
+TEMP_PATH = "./music/.Cached Songs/"
 
 TEMP_FOLDER_MAX_SIZE_IN_MB = 512
 
@@ -96,6 +96,8 @@ YTDL_INFO_OPTIONS = {
     'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
+PLAYLIST_MSG_MAX_LEN = 20
+
 # Browser Configuration:
 CMD_SLOT_REACTIONS = [
     "0\N{COMBINING ENCLOSING KEYCAP}", "1\N{COMBINING ENCLOSING KEYCAP}",
@@ -140,10 +142,13 @@ COMMANDLIST_EMBED_PREP = [
     ":white_small_square: " + PREFIX[0] + "play <link / filepath / filename> - Plays a Youtube video or local file.\n",
     ":white_small_square: " + PREFIX[0] + "sfx <filepath / filename> - Plays a local sound effect.\n",
     ":white_small_square: " + PREFIX[0] + "playlist - Displays the current playlist.\n",
-    ":white_small_square: " + PREFIX[0] + "playlist <1 - 15> - Puts an entry to the front.\n",
+    ":white_small_square: " + PREFIX[0] + "playlist <1 - 20> - Puts an entry to the front.\n",
+    ":white_small_square: " + PREFIX[0] + "playlist remove - Clears the playlist.\n",
+    ":white_small_square: " + PREFIX[0] + "playlist remove <1 - 20> - Removes a song from the playlist.\n",
+    ":white_small_square: " + PREFIX[0] + "playlist copy <1 - 20> - Copies a track and inserts it at the beginning.\n",
     ":white_small_square: " + PREFIX[0] + "stop - Turns off the music player and makes Maon leave.\n",
     ":white_small_square: " + PREFIX[0] + "skip - Skips the current song.\n",
-    ":white_small_square: " + PREFIX[0] + "loop <song / playlist> - Loops the current song or playlist.\n",
+    ":white_small_square: " + PREFIX[0] + "loop <song / playlist / off> - Loops the current song or playlist.\n",
     ":white_small_square: " + PREFIX[0] + "volume <0 - 100> - Changes the music player volume.\n",
     ":white_small_square: " + PREFIX[0] + "pause - Pauses the music player.\n",
     ":white_small_square: " + PREFIX[0] + "resume - Resumes the music player.\n",
@@ -161,6 +166,6 @@ SIGNATURE = '''
 | '__/ _` |/ _ \/ __|/ _ \| |_| __|
 | | | (_| |  __/\__ \ (_) |  _| |_ 
 |_|  \__,_|\___||___/\___/|_|  \__|
-          Maon v20.10.18
+          Maon v20.10.20
 '''
-VERSION = "Maon v20.10.18"
+VERSION = "Maon v20.10.20"
