@@ -462,52 +462,106 @@ class Audio(commands.Cog):
 
     @commands.command(aliases=["queue", "q"])
     @commands.guild_only()
-    async def playlist(self, message, *, pos = None):
-        if not message.guild.voice_client or not message.guild.voice_client.is_connected():
+    async def playlist(self, message, *args):
+        if not message.guild.id in self.players:
             return
-        
-        elif message.guild.id in self.players:
-            q_list = list(self.players[message.guild.id].queue._queue)
-            if not self.players[message.guild.id].now_playing and (len(q_list) == 0):
-                return await message.send("I'm not playing anything right now.")
+        elif (not self.players[message.guild.id].now_playing) and (self.players[message.guild.id].queue.qsize() == 0):
+            return await message.send("I'm not playing anything right now.")
 
-            if pos is None:
-                q_list = list(self.players[message.guild.id].queue._queue)
+        q_list = list(self.players[message.guild.id].queue._queue)
 
-                now_playing_entry = ":cd: Now Playing:\n    " + self.players[message.guild.id].now_playing
-                playlist_description = ""
-
-                if len(q_list) > 0:
-                    i = 1
-                    playlist_description += "**Up Next:**\n"
-                    
-                    for item in q_list:
-                        playlist_description += "  `" + str(i).zfill(2) + "`: " + item.get("title") + "\n"
-                        i += 1
-                        if i > 15:
-                            playlist_description += "  •\n  •\n  •"
-                            break
-
-                playlist_embed = Embed(title=now_playing_entry, description=playlist_description, color=config.COLOR_HEX)
-                return await message.send(embed=playlist_embed)
-            else:
-                try:
-                    pos = int(pos)
-                    if (pos < 16) and (pos > 0) and (pos <= len(q_list)):
-                        new_queue = asyncio.Queue()
-                        priority_item = q_list[pos - 1]
-                        priority_item["track_type"] = "playlist insert"
-                        await new_queue.put(priority_item)
-                        for item in q_list:
-                            await new_queue.put(item)
-                        
-                        self.players[message.guild.id].queue = new_queue
-                        return await message.send("Next up: " + priority_item.get("title"))
-
-                except (TypeError, ValueError):
-                    return
+        # No args, just print the current playlist
+        if not args:
+            now_playing_str = ":cd: Now Playing:\n    " + self.players[message.guild.id].now_playing
+            playlist_description = ""
             
+            if len(q_list) > 0:
+                i = 1
+                playlist_description += "**Up Next:**\n"
                 
+                for item in q_list:
+                    playlist_description += "  `" + str(i).zfill(2) + "`: " + item.get("title") + "\n"
+                    i += 1
+                    if i > config.PLAYLIST_MSG_MAX_LEN:
+                        playlist_description += "  •\n  •\n  •"
+                        break
+
+            playlist_embed = Embed(title=now_playing_str, description=playlist_description, color=config.COLOR_HEX)
+            return await message.send(embed=playlist_embed)
+
+        else:
+            # See if the args are only valid integers to restructure the current playlist
+            try:
+                positions = await parse_playlist_positions(args, len(q_list))
+                
+                # With valid positions, begin restructuring the queue.                
+                new_q_list = []
+                for pos in positions:
+                    new_q_list.append(q_list[pos - 1])
+                    q_list[pos - 1] = 0
+                for item in q_list:
+                    if item == 0:
+                        continue
+                    new_q_list.append(item)
+
+                self.players[message.guild.id].queue = asyncio.Queue()
+                for item in new_q_list:
+                    await self.players[message.guild.id].queue.put(item)
+                
+                if len(positions) == 1:
+                    return await message.send("Next up: " + new_q_list[0].get("title"))
+                else:
+                    return await message.send("Playlist reorganized, next up: " + new_q_list[0].get("title"))
+
+            # See if the first arg is a command to remove songs from the playlist
+            except ValueError:
+                try:
+                    if str(args[0]) in ["clear", "delete", "del", "d", "remove", "rm", "r", "copy"] and args[1]:
+                        positions = await parse_playlist_positions(args[1:], len(q_list))
+                    else:
+                        raise ValueError
+
+                    changed_list = []
+                    if args[0] != "copy":
+                        cleared_list = q_list
+                        q_list = []
+                        for pos in positions:
+                            changed_list.append(cleared_list[pos - 1])
+                            cleared_list[pos - 1] = 0
+                        for item in cleared_list:
+                            if item != 0:
+                                q_list.append(item)
+
+                    else:
+                        copied_list = q_list
+                        q_list = []
+                        for pos in reversed(positions):
+                            changed_list.append(copied_list[pos - 1])
+                            q_list.append(copied_list[pos - 1])
+                        for item in copied_list:
+                            q_list.append(item)
+
+                    self.players[message.guild.id].queue = asyncio.Queue()
+                    for item in q_list:
+                        await self.players[message.guild.id].queue.put(item)
+                    
+                    if args[0] != "copy":
+                        if len(positions) == 1:
+                            return await message.send("Removed " + changed_list[0].get("title") + " from the playlist.")
+                        else:
+                            return await message.send("Removed selected tracks from the playlist.")
+                    else:
+                        if len(positions) == 1:
+                            return await message.send("Copied " + changed_list[0].get("title") + " to the beginning of the playlist.")
+                        else:
+                            return await message.send("Copied the selected tracks.")
+
+                # If arg at this point is not a plain clear command, args are invalid, print usage
+                except (ValueError, IndexError):
+                    if args[0] in ["clear", "delete", "del", "d", "remove", "rm", "r"] and (len(args) == 1):
+                        self.players[message.guild.id].queue = asyncio.Queue()
+                        return await message.send("I've cleared the playlist.")
+                    await message.send("Usage for my playlist command is `" + config.PREFIX[0] + "playlist <1 - " + str(config.PLAYLIST_MSG_MAX_LEN) + ">` if you want to prioritize a song.")   
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
@@ -527,6 +581,18 @@ class Audio(commands.Cog):
 
 
 # ═══ Functions ════════════════════════════════════════════════════════════════════════════════════════════════════════
+async def parse_playlist_positions(args, list_length: int):
+    positions = []
+    for a in args:
+        a = int(a)
+        if (a > 0) and (a <= config.PLAYLIST_MSG_MAX_LEN) and (a <= list_length) and (a not in positions):
+            positions.append(int(a))
+    if len(positions) > 0:
+        return positions
+    else:
+        raise ValueError
+
+
 async def volume_gradient(player, message, vol):
     vol_old = int(message.guild.voice_client.source.volume * 100)
     if vol == 0:

@@ -79,7 +79,7 @@ class AudioPlayer:
                 self.now_playing = ""
 
                 # Playlist loop
-                if self.looping == "playlist" and track["track_type"] != "sfx" and track["track_type"] != "playlist insert":
+                if self.looping == "playlist" and track["track_type"] != "sfx":
                     await self.queue.put(track)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
