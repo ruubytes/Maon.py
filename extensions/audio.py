@@ -345,6 +345,8 @@ class Audio(commands.Cog):
             return await message.send("You're not in the voice channel, silly.")
         elif message.guild.id not in self.players:
             return await message.send("I'm not even playing anything. :eyes:")
+        elif not self.players[message.guild.id].now_playing:
+            return await message.send("I'm not playing anything.")
         elif vol is None:
             return await message.send("The volume is set to {}%.".format(
                 int(self.players[message.guild.id].volume * 100)))
@@ -472,7 +474,7 @@ class Audio(commands.Cog):
 
         # No args, just print the current playlist
         if not args:
-            now_playing_str = ":cd: Now Playing:\n    " + self.players[message.guild.id].now_playing
+            now_playing_str = ":cd: Now Playing: " + self.players[message.guild.id].now_playing
             playlist_description = ""
             
             if len(q_list) > 0:

@@ -71,9 +71,9 @@ class AudioPlayer:
                     self.voice_client.source.volume = self.volume
                     await self.message.send(":cd: Now playing: {}, at {}% volume.".format(
                         track.get("title"), (int(self.volume * 100))))
-                    self.now_playing = track.get("title")
                 else:
                     self.voice_client.source.volume = self.sfx_volume
+                self.now_playing = track.get("title")
 
                 await self.next.wait()
                 self.now_playing = ""
