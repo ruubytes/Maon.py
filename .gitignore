@@ -4,6 +4,9 @@
 ### IntelliJ IDEA ###
 .idea/
 
+### VSCode ###
+.vscode/
+
 ### Python Cache ###
 __pycache__
 *.pyc
