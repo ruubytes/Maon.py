@@ -537,7 +537,7 @@ class Audio(commands.Cog):
                     else:
                         copied_list = q_list
                         q_list = []
-                        for pos in reversed(positions):
+                        for pos in positions:
                             changed_list.append(copied_list[pos - 1])
                             q_list.append(copied_list[pos - 1])
                         for item in copied_list:

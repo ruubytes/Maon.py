@@ -24,7 +24,7 @@ class Fun(commands.Cog):
             number = int(number)
             if number < 1:
                 return await message.send("I need a positive number to roll.")
-            return await message.send("{} rolled `{}`.".format(message.author.name, randint(0, number)))
+            return await message.send("{} rolled `{}`.".format(message.author.name, randint(1, number)))
         except (TypeError, ValueError):
             return await message.send("I need a positive number to roll. :eyes:")
 
