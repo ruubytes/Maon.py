@@ -98,6 +98,11 @@ YTDL_INFO_OPTIONS = {
 
 PLAYLIST_MSG_MAX_LEN = 20
 
+# Web Settings:
+RFC_3986_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%"
+MAL_API_ANIME_SEARCH_URL = "https://api.jikan.moe/v3/search/anime?q="
+MAL_API_MANGA_SEARCH_URL = "https://api.jikan.moe/v3/search/manga?q="
+
 # Browser Configuration:
 CMD_SLOT_REACTIONS = [
     "0\N{COMBINING ENCLOSING KEYCAP}", "1\N{COMBINING ENCLOSING KEYCAP}",
@@ -123,7 +128,7 @@ EXTENSION_LIST = ["admin", "audio", "basic", "errormanager", "filebrowser", "fun
 COMMANDLIST_EMBED_PREP_START = "Prefix: Maon (case insensitive)\n\n"
 
 COMMANDLIST_EMBED_ADMIN_PREP = [
-    ":flag_kp: ***Admin Commands:*** (requires ownership)\n",
+    ":flag_kp: ***Admin Commands:***  (requires ownership)\n",
     ":white_small_square: " + PREFIX[0] + "kill - Shuts Maon down.\n",
     ":white_small_square: " + PREFIX[0] + "reload <extension / all> - Unloads and loads extensions.\n",
     ":white_small_square: " + PREFIX[0] + "remove <number> - Removes messages in the channel.\n",
@@ -133,9 +138,8 @@ COMMANDLIST_EMBED_ADMIN_PREP = [
 ]
 
 COMMANDLIST_EMBED_PREP = [
-    ":beginner: ***Useful Commands:***\n",
+    ":beginner: ***Basic Commands:***\n",
     ":white_small_square: " + PREFIX[0] + "ping - Maon's latency.\n",
-    ":white_small_square: " + PREFIX[0] + "help - What you're looking at right now.\n",
     "\n",
     ":notes: ***Music Commands:***\n",
     ":white_small_square: " + PREFIX[0] + "browse <music / sfx> - Opens the file browser.\n",
@@ -156,7 +160,9 @@ COMMANDLIST_EMBED_PREP = [
     ":juggling: ***Fun Commands:***\n",
     ":white_small_square: " + PREFIX[0] + "<question> - Maon will reply to a closed (is, are, do, can...) question.\n",
     ":white_small_square: " + PREFIX[0] + "toss - Coin toss.\n",
-    ":white_small_square: " + PREFIX[0] + "roll <number> - Roll a number from 0 to number.\n"
+    ":white_small_square: " + PREFIX[0] + "roll <number> - Roll a number from 1 to number.\n",
+    ":white_small_square: " + PREFIX[0] + "anime <search term> - Posts an anime title link closest to the search term.\n",
+    ":white_small_square: " + PREFIX[0] + "manga <search term> - Posts a manga title link closest to the search term.\n"
 ]
 
 # Maon Version:
@@ -166,6 +172,6 @@ SIGNATURE = '''
 | '__/ _` |/ _ \/ __|/ _ \| |_| __|
 | | | (_| |  __/\__ \ (_) |  _| |_ 
 |_|  \__,_|\___||___/\___/|_|  \__|
-          Maon v20.10.20
+          Maon v20.10.22
 '''
-VERSION = "Maon v20.10.20"
+VERSION = "Maon v20.10.22"

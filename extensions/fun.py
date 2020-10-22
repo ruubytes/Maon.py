@@ -1,3 +1,6 @@
+from json import loads
+from urllib import request
+from urllib.error import URLError, HTTPError
 from discord.ext import commands
 from random import choice
 from random import randint
@@ -36,6 +39,34 @@ class Fun(commands.Cog):
             if "why" in message.invoked_with:
                 return await message.send(choice(config.QUESTION_REPLY_WHY))
             return await message.send(choice(config.QUESTION_REPLY))
+
+    @commands.command(aliases=["anime", "animu", "hentai", "manga"])
+    async def mal(self, message, *args: str):
+        if not args:
+            return await message.send(
+                "You can search for an anime if you provide me a search term. I'll look for the closest one I can find `" + config.PREFIX[0] + "anime <key words>`")
+        
+        query = "%20".join(args)
+        for char in query:
+            if config.RFC_3986_CHARS.find(char) < 1:
+                query = query.replace(char, "")
+        
+        if len(query) < 3:
+            return await message.send("Search terms have to be at least 3 characters.")
+        elif len(query) > 150:
+            query = query[:150]
+        
+        try:
+            if "manga" in message.invoked_with:
+                resp = request.urlopen(request.Request(config.MAL_API_MANGA_SEARCH_URL + query))
+            else:
+                resp = request.urlopen(request.Request(config.MAL_API_ANIME_SEARCH_URL + query))
+            data = loads(resp.read().decode("utf-8"))
+            first_entry = data.get("results")[0]
+            return await message.send(first_entry.get("url"))
+
+        except (URLError, HTTPError):
+            return await message.send("I could not fetch any information, maybe try again in a few seconds.")
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
