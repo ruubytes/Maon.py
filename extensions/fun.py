@@ -20,9 +20,144 @@ class Fun(commands.Cog):
         return await message.send("It's {}!".format(choice(coin)))
 
     @commands.command(aliases=["dice", "roll"])
-    async def rng(self, message, *, number: str = None):
-        if number is None:
-            return await message.send("I need a max number to roll.")
+    async def rng(self, message, *, numbers: str = None):
+        if numbers is None:
+            return await message.send("You can roll the dice for example with `" + config.PREFIX[0] + " roll 20` or several times with `" + config.PREFIX[0] + " roll 20 x5` or `" + config.PREFIX[0] + " roll 20 20 20`")
+
+        numbers_list = list(numbers.split(" "))
+        roll_list = []
+
+        # Single roll or mushed together multiple rolls
+        if len(numbers_list) == 1:
+            if (numbers.find("x") >= 1):
+                try:
+                    multiplicand = int(numbers[:numbers.find("x")])
+                    multiplier = int(numbers[numbers.find("x") + 1:])
+
+                    if (multiplier > 20):
+                        return await message.send("Let's keep it reasonable.")
+                    elif (multiplicand < 1) or (multiplier < 1):
+                        raise ValueError
+
+                    while (multiplier > 0):
+                        try:
+                            roll_list.append(randint(1, multiplicand))
+                            multiplier -= 1
+                        except (TypeError, ValueError):
+                            return await message.send("I need a positive number to roll. :eyes:")
+
+                    rolled_str = ""
+                    for rolled_num in roll_list:
+                        rolled_str += "`" + str(rolled_num) + "` "
+                    return await message.send("{} rolled {}".format(message.author.display_name, rolled_str) + ".")
+
+                except (TypeError, ValueError):
+                    return await message.send("I need a positive number to roll. :eyes:")
+            
+            elif (numbers.find("*") >= 1):
+                try:
+                    multiplicand = int(numbers[:numbers.find("*")])
+                    multiplier = int(numbers[numbers.find("*") + 1:])
+
+                    if (multiplier > 20):
+                        return await message.send("Let's keep it reasonable.")
+                    elif (multiplicand < 1) or (multiplier < 1):
+                        raise ValueError
+
+                    while (multiplier > 0):
+                        try:
+                            roll_list.append(randint(1, multiplicand))
+                            multiplier -= 1
+                        except (TypeError, ValueError):
+                            return await message.send("I need a positive number to roll. :eyes:")
+                    
+                    rolled_str = ""
+                    for rolled_num in roll_list:
+                        rolled_str += "`" + str(rolled_num) + "` "
+                    return await message.send("{} rolled {}".format(message.author.display_name, rolled_str) + ".")
+
+                except (TypeError, ValueError):
+                    return await message.send("I need a positive number to roll. :eyes:")
+
+            else:
+                try:
+                    number = int(numbers_list[0])
+                    return await message.send("{} rolled `{}`.".format(message.author.display_name, randint(1, number)))
+                except (TypeError, ValueError):
+                    return await message.send("I need a positive number to roll. :eyes:")
+
+        # Check for multiplicator
+        multiplicator = 0
+        if (len(numbers_list) == 2) and (numbers_list[1].startswith("x") or numbers_list[1].startswith("*")):
+            try:
+                multiplicator = int(numbers_list[1][1:])
+                if multiplicator < 1:
+                    raise ValueError
+            except (TypeError, ValueError):
+                return await message.send("I need a positive number to roll. :eyes:")
+
+        elif (len(numbers_list) == 3) and ((numbers_list[1] == "x") or (numbers_list[1] == "*")):
+            try:
+                multiplicator = int(numbers_list[2])
+                if multiplicator < 1:
+                    raise ValueError
+            except (TypeError, ValueError):
+                return await message.send("I need a positive number to roll. :eyes:")
+
+        # Roll <multiplicator> times
+        if multiplicator > 0:
+            if multiplicator > 20:
+                return await message.send("Let's keep it reasonable.")
+            while (multiplicator > 0):
+                try:
+                    number = int(numbers_list[0])
+                    roll_list.append(randint(1, number))
+                    multiplicator -= 1
+                except (TypeError, ValueError):
+                    return await message.send("I need a positive number to roll. :eyes:")
+            
+            rolled_str = ""
+            for rolled_num in roll_list:
+                rolled_str += "`" + str(rolled_num) + "` "
+            return await message.send("{} rolled {}".format(message.author.display_name, rolled_str) + ".")
+        
+        # Roll all specific rolls
+        else:
+            false_input_count = 0
+            for number in numbers_list:
+                try:
+                    number = int(number)
+                    roll_list.append(randint(1, number))
+                except (TypeError, ValueError):
+                    false_input_count += 1
+            
+            if false_input_count == len(numbers_list):
+                return await message.send("I need a positive number to roll. :eyes:")
+
+            rolled_str = ""
+            for rolled_num in roll_list:
+                rolled_str += "`" + str(rolled_num) + "` "
+            
+            return await message.send("{} rolled {}".format(message.author.display_name, rolled_str) + ".")
+
+    
+        """
+        false_input_count = 0
+        roll_list = list(numbers.split(" "))
+        for num in roll_list:
+            try:
+                num = int(num)
+                if num < 1:
+                    raise ValueError
+
+            except (TypeError, ValueError):
+                false_input_count += 1
+        
+        if false_input_count >= len(roll_list):
+            await message.send("I need a positive number to roll. :eyes:")
+        """
+
+        """
         try:
             number = int(number)
             if number < 1:
@@ -30,6 +165,7 @@ class Fun(commands.Cog):
             return await message.send("{} rolled `{}`.".format(message.author.name, randint(1, number)))
         except (TypeError, ValueError):
             return await message.send("I need a positive number to roll. :eyes:")
+        """
 
     @commands.command(aliases=config.QUESTION_TRIGGER)
     async def eightball(self, message, *, question:str = None):
