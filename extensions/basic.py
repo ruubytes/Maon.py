@@ -1,4 +1,5 @@
 from discord.ext import commands
+from asyncio import sleep
 import configuration as config
 import discord
 
@@ -19,17 +20,45 @@ class Basic(commands.Cog):
     async def help(self, message):
         if "version" in message.invoked_with:
             return await message.send("`{}`".format(config.VERSION))
-        command_print = config.COMMANDLIST_EMBED_PREP_START
+
+        commands_print_bot = config.COMMANDLIST_EMBED_PREP_START
+
+        # In case of footer with owner ID
+        """
+        icon_url, user_name, user_discriminator = "", "", ""
+        try:
+            user_name = self.client.get_user(self.client.owner_id).name
+            user_discriminator = self.client.get_user(self.client.owner_id).discriminator
+            icon_url = self.client.get_user(self.client.owner_id).avatar_url
+        except AttributeError:
+            user_name = ""
+
+        if (user_name != ""):
+            help_embed.set_footer(text="Owner: " + 
+                    user_name + "#" +
+                    user_discriminator, 
+                icon_url=icon_url)
+        """
+
         if message.author.id == self.client.owner_id:
-            command_print += "".join(config.COMMANDLIST_EMBED_ADMIN_PREP)
-        command_print += "".join(config.COMMANDLIST_EMBED_PREP)
-        help_embed = discord.Embed(title=config.VERSION, description=command_print, color=config.COLOR_HEX)
-        help_embed.set_thumbnail(url=self.client.user.avatar_url)
-        help_embed.set_footer(text="Owner: " + 
-                self.client.get_user(self.client.owner_id).name + "#" +
-                self.client.get_user(self.client.owner_id).discriminator, 
-            icon_url=self.client.get_user(self.client.owner_id).avatar_url)
-        return await message.send(embed=help_embed)
+            commands_print_bot += "".join(config.COMMANDLIST_EMBED_ADMIN_PREP)
+        help_embed_bot = discord.Embed(
+                title=config.VERSION,
+                description=commands_print_bot,
+                color=config.COLOR_HEX)
+        help_embed_bot.set_thumbnail(url=self.client.user.avatar_url)
+
+        commands_print_basic = "".join(config.COMMANDLIST_EMBED_BASIC_PREP)
+        help_embed_basic = discord.Embed(description=commands_print_basic, color=config.COLOR_HEX)
+        
+        commands_print_music = "".join(config.COMMANDLIST_EMBED_MUSIC_PREP)
+        help_embed_music = discord.Embed(description=commands_print_music, color=config.COLOR_HEX)
+        
+        await message.send(embed=help_embed_bot)
+        await sleep(0.25)
+        await message.send(embed=help_embed_basic)
+        await sleep(0.25)
+        await message.send(embed=help_embed_music)
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════

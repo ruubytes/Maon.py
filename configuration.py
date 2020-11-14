@@ -125,10 +125,10 @@ EXTENSION_PATH = "extensions." # Use . instead of / for folders as required by D
 EXTENSION_LIST = ["admin", "audio", "basic", "errormanager", "filebrowser", "fun"]
 
 # Help Command Embed:
-COMMANDLIST_EMBED_PREP_START = "Prefix: Maon (case insensitive)\n\n"
+COMMANDLIST_EMBED_PREP_START = "Prefix: " + PREFIX[0] + " (case insensitive)\n\n"
 
 COMMANDLIST_EMBED_ADMIN_PREP = [
-    ":flag_kp: ***Admin Commands:***  (requires ownership)\n",
+    ":flag_kp: ***Admin Commands:***\n",
     ":white_small_square: " + PREFIX[0] + "kill - Shuts Maon down.\n",
     ":white_small_square: " + PREFIX[0] + "reload <extension / all> - Unloads and loads extensions.\n",
     ":white_small_square: " + PREFIX[0] + "remove <number> - Removes messages in the channel.\n",
@@ -137,10 +137,18 @@ COMMANDLIST_EMBED_ADMIN_PREP = [
     "\n"
 ]
 
-COMMANDLIST_EMBED_PREP = [
+COMMANDLIST_EMBED_BASIC_PREP = [
     ":beginner: ***Basic Commands:***\n",
     ":white_small_square: " + PREFIX[0] + "ping - Maon's latency.\n",
-    "\n",
+    ":white_small_square: " + PREFIX[0] + "<question> - Maon will reply to a closed (is, are, do, can...) question.\n",
+    ":white_small_square: " + PREFIX[0] + "toss - Coin toss.\n",
+    ":white_small_square: " + PREFIX[0] + "roll <number> - Roll a number from 1 to number.\n",
+    ":white_small_square: " + PREFIX[0] + "anime <search term> - Posts an anime title link closest to the search term.\n",
+    ":white_small_square: " + PREFIX[0] + "manga <search term> - Posts a manga title link closest to the search term.\n",
+    "\n"
+]
+
+COMMANDLIST_EMBED_MUSIC_PREP = [
     ":notes: ***Music Commands:***\n",
     ":white_small_square: " + PREFIX[0] + "browse <music / sfx> - Opens the file browser.\n",
     ":white_small_square: " + PREFIX[0] + "play <link / filepath / filename> - Plays a Youtube video or local file.\n",
@@ -156,13 +164,7 @@ COMMANDLIST_EMBED_PREP = [
     ":white_small_square: " + PREFIX[0] + "volume <0 - 100> - Changes the music player volume.\n",
     ":white_small_square: " + PREFIX[0] + "pause - Pauses the music player.\n",
     ":white_small_square: " + PREFIX[0] + "resume - Resumes the music player.\n",
-    "\n",
-    ":juggling: ***Fun Commands:***\n",
-    ":white_small_square: " + PREFIX[0] + "<question> - Maon will reply to a closed (is, are, do, can...) question.\n",
-    ":white_small_square: " + PREFIX[0] + "toss - Coin toss.\n",
-    ":white_small_square: " + PREFIX[0] + "roll <number> - Roll a number from 1 to number.\n",
-    ":white_small_square: " + PREFIX[0] + "anime <search term> - Posts an anime title link closest to the search term.\n",
-    ":white_small_square: " + PREFIX[0] + "manga <search term> - Posts a manga title link closest to the search term.\n"
+    "\n"
 ]
 
 # Maon Version:
@@ -174,4 +176,4 @@ SIGNATURE = '''
 |_|  \__,_|\___||___/\___/|_|  \__|
           Maon v20.11.14
 '''
-VERSION = "Maon v20.11.14"
+VERSION = "Maon  v20.11.14"
