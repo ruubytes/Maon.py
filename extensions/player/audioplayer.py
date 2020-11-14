@@ -1,6 +1,7 @@
 from async_timeout import timeout
 from discord import PCMVolumeTransformer
 from discord import FFmpegPCMAudio
+from discord.errors import ClientException
 from youtube_dl import YoutubeDL
 from youtube_dl.utils import DownloadError
 from time import time
@@ -88,6 +89,17 @@ class AudioPlayer:
             self.active_task.cancel()
             await self.voice_client.disconnect()
             return self.audio.destroy_player(self.message)
+        
+        except ClientException:
+            print("[{}|{}] ClientException - Cancelling audioplayer...".format(self.message.guild.name, self.message.guild.id))
+            self.running = False
+            self.active_task.cancel()
+            try:
+                await self.message.channel.send("I ran into a big error, shutting down my audioplayer...")
+                await self.voice_client.disconnect()
+            finally:
+                return self.audio.destroy_player(self.message)
+
 
     async def active_loop(self):
         """ Periodically checks if Maon is alone in a voice channel and disconnects if True """

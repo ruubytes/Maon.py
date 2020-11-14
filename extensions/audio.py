@@ -265,9 +265,16 @@ class Audio(commands.Cog):
     @commands.command(aliases=["p", "stream", "yt"])
     @commands.guild_only()
     async def play(self, message, *, url: str = None):
-        if not await check_voice_state(message):
-            return
-
+        if message.guild.voice_client is None:
+            if message.author.voice:
+                await message.author.voice.channel.connect()
+                if message.guild.id not in self.players:
+                    self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+            else:
+                return await message.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.send("Come in here if you want me to play something. :eyes:")
+    
         if url is None:
             return await message.send(
                 "You can browse the music folder with `browse music`, if you're looking for something specific.")
@@ -301,8 +308,17 @@ class Audio(commands.Cog):
         
         track = {"title": track_title, "url": url, "track_type": "music", "message": message}
         
-        if not await check_voice_state(message):
-            return
+        # Connection check
+        if message.guild.voice_client is None:
+            if message.author.voice:
+                await message.author.voice.channel.connect()
+                if message.guild.id not in self.players:
+                    self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+            else:
+                return await message.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.send("Come in here if you want me to play something. :eyes:")
+
         await self.track_queue.put(track)
 
     @commands.command(aliases=["s", "effects", "effect"])
@@ -322,12 +338,20 @@ class Audio(commands.Cog):
         track["title"] = url
         track["track_type"] = "sfx"  # link / music / sfx
 
-        if not await check_voice_state(message):
-            return
+        # Connection check
+        if message.guild.voice_client is None:
+            if message.author.voice:
+                await message.author.voice.channel.connect()
+                if message.guild.id not in self.players:
+                    self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+            else:
+                return await message.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.send("Come in here if you want me to play something. :eyes:")
 
         if message.guild.id not in self.players:
             self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
-        await self.players[message.guild.id].queue.put(track)
+        return await self.players[message.guild.id].queue.put(track)
 
     async def fb_sfx(self, message, url):
         try:
@@ -335,8 +359,16 @@ class Audio(commands.Cog):
         except TinyTagException:
             return
 
-        if not await check_voice_state(message):
-            return
+        # Connection check
+        if message.guild.voice_client is None:
+            if message.author.voice:
+                await message.author.voice.channel.connect()
+                if message.guild.id not in self.players:
+                    self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+            else:
+                return await message.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.send("Come in here if you want me to play something. :eyes:")
 
         if tag.title is None:
             tag.title = url[url.rfind("/") + 1:]
@@ -371,9 +403,12 @@ class Audio(commands.Cog):
     @commands.command(aliases=["j"])
     @commands.guild_only()
     async def join(self, message):
+        # Connection check
         if message.guild.voice_client is None:
             if message.author.voice:
-                return await message.author.voice.channel.connect()
+                await message.author.voice.channel.connect()
+                if message.guild.id not in self.players:
+                    self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
             else:
                 return await message.send("You're not in a voice channel, silly. :eyes:")
         elif message.author.voice.channel != message.guild.voice_client.channel:
@@ -641,20 +676,6 @@ async def check_volume(vol):
             return False
     except (TypeError, ValueError):
         return False
-
-
-async def check_voice_state(message):
-    if message.guild.voice_client is None:
-        if message.author.voice:
-            await message.author.voice.channel.connect()
-            return True
-        else:
-            await message.send("You're not in a voice channel, silly. :eyes:")
-            return False
-    elif message.author.voice.channel != message.guild.voice_client.channel:
-        await message.send("Come in here if you want me to play something. :eyes:")
-        return False
-    return True
 
 
 async def get_video_id(url: str):
