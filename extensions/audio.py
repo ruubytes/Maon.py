@@ -99,7 +99,12 @@ class Audio(commands.Cog):
 
                 # Find out if the video is a live stream or is longer than n seconds (config)
                 # Stream it if yes, preload would take too long.
-                if video_info.get("protocol") or (video_info.get("duration") > config.SONG_DURATION_MAX):
+                
+                # Check if normal video has its duration stripped, sometimes this occures.
+                if (video_info.get("protocol") is None) and (video_info.get("duration") is None):
+                    video_info["duration"] = config.SONG_DURATION_MAX
+
+                if video_info.get("protocol") or (video_info.get("duration") >= config.SONG_DURATION_MAX) or (config.SONG_DURATION_MAX == 0):
                     track = {
                         "title": video_info.get("title"), 
                         "url": video_info.get("url"), 
@@ -109,7 +114,7 @@ class Audio(commands.Cog):
                         "video_info": video_info,
                         "time_stamp": time()
                     }
-                    if (video_info.get("duration") > config.SONG_DURATION_MAX):
+                    if (video_info.get("duration") >= config.SONG_DURATION_MAX):
                         formats = video_info.get("formats", [video_info])
                         for f in formats:
                             if f["format_id"] == "251":
@@ -231,6 +236,8 @@ class Audio(commands.Cog):
                 video_id = req.get("video_id")
                 
                 # Find file by video_id because the ytdl library filters chars out, title != filename
+                track_title = ""
+                track_url = ""
                 temp_list = listdir(config.TEMP_PATH)
                 for filename in temp_list:
                     if filename.endswith(video_id + ".mp3"):
@@ -238,10 +245,15 @@ class Audio(commands.Cog):
                         track_title = filename[:len(filename) - 16]
                         track_url = config.TEMP_PATH + filename
 
-                track = {"title": track_title, "url": track_url, "track_type": "music", "message": req.get("message")}
+                if (track_title == "") or (track_url == ""):
+                    message = req.get("message")
+                    await message.channel.send("I could not find the downloaded file within my cache... sorry!")
 
-                # Throw the track into the queue of the audioplayer
-                await self.track_queue.put(track)
+                else:
+                    track = {"title": track_title, "url": track_url, "track_type": "music", "message": req.get("message")}
+
+                    # Throw the track into the queue of the audioplayer
+                    await self.track_queue.put(track)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
             pass
