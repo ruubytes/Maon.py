@@ -51,7 +51,8 @@ class GuildBrowser:
         self.running = True
         await self.client.wait_until_ready()
         await self.set_content()
-        await self.load_navigation(message)
+        self.window_message = await message.send("Generating browser...")
+        self.client.loop.create_task(self.load_navigation(message))
         await self.display_window()
 
         try:
@@ -61,19 +62,22 @@ class GuildBrowser:
                 await self.update(command)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
-            pass
-
-        finally:
             print("[{}|{}] Closing file browser...".format(self.message.guild.name, self.message.guild.id))
             browser_embed = discord.Embed(title="Media browser closed.", description="", color=config.COLOR_HEX)
-            await self.window_message.edit(content="", embed=browser_embed)
+            try:
+                await self.window_message.edit(content="", embed=browser_embed)
+            except (discord.NotFound, RuntimeError):
+                pass
             return self.filebrowser.browser_exit(self.message)
+            
 
     async def update(self, command):
-        await self.execute(command)
         if self.running:
+            await self.execute(command)
             await self.set_content()
             await self.display_window()
+        else:
+            self.filebrowser_task.cancel()
 
     async def execute(self, command):
         if command.emoji in self.cmd_slot_list:         # A selection
@@ -170,7 +174,6 @@ class GuildBrowser:
                 self.slot_types.append(1)
 
     async def load_navigation(self, message):
-        self.window_message = await message.send("Generating browser...")
         self.id = self.window_message.id
         await self.window_message.add_reaction("\u21A9")  # Back
         await self.window_message.add_reaction("\u0030\u20E3")  # 0

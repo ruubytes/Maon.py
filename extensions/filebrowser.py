@@ -16,7 +16,7 @@ class FileBrowser(commands.Cog):
         self.filebrowsers = {}
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
-    @commands.command(aliases=["b"])
+    @commands.command(aliases=["b", "browser"])
     @commands.guild_only()
     async def browse(self, message, *, folder: str = None):
         if folder is None:
@@ -26,12 +26,14 @@ class FileBrowser(commands.Cog):
             if message.guild.id not in self.filebrowsers:
                 self.filebrowsers[message.guild.id] = guildbrowser.GuildBrowser(self.client, message, 0)
             else:
-                return await message.send("There is an active file browser in the server right now.")
+                return await message.send(
+                    "There is an active file browser in the server right now. You can close it with `" + config.PREFIX[0] + "browse exit`")
         elif folder.lower() in self.call_sfx:
             if message.guild.id not in self.filebrowsers:
                 self.filebrowsers[message.guild.id] = guildbrowser.GuildBrowser(self.client, message, 1)
             else:
-                return await message.send("There is an active file browser in the server right now.")
+                return await message.send(
+                    "There is an active file browser in the server right now. You can close it with `" + config.PREFIX[0] + "browse exit`")
         elif folder.lower() in self.call_close:
             if message.guild.id in self.filebrowsers:
                 self.filebrowsers[message.guild.id].filebrowser_task.cancel()
@@ -39,7 +41,7 @@ class FileBrowser(commands.Cog):
                 return await message.send("There is no active file browser at the moment.")
         else:
             return await message.send(
-                "You can browse the `sfx` or `music` folder, or close an existing browser with `exit`.")
+                "You can browse the `sfx` or `music` folder, or close an existing browser with `exit`. Command: `" + config.PREFIX[0] + "browse <option>`")
 
     # ═══ Helper Methods ═══════════════════════════════════════════════════════════════════════════════════════════════
     def browser_exit(self, message):
@@ -62,10 +64,23 @@ class FileBrowser(commands.Cog):
     @commands.Cog.listener()
     async def on_reaction_remove(self, reaction, user):
         if not user.id == login.MAON_ID:
-            if (reaction.emoji in config.CMD_SLOT_REACTIONS) or (reaction.emoji in config.CMD_NAV_REACTIONS):
-                if reaction.message.guild.id in self.filebrowsers:
+            if reaction.message.guild.id in self.filebrowsers:
+                if (reaction.emoji in config.CMD_SLOT_REACTIONS) or (reaction.emoji in config.CMD_NAV_REACTIONS):
                     if reaction.message.id == self.filebrowsers[reaction.message.guild.id].id:
                         await self.filebrowsers[reaction.message.guild.id].cmd_queue.put(reaction)
+
+    @commands.Cog.listener()
+    async def on_message_delete(self, message):
+        if message.guild.id in self.filebrowsers:
+            if message.id == self.filebrowsers[message.guild.id].id:
+                self.filebrowsers[message.guild.id].filebrowser_task.cancel()
+    
+    @commands.Cog.listener()
+    async def on_bulk_message_delete(self, messages):
+        for m in messages:
+            if m.guild.id in self.filebrowsers:
+                if m.id == self.filebrowsers[m.guild.id].id:
+                    self.filebrowsers[m.guild.id].filebrowser_task.cancel()
 
 
 

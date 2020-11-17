@@ -2,6 +2,7 @@ import os.path
 import asyncio
 import subprocess
 import configuration as config
+from discord import Embed
 from discord.ext import commands
 from extensions.player import audioplayer
 from youtube_dl import YoutubeDL
@@ -42,7 +43,7 @@ class Audio(commands.Cog):
         
         # Look up video_id in cached_songs dictionary and build a track if an entry exists.
         filename = self.cached_songs.get(video_id)
-        if filename is not None:
+        if (filename is not None) and (os.path.exists(config.TEMP_PATH + filename)):
             track_title = filename[:len(filename) - 16]
             track_url = config.TEMP_PATH + filename
             track = {"title": track_title, "url": track_url, "track_type": "music", "message": message}
@@ -73,7 +74,7 @@ class Audio(commands.Cog):
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
                 await self.players[message.guild.id].queue.put(track)
-                if message.guild.voice_client.is_playing():
+                if message.guild.voice_client.is_playing() or message.guild.voice_client.is_paused():
                     await message.channel.send("{} has been added to the queue.".format(track.get("title")))
         
         except (asyncio.CancelledError, asyncio.TimeoutError):
@@ -98,7 +99,12 @@ class Audio(commands.Cog):
 
                 # Find out if the video is a live stream or is longer than n seconds (config)
                 # Stream it if yes, preload would take too long.
-                if video_info.get("protocol") or (video_info.get("duration") > config.SONG_DURATION_MAX):
+                
+                # Check if normal video has its duration stripped, sometimes this occures.
+                if (video_info.get("protocol") is None) and (video_info.get("duration") is None):
+                    video_info["duration"] = config.SONG_DURATION_MAX
+
+                if video_info.get("protocol") or (video_info.get("duration") >= config.SONG_DURATION_MAX) or (config.SONG_DURATION_MAX == 0):
                     track = {
                         "title": video_info.get("title"), 
                         "url": video_info.get("url"), 
@@ -108,7 +114,7 @@ class Audio(commands.Cog):
                         "video_info": video_info,
                         "time_stamp": time()
                     }
-                    if (video_info.get("duration") > config.SONG_DURATION_MAX):
+                    if (video_info.get("duration") >= config.SONG_DURATION_MAX):
                         formats = video_info.get("formats", [video_info])
                         for f in formats:
                             if f["format_id"] == "251":
@@ -174,10 +180,13 @@ class Audio(commands.Cog):
             filesize_in_mb = 0
             for f in req.get("formats"):
                 if f["format_id"] == req.get("format_id"):
-                    filesize_in_mb = (f.get("filesize") / (1024 * 1024))
-                    if filesize_in_mb > config.TEMP_FOLDER_MAX_SIZE_IN_MB:
-                        raise OSError("[Audio Ext] Requested download is larger than the allowed size of the temp folder. ({} > {})".format(filesize_in_mb, config.TEMP_FOLDER_MAX_SIZE_IN_MB))
-                    break
+                    if f.get("filesize"):
+                        filesize_in_mb = (f.get("filesize") / (1024 * 1024))
+                        if filesize_in_mb > config.TEMP_FOLDER_MAX_SIZE_IN_MB:
+                            raise OSError("[Audio Ext] Requested download is larger than the allowed size of the temp folder. ({} > {})".format(filesize_in_mb, config.TEMP_FOLDER_MAX_SIZE_IN_MB))
+                        break
+                    else:
+                        break
             size_in_mb += filesize_in_mb
             while (config.TEMP_FOLDER_MAX_SIZE_IN_MB < size_in_mb):
                 first_file = min(Path(config.TEMP_PATH).glob('**/*'), key=os.path.getmtime)
@@ -227,6 +236,8 @@ class Audio(commands.Cog):
                 video_id = req.get("video_id")
                 
                 # Find file by video_id because the ytdl library filters chars out, title != filename
+                track_title = ""
+                track_url = ""
                 temp_list = listdir(config.TEMP_PATH)
                 for filename in temp_list:
                     if filename.endswith(video_id + ".mp3"):
@@ -234,10 +245,15 @@ class Audio(commands.Cog):
                         track_title = filename[:len(filename) - 16]
                         track_url = config.TEMP_PATH + filename
 
-                track = {"title": track_title, "url": track_url, "track_type": "music", "message": req.get("message")}
+                if (track_title == "") or (track_url == ""):
+                    message = req.get("message")
+                    await message.channel.send("I could not find the downloaded file within my cache... sorry!")
 
-                # Throw the track into the queue of the audioplayer
-                await self.track_queue.put(track)
+                else:
+                    track = {"title": track_title, "url": track_url, "track_type": "music", "message": req.get("message")}
+
+                    # Throw the track into the queue of the audioplayer
+                    await self.track_queue.put(track)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
             pass
@@ -249,9 +265,16 @@ class Audio(commands.Cog):
     @commands.command(aliases=["p", "stream", "yt"])
     @commands.guild_only()
     async def play(self, message, *, url: str = None):
-        if not await check_voice_state(message):
-            return
-
+        if message.guild.voice_client is None:
+            if message.author.voice:
+                await message.author.voice.channel.connect()
+                if message.guild.id not in self.players:
+                    self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+            else:
+                return await message.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.send("Come in here if you want me to play something. :eyes:")
+    
         if url is None:
             return await message.send(
                 "You can browse the music folder with `browse music`, if you're looking for something specific.")
@@ -285,8 +308,17 @@ class Audio(commands.Cog):
         
         track = {"title": track_title, "url": url, "track_type": "music", "message": message}
         
-        if not await check_voice_state(message):
-            return
+        # Connection check
+        if message.guild.voice_client is None:
+            if message.author.voice:
+                await message.author.voice.channel.connect()
+                if message.guild.id not in self.players:
+                    self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+            else:
+                return await message.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.send("Come in here if you want me to play something. :eyes:")
+
         await self.track_queue.put(track)
 
     @commands.command(aliases=["s", "effects", "effect"])
@@ -306,12 +338,20 @@ class Audio(commands.Cog):
         track["title"] = url
         track["track_type"] = "sfx"  # link / music / sfx
 
-        if not await check_voice_state(message):
-            return
+        # Connection check
+        if message.guild.voice_client is None:
+            if message.author.voice:
+                await message.author.voice.channel.connect()
+                if message.guild.id not in self.players:
+                    self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+            else:
+                return await message.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.send("Come in here if you want me to play something. :eyes:")
 
         if message.guild.id not in self.players:
             self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
-        await self.players[message.guild.id].queue.put(track)
+        return await self.players[message.guild.id].queue.put(track)
 
     async def fb_sfx(self, message, url):
         try:
@@ -319,8 +359,16 @@ class Audio(commands.Cog):
         except TinyTagException:
             return
 
-        if not await check_voice_state(message):
-            return
+        # Connection check
+        if message.guild.voice_client is None:
+            if message.author.voice:
+                await message.author.voice.channel.connect()
+                if message.guild.id not in self.players:
+                    self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+            else:
+                return await message.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.send("Come in here if you want me to play something. :eyes:")
 
         if tag.title is None:
             tag.title = url[url.rfind("/") + 1:]
@@ -335,12 +383,14 @@ class Audio(commands.Cog):
     async def volume(self, message, *, vol=None):
         if message.author.voice is None:
             return await message.send("You're not in a voice channel, silly.")
-        elif message.author.voice.channel != message.guild.voice_client.channel:
-            return await message.send("You're not in the voice channel, silly.")
         elif message.guild.voice_client is None:
             return await message.send("I'm not even playing anything. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.send("You're not in the voice channel, silly.")
         elif message.guild.id not in self.players:
             return await message.send("I'm not even playing anything. :eyes:")
+        elif not self.players[message.guild.id].now_playing:
+            return await message.send("I'm not playing anything.")
         elif vol is None:
             return await message.send("The volume is set to {}%.".format(
                 int(self.players[message.guild.id].volume * 100)))
@@ -353,9 +403,12 @@ class Audio(commands.Cog):
     @commands.command(aliases=["j"])
     @commands.guild_only()
     async def join(self, message):
+        # Connection check
         if message.guild.voice_client is None:
             if message.author.voice:
-                return await message.author.voice.channel.connect()
+                await message.author.voice.channel.connect()
+                if message.guild.id not in self.players:
+                    self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
             else:
                 return await message.send("You're not in a voice channel, silly. :eyes:")
         elif message.author.voice.channel != message.guild.voice_client.channel:
@@ -456,6 +509,109 @@ class Audio(commands.Cog):
             else:
                 await message.guild.voice_client.disconnect()
 
+    @commands.command(aliases=["queue", "q"])
+    @commands.guild_only()
+    async def playlist(self, message, *args):
+        if not message.guild.id in self.players:
+            return
+        elif (not self.players[message.guild.id].now_playing) and (self.players[message.guild.id].queue.qsize() == 0):
+            return await message.send("I'm not playing anything right now.")
+
+        q_list = list(self.players[message.guild.id].queue._queue)
+
+        # No args, just print the current playlist
+        if not args:
+            now_playing_str = ":cd: Now Playing: " + self.players[message.guild.id].now_playing
+            playlist_description = ""
+            
+            if len(q_list) > 0:
+                i = 1
+                playlist_description += "**Up Next:**\n"
+                
+                for item in q_list:
+                    playlist_description += "  `" + str(i).zfill(2) + "`: " + item.get("title") + "\n"
+                    i += 1
+                    if i > config.PLAYLIST_MSG_MAX_LEN:
+                        playlist_description += "  •\n  •\n  •"
+                        break
+
+            playlist_embed = Embed(title=now_playing_str, description=playlist_description, color=config.COLOR_HEX)
+            return await message.send(embed=playlist_embed)
+
+        else:
+            # See if the args are only valid integers to restructure the current playlist
+            try:
+                positions = await parse_playlist_positions(args, len(q_list))
+                
+                # With valid positions, begin restructuring the queue.                
+                new_q_list = []
+                for pos in positions:
+                    new_q_list.append(q_list[pos - 1])
+                    q_list[pos - 1] = 0
+                for item in q_list:
+                    if item == 0:
+                        continue
+                    new_q_list.append(item)
+
+                self.players[message.guild.id].queue = asyncio.Queue()
+                for item in new_q_list:
+                    await self.players[message.guild.id].queue.put(item)
+                
+                if len(positions) == 1:
+                    return await message.send("Next up: " + new_q_list[0].get("title"))
+                else:
+                    return await message.send("Playlist reorganized, next up: " + new_q_list[0].get("title"))
+
+            # See if the first arg is a command to remove songs from the playlist
+            except ValueError:
+                try:
+                    if str(args[0]) in ["clear", "delete", "del", "d", "remove", "rm", "r", "copy"] and args[1]:
+                        positions = await parse_playlist_positions(args[1:], len(q_list))
+                    else:
+                        raise ValueError
+
+                    changed_list = []
+                    if args[0] != "copy":
+                        cleared_list = q_list
+                        q_list = []
+                        for pos in positions:
+                            changed_list.append(cleared_list[pos - 1])
+                            cleared_list[pos - 1] = 0
+                        for item in cleared_list:
+                            if item != 0:
+                                q_list.append(item)
+
+                    else:
+                        copied_list = q_list
+                        q_list = []
+                        for pos in positions:
+                            changed_list.append(copied_list[pos - 1])
+                            q_list.append(copied_list[pos - 1])
+                        for item in copied_list:
+                            q_list.append(item)
+
+                    self.players[message.guild.id].queue = asyncio.Queue()
+                    for item in q_list:
+                        await self.players[message.guild.id].queue.put(item)
+                    
+                    if args[0] != "copy":
+                        if len(positions) == 1:
+                            return await message.send("Removed " + changed_list[0].get("title") + " from the playlist.")
+                        else:
+                            return await message.send("Removed selected tracks from the playlist.")
+                    else:
+                        if len(positions) == 1:
+                            return await message.send("Copied " + changed_list[0].get("title") + " to the beginning of the playlist.")
+                        else:
+                            return await message.send("Copied the selected tracks.")
+
+                # If arg at this point is not a plain clear command, args are invalid, print usage
+                except (ValueError, IndexError):
+                    if args[0] in ["clear", "delete", "del", "d", "remove", "rm", "r"] and (len(args) == 1):
+                        self.players[message.guild.id].queue = asyncio.Queue()
+                        return await message.send("I've cleared the playlist.")
+                    await message.send("Usage for my playlist command is `" + config.PREFIX[0] + "playlist <1 - " + str(config.PLAYLIST_MSG_MAX_LEN) + ">` if you want to prioritize a song.")   
+
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -474,6 +630,18 @@ class Audio(commands.Cog):
 
 
 # ═══ Functions ════════════════════════════════════════════════════════════════════════════════════════════════════════
+async def parse_playlist_positions(args, list_length: int):
+    positions = []
+    for a in args:
+        a = int(a)
+        if (a > 0) and (a <= config.PLAYLIST_MSG_MAX_LEN) and (a <= list_length) and (a not in positions):
+            positions.append(int(a))
+    if len(positions) > 0:
+        return positions
+    else:
+        raise ValueError
+
+
 async def volume_gradient(player, message, vol):
     vol_old = int(message.guild.voice_client.source.volume * 100)
     if vol == 0:
@@ -508,20 +676,6 @@ async def check_volume(vol):
             return False
     except (TypeError, ValueError):
         return False
-
-
-async def check_voice_state(message):
-    if message.guild.voice_client is None:
-        if message.author.voice:
-            await message.author.voice.channel.connect()
-            return True
-        else:
-            await message.send("You're not in a voice channel, silly. :eyes:")
-            return False
-    elif message.author.voice.channel != message.guild.voice_client.channel:
-        await message.send("Come in here if you want me to play something. :eyes:")
-        return False
-    return True
 
 
 async def get_video_id(url: str):

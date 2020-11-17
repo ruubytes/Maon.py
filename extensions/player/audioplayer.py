@@ -1,6 +1,7 @@
 from async_timeout import timeout
 from discord import PCMVolumeTransformer
 from discord import FFmpegPCMAudio
+from discord.errors import ClientException
 from youtube_dl import YoutubeDL
 from youtube_dl.utils import DownloadError
 from time import time
@@ -10,7 +11,7 @@ import asyncio
 
 class AudioPlayer:
     __slots__ = ["client", "audio", "message", "voice_client", "volume", "looping", "sfx_volume", "player_timeout",
-                 "queue", "next", "running", "player_task", "active_task"]
+                 "now_playing", "queue", "next", "running", "player_task", "active_task"]
 
     def __init__(self, client, message):
         self.client = client
@@ -21,6 +22,7 @@ class AudioPlayer:
         self.looping = "off"  # off / song / playlist
         self.sfx_volume = config.SFX_VOLUME
         self.player_timeout = config.PLAYER_TIMEOUT
+        self.now_playing = ""
         self.queue = asyncio.Queue()
         self.next = asyncio.Event()
         self.running = True
@@ -72,8 +74,10 @@ class AudioPlayer:
                         track.get("title"), (int(self.volume * 100))))
                 else:
                     self.voice_client.source.volume = self.sfx_volume
+                self.now_playing = track.get("title")
 
                 await self.next.wait()
+                self.now_playing = ""
 
                 # Playlist loop
                 if self.looping == "playlist" and track["track_type"] != "sfx":
@@ -85,19 +89,33 @@ class AudioPlayer:
             self.active_task.cancel()
             await self.voice_client.disconnect()
             return self.audio.destroy_player(self.message)
+        
+        except ClientException:
+            print("[{}|{}] ClientException - Cancelling audioplayer...".format(self.message.guild.name, self.message.guild.id))
+            self.running = False
+            self.active_task.cancel()
+            try:
+                await self.message.channel.send("I ran into a big error, shutting down my audioplayer...")
+                await self.voice_client.disconnect()
+            finally:
+                return self.audio.destroy_player(self.message)
+
 
     async def active_loop(self):
         """ Periodically checks if Maon is alone in a voice channel and disconnects if True """
         try:
             while self.running:
-                if len(self.message.guild.voice_client.channel.members) < 2:
+                if len(self.message.guild.voice_client.channel.voice_states) < 2:
                     print("[{}|{}] Users left the voice channel, destroying audioplayer.".format(self.message.guild.name,
                                                                                                 self.message.guild.id))
                     self.running = False
-                    await self.voice_client.disconnect()
-                    return self.audio.destroy_player(self.message)
+                    return await self.player_task.cancel()
+                    #await self.voice_client.disconnect()
+                    #return self.audio.destroy_player(self.message)
+                
                 else:
                     await asyncio.sleep(10)
+
         except asyncio.CancelledError:
             pass
 
