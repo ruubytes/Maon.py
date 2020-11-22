@@ -274,6 +274,8 @@ class Audio(commands.Cog):
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
             else:
                 return await message.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice is None:
+            return await message.send("Come in here if you want me to play something. :eyes:")
         elif message.author.voice.channel != message.guild.voice_client.channel:
             return await message.send("Come in here if you want me to play something. :eyes:")
     
@@ -317,9 +319,11 @@ class Audio(commands.Cog):
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
             else:
-                return await message.send("You're not in a voice channel, silly. :eyes:")
-        elif message.author.voice.channel != message.guild.voice_client.channel:
+                return await message.channel.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice is None:
             return await message.send("Come in here if you want me to play something. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.channel.send("Come in here if you want me to play something. :eyes:")
 
         await self.track_queue.put(track)
 
@@ -348,6 +352,8 @@ class Audio(commands.Cog):
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
             else:
                 return await message.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice is None:
+            return await message.send("Come in here if you want me to play something. :eyes:")
         elif message.author.voice.channel != message.guild.voice_client.channel:
             return await message.send("Come in here if you want me to play something. :eyes:")
 
@@ -368,9 +374,11 @@ class Audio(commands.Cog):
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
             else:
-                return await message.send("You're not in a voice channel, silly. :eyes:")
-        elif message.author.voice.channel != message.guild.voice_client.channel:
+                return await message.channel.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice is None:
             return await message.send("Come in here if you want me to play something. :eyes:")
+        elif message.author.voice.channel != message.guild.voice_client.channel:
+            return await message.channel.send("Come in here if you want me to play something. :eyes:")
 
         if tag.title is None:
             tag.title = url[url.rfind("/") + 1:]
@@ -413,6 +421,8 @@ class Audio(commands.Cog):
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
             else:
                 return await message.send("You're not in a voice channel, silly. :eyes:")
+        elif message.author.voice is None:
+            return
         elif message.author.voice.channel != message.guild.voice_client.channel:
             return await message.guild.voice_client.move_to(message.author.voice.channel)
 
