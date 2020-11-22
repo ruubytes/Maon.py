@@ -20,6 +20,7 @@ downloads/
 music/
 sfx/
 temp/
+*.txt
 
 ### Test Files ###
-test_*
+tests/

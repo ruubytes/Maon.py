@@ -51,6 +51,7 @@ class Audio(commands.Cog):
             await self.track_queue.put(track)
         
         else: # Track is not in temp folder, hand it over to info_queue and start the downloading or streaming process.
+            url = "https://www.youtube.com/watch?v=" + video_id
             req = {"message": message, "url": url, "video_id": video_id}
             return await self.info_queue.put(req)
 
@@ -117,8 +118,9 @@ class Audio(commands.Cog):
                     if (video_info.get("duration") >= config.SONG_DURATION_MAX):
                         formats = video_info.get("formats", [video_info])
                         for f in formats:
-                            if f["format_id"] == "251":
+                            if f.get("format_id") == "251":
                                 track["url"] = f.get("url")
+                                break
                     await self.track_queue.put(track)
 
                 else:
