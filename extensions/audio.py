@@ -399,16 +399,15 @@ class Audio(commands.Cog):
             return await message.send("You're not in the voice channel, silly.")
         elif message.guild.id not in self.players:
             return await message.send("I'm not even playing anything. :eyes:")
-        elif not self.players[message.guild.id].now_playing:
-            return await message.send("I'm not playing anything.")
         elif vol is None:
             return await message.send("The volume is set to {}%.".format(
                 int(self.players[message.guild.id].volume * 100)))
-
-        if not await check_volume(vol):
+        elif not await check_volume(vol):
             return await message.send("Please enter a number ranging from 0 to 100.")
-
-        await volume_gradient(self.players[message.guild.id], message, int(vol))
+        elif self.players[message.guild.id].now_playing:
+            return await volume_gradient(self.players[message.guild.id], message, int(vol))
+        else:
+            return await volume_no_gradient(self.players[message.guild.id], message, int(vol))
 
     @commands.command(aliases=["j"])
     @commands.guild_only()
@@ -675,6 +674,19 @@ async def volume_gradient(player, message, vol):
             vol_old += 1
             message.guild.voice_client.source.volume = (vol_old / 100)
             sleep(0.010)
+        player.volume = vol / 100
+        return await message.send(":arrow_up_small: I've set the volume to {}%.".format(vol))
+
+
+async def volume_no_gradient(player, message, vol):
+    vol_old = player.volume * 100
+    if vol == 0:
+        player.volume = 0
+        return await message.channel.send("I've muted my music player.")
+    elif vol < vol_old:
+        player.volume = vol / 100
+        return await message.channel.send(":arrow_down_small: I've set the volume to {}%.".format(vol))
+    else:
         player.volume = vol / 100
         return await message.send(":arrow_up_small: I've set the volume to {}%.".format(vol))
 
