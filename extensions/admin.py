@@ -6,7 +6,9 @@ from shutil import rmtree
 from os import path
 import configuration as config
 import discord
-
+import os
+import psutil
+import sys
 
 class Admin(commands.Cog):
     __slots__ = ["client", "status_task", "running"]
@@ -29,8 +31,14 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def restart(self, message):
-        """ Work in progress """
-        return await message.send("WIP")
+        try:
+            p = psutil.Process(os.getpid())
+            for handler in p.open_files() + p.connections():
+                os.close(handler.fd)
+        except Exception as e:
+            print(e.__str__())
+        
+        os.execl(sys.executable, sys.executable, *sys.argv)
 
     @commands.command()
     @commands.is_owner()

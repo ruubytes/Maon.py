@@ -23,4 +23,5 @@ temp/
 *.txt
 
 ### Test Files ###
-tests/
+__tests__/
+__errors__/

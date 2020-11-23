@@ -1,6 +1,4 @@
 from discord.ext import commands
-from shutil import rmtree
-from os import path
 import discord
 import configuration as config
 import login as login

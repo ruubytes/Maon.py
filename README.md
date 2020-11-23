@@ -33,7 +33,7 @@ For audio playback we'll need `ffmpeg` and `opus-tools`:
 
 Next the dependencies:
 
-    python3 -m pip install -U discord.py youtube-dl pynacl tinytag
+    python3 -m pip install -U psutil discord.py youtube-dl pynacl tinytag
 
 ## Windows:
 Requires `Python 3.6+`, `pip`, and `ffmpeg` to be installed. Install instructions for
@@ -41,7 +41,7 @@ these are on their respective websites.
 
 To install the dependencies, open a new command prompt and enter:
 
-    python -m pip install -U discord.py youtube-dl pynacl tinytag lxml
+    python -m pip install -U psutil discord.py youtube-dl pynacl tinytag
         
 # Running Maon:
 ## Ubuntu / Debian / Raspbian:
