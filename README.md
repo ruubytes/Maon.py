@@ -54,7 +54,6 @@ Deletes the music cache folder.
 Returns the ascii encoded name of an emoji.
 
 ## Basic
----
 ### `help` (alias: `info`, `infocard`)
 Lists all commands.
 
@@ -80,7 +79,6 @@ Maon will reply to a closed question or the `eightball` command. For example: `M
 Maon will look up the requested search term and return the closest anime title linking to MyAnimeList. The alias `manga` will look for a manga title instead.
 
 ## Music
----
 ### `play <url / path>` (alias: `p`, `stream`, `yt`)
 Play a local sound file from the music folder or a Youtube link in a voice channel.
 
