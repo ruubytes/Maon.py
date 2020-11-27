@@ -19,8 +19,10 @@ class Fun(commands.Cog):
         coin = ["heads", "tails"]
         return await message.send("It's {}!".format(choice(coin)))
 
-    @commands.command(aliases=["dice", "roll"])
+    @commands.command(aliases=["dice", "roll", "r"])
     async def rng(self, message, *, numbers: str = None):
+        """ Rolls a number ranging from 1 to `numbers`. Rolls as many times as integers within `numbers`.
+        Max amount of rolls is 20. Can also be shortened to a multiplication like `20x5`. """
         if numbers is None:
             return await message.send("You can roll the dice for example with `" + config.PREFIX[0] + " roll 20` or several times with `" + config.PREFIX[0] + " roll 20 x5` or `" + config.PREFIX[0] + " roll 20 20 20`")
 
@@ -169,6 +171,8 @@ class Fun(commands.Cog):
 
     @commands.command(aliases=config.QUESTION_TRIGGER)
     async def eightball(self, message, *, question:str = None):
+        """ Maon replies with a variation of yes / no / maybe to the eightball command or aliases specified
+        in the config file. Default settings simulate an answer to a closed question. """  
         if question is None:
             return await message.send(choice(config.DEFAULT_REPLY))
         else:
@@ -178,6 +182,7 @@ class Fun(commands.Cog):
 
     @commands.command(aliases=["anime", "animu", "hentai", "manga"])
     async def mal(self, message, *args: str):
+        """ Looks up an anime or manga title on MyAnimeList specified by search terms in `args`. """
         if not args:
             return await message.send(
                 "You can search for an anime if you provide me a search term. I'll look for the closest one I can find `" + config.PREFIX[0] + "anime <key words>`")
@@ -207,6 +212,7 @@ class Fun(commands.Cog):
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
     async def on_message(self, message):
+        """ Maon replies with a variation of "what?" if only her prefix is called without any command. """ 
         if message.author.id != self.client.user.id:
             if message.content.lower() == config.PREFIX_FAST:
                 return await message.channel.send(choice(config.DEFAULT_REPLY))

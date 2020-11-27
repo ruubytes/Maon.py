@@ -34,7 +34,7 @@ class Audio(commands.Cog):
         self.track_task = self.client.loop.create_task(self.track_loop())
 
     async def prep_link_track(self, message, url: str):
-        """ Looks up the requested url in the cached_songs dictionary to see if the track exists in the
+        """ Looks up the requested `url` in the cached_songs dictionary to see if the track exists in the
         temp folder. If not, starts the download / streaming process. """
         # All we know at this point is the url and who requested it. Get the video_id from the url.
         video_id = await get_video_id(url)
@@ -57,7 +57,7 @@ class Audio(commands.Cog):
 
 
     async def prep_local_track(self, message, url: str):
-        """ Build local track information for the audioplayer """
+        """ Builds local track information for the audioplayer. """
         tag = TinyTag.get(config.MUSIC_PATH + url)
         if tag.title is None:
             tag.title = url
@@ -66,7 +66,7 @@ class Audio(commands.Cog):
 
 
     async def track_loop(self):
-        """ Centralize the queuing of tracks in this task """
+        """ Centralizes the queuing of tracks in this task. Will turn this loop into a function instead later. """
         try:
             while self.running:
                 track = await self.track_queue.get()
@@ -83,7 +83,8 @@ class Audio(commands.Cog):
 
 
     async def info_loop(self):
-        """ Gather information about the requested song and process it """
+        """ Gather information about the requested song and process it. Also manages the music cache folder
+        for now so it is a centralized task. """
         try:
             while self.running:
                 req = await self.info_queue.get()
@@ -157,7 +158,8 @@ class Audio(commands.Cog):
             pass
 
     async def track_rescue(self, req, video_info):
-        """ Creates a track of streaming type for the player """
+        """ Creates a track of streaming type for the player as a fallback solution if the meta data
+        obtained from Youtube is faulty for download. """
         message = req.get("message")
         track = {
             "title": video_info.get("title"), 
@@ -199,7 +201,7 @@ class Audio(commands.Cog):
             print("[Audio Ext] Temp folder is empty or does not exist.")
 
     async def download_loop(self):
-        """ Downloads a requested song and stores it in the temp folder for ease of access and replayability """ 
+        """ Downloads a requested song and stores it in the music cache folder for ease of access and replayability """ 
         try:
             while self.running:
                 req = await self.download_queue.get()
@@ -220,7 +222,7 @@ class Audio(commands.Cog):
             pass
 
     async def cache_loop(self):
-        """ Keeps track of files in the temp folder """
+        """ Keeps track of files in the temp folder and queues newly added songs. """
         # Load the cache first
         temp_list = {}
         try:
@@ -267,6 +269,8 @@ class Audio(commands.Cog):
     @commands.command(aliases=["p", "stream", "yt"])
     @commands.guild_only()
     async def play(self, message, *, url: str = None):
+        """ Makes Maon play an url linking to a Youtube video or filepath to a local mp3 / wav file in the music folder
+        specified in `url`. Maon joins the requestee's voice channel and parses the `url`. """ 
         if message.guild.voice_client is None:
             if message.author.voice:
                 await message.author.voice.channel.connect()
@@ -292,7 +296,7 @@ class Audio(commands.Cog):
             return await message.send("I need a Youtube link or file path to play.")
 
     async def fb_play(self, message, url):
-        """ Play command for the filebrowser """
+        """ Play command for the filebrowser to play songs selected with reactions. """
         # Check if the requested track is within the cache folder or not because cached mp3s
         # should not have meta data. The track title is in the filename, though.
         track_title = ""
@@ -330,6 +334,7 @@ class Audio(commands.Cog):
     @commands.command(aliases=["s", "effects", "effect"])
     @commands.guild_only()
     async def sfx(self, message, *, url: str = None):
+        """ Plays a local sound effect from the sfx folder specified by a filepath or filename in `url`. """
         track = {}
         if url is None:
             return await message.send(
@@ -362,6 +367,7 @@ class Audio(commands.Cog):
         return await self.players[message.guild.id].queue.put(track)
 
     async def fb_sfx(self, message, url):
+        """ Sfx play command for the file browser to play a sound effect selected with a reaction. """ 
         try:
             tag = TinyTag.get(url)
         except TinyTagException:
@@ -391,6 +397,8 @@ class Audio(commands.Cog):
     @commands.command(aliases=["v", "vol"])
     @commands.guild_only()
     async def volume(self, message, *, vol=None):
+        """ Sets the volume for the audioplayer. If the audioplayer is already playing, sets the volume
+        gradually and not instant for a smoother listening experience. """
         if message.author.voice is None:
             return await message.send("You're not in a voice channel, silly.")
         elif message.guild.voice_client is None:
@@ -412,6 +420,8 @@ class Audio(commands.Cog):
     @commands.command(aliases=["j"])
     @commands.guild_only()
     async def join(self, message):
+        """ Makes Maon join the voice channel. Returns if the requestee is not in a voice channel. Also
+        makes Maon switch channels if the requestee is in another voice channel. """ 
         # Connection check
         if message.guild.voice_client is None:
             if message.author.voice:
@@ -428,6 +438,7 @@ class Audio(commands.Cog):
     @commands.command(aliases=["next", "n", "ne", "nxt", "nx", "sk", "skp"])
     @commands.guild_only()
     async def skip(self, message):
+        """ Skips a currently playing song. """ 
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
             return await message.send("I'm not playing anything. :eyes:")
         elif message.author.voice is None:
@@ -443,6 +454,7 @@ class Audio(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def loop(self, message, *, option: str = None):
+        """ Loops a song or the whole playlist. `off` as `option` turns off the loop. """ 
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
             return await message.send("I'm not playing anything. :eyes:")
         elif message.guild.id not in self.players:
@@ -474,6 +486,7 @@ class Audio(commands.Cog):
     @commands.command()
     @commands.guild_only()
     async def pause(self, message):
+        """ Pauses the currently playing song. """ 
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
             return await message.send("I'm not playing anything. :eyes:")
         elif message.author.voice is None:
@@ -491,6 +504,7 @@ class Audio(commands.Cog):
     @commands.command(aliases=["res", "cont", "continue", "re", "co"])
     @commands.guild_only()
     async def resume(self, message):
+        """ Continues a paused song. """ 
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():
             return await message.send("I'm not playing anything. :eyes:")
         elif message.author.voice is None:
@@ -508,6 +522,7 @@ class Audio(commands.Cog):
     @commands.command(aliases=["leave", "l"])
     @commands.guild_only()
     async def stop(self, message):
+        """ Stops any currently playing song, cancels the audioplayer and makes Maon leave the voice channel. """ 
         if message.author.voice is None:
             return await message.send("Don't tell me what to do. :eyes:")
         elif not message.guild.voice_client or not message.guild.voice_client.is_connected():
@@ -523,6 +538,10 @@ class Audio(commands.Cog):
     @commands.command(aliases=["queue", "q"])
     @commands.guild_only()
     async def playlist(self, message, *args):
+        """ Displays the current playlist if no `args`. Can rearrange the songs in the playlist with integers describing
+        the current entry position of a song in the playlist and moves them to the front of the playlist. If the first arg is `copy`
+        all following positions are copied to the front of the playlist. If the first arg is `remove` all following positions in the
+        playlist are deleted. """ 
         if not message.guild.id in self.players:
             return
         elif (not self.players[message.guild.id].now_playing) and (self.players[message.guild.id].queue.qsize() == 0):
@@ -626,6 +645,7 @@ class Audio(commands.Cog):
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
     async def on_message(self, message):
+        """ Event listener for the prefix- and command-less sound effect functionality. """
         if message.guild.id in self.players:
             if message.channel == self.players[message.guild.id].message.channel:
                 if os.path.exists(config.SFX_PATH + message.content + ".mp3"):
@@ -654,6 +674,8 @@ async def parse_playlist_positions(args, list_length: int):
 
 
 async def volume_gradient(player, message, vol):
+    """ Increments or decrements the volume of the audioplayer in small intervals to generate a 
+    gradient volume increase or decrease for listening comfort. `vol` being the requested volume level.""" 
     vol_old = int(message.guild.voice_client.source.volume * 100)
     if vol == 0:
         while vol_old > 0:
@@ -679,6 +701,7 @@ async def volume_gradient(player, message, vol):
 
 
 async def volume_no_gradient(player, message, vol):
+    """ If no song is playing, sets the volume level `vol` for the audioplayer instantly. """ 
     vol_old = player.volume * 100
     if vol == 0:
         player.volume = 0
@@ -692,6 +715,7 @@ async def volume_no_gradient(player, message, vol):
 
 
 async def check_volume(vol):
+    """ Checks if `vol` is a valid integer ranging from 0 to 100. """ 
     try:
         vol = int(vol)
         if (-1 < vol) and (vol < 101):
@@ -703,7 +727,7 @@ async def check_volume(vol):
 
 
 async def get_video_id(url: str):
-    """ Get the 11 chars long video id from a Youtube link """
+    """ Get the 11 chars long video id from a Youtube link. """
     if url.find("?v=") > 0:
         return url[url.find("?v=") + 3 : url.find("?v=") + 14] 
     elif url.find("&v=") > 0:

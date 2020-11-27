@@ -19,6 +19,8 @@ class FileBrowser(commands.Cog):
     @commands.command(aliases=["b", "browser"])
     @commands.guild_only()
     async def browse(self, message, *, folder: str = None):
+        """ Opens a file browser as embed message in the chat for the specified `folder` to browse local music
+        or sound effects. The browser can then be navigated with emojis. """
         if folder is None:
             return await message.send(
                 "You can browse the `sfx` or `music` folder, or close an existing browser with `exit`.")
@@ -71,12 +73,14 @@ class FileBrowser(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
+        """ Cancels the file browser if the browser message is deleted. """
         if message.guild.id in self.filebrowsers:
             if message.id == self.filebrowsers[message.guild.id].id:
                 self.filebrowsers[message.guild.id].filebrowser_task.cancel()
     
     @commands.Cog.listener()
     async def on_bulk_message_delete(self, messages):
+        """ Cancels the file browser if the browser message is deleted. """
         for m in messages:
             if m.guild.id in self.filebrowsers:
                 if m.id == self.filebrowsers[m.guild.id].id:

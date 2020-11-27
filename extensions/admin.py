@@ -21,6 +21,7 @@ class Admin(commands.Cog):
     @commands.command(aliases=["kill"])
     @commands.is_owner()
     async def shutdown(self, message):
+        """ Shuts down Maon gracefully by first logging out and closing all event loops. """
         await self.client.logout()
         await self.client.close()
         try:
@@ -31,18 +32,22 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def restart(self, message):
-        try:
-            p = psutil.Process(os.getpid())
-            for handler in p.open_files() + p.connections():
+        """ Restarts Maon by killing all connections and then restarts the process with the same 
+        arguments. """
+        await self.client.logout()
+        await self.client.close()
+        p = psutil.Process(os.getpid())
+        for handler in p.open_files() + p.connections():
+            try:
                 os.close(handler.fd)
-        except Exception as e:
-            print(e.__str__())
-        
+            except Exception as e:
+                print(e.__str__())
         os.execl(sys.executable, sys.executable, *sys.argv)
 
     @commands.command()
     @commands.is_owner()
     async def reload(self, message, *, extension: str = None):
+        """ Reloads selected or all extension modules. """
         if extension is None:
             return await message.send("Do you want me to reload a specific extension or `all`?")
         elif extension.lower() in config.EXTENSION_LIST:
@@ -66,6 +71,7 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def disable(self, message, *, extension: str = None):
+        """ Disables a specified `extension` or `all` of them. """
         if extension is None:
             return await message.send("Do you want me to disable a specific extension or `all`?")
         elif extension.lower() in config.EXTENSION_LIST:
@@ -91,6 +97,7 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def enable(self, message, *, extension: str = None):
+        """ Enables a specified `extension` or `all` of them. """
         if extension is None:
             return await message.send("Do you want me to enable a specific extension or `all`?")
 
@@ -118,6 +125,8 @@ class Admin(commands.Cog):
     @commands.is_owner()
     @commands.guild_only()
     async def remove(self, message, *, number: int = None):
+        """ Removes `number` `+ 1` messages from the channel the command is called in. +1 to also remove 
+        the calling command. Max amount is 50 messages. """
         if number is None:
             return await message.send("How many messages do you want me to delete? (max 50 messages)")
         else:
@@ -134,6 +143,8 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def status(self, message, *, activity: str = None):
+        """ Sets the status message of Maon. `activity` has to start with one of the available activity
+        types like `playing / watching / listening` followed by the status text that is to be displayed. """
         if activity is None:
             return await message.send("Usage: <prefix> status `listening`/`playing`/`watching` <text>")
 
@@ -167,16 +178,18 @@ class Admin(commands.Cog):
     @commands.command()
     @commands.is_owner()
     async def scrub(self, message):
-        """ Empty the temp folder. """
+        """ Empties the music cache folder. """
         if path.exists(config.TEMP_PATH):
             rmtree(config.TEMP_PATH)
         return await message.send("Temp folder has been scrubbed.")
 
     @commands.command()
     async def emojiname(self, message, emoji):
+        """ Returns the ASCII encode of the emoji sent with the message. """
         return await message.send(emoji.encode('ascii', 'namereplace'))
 
     async def status_loop(self):
+        """ Updates the status message of Maon hourly. """
         while self.running:
             activity = choice(["listening", "watching", "playing"])
             if activity == "listening":

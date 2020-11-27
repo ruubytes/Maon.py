@@ -18,6 +18,8 @@ class Basic(commands.Cog):
 
     @commands.command(aliases=["info", "infocard", "version"])
     async def help(self, message):
+        """ Returns an embed message with all the available commands. If the owner is the requestee, also 
+        adds the admin commands. """ 
         if "version" in message.invoked_with:
             return await message.send("`{}`".format(config.VERSION))
 

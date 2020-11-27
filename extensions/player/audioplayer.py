@@ -120,7 +120,7 @@ class AudioPlayer:
             pass
 
     async def refresh_url(self, track):
-        """ Refreshes the stream url of a track """
+        """ Refreshes the stream url of a track in case it is in danger of expiring. """
         message = track.get("message")
         try:
             video_info = await self.client.loop.run_in_executor(

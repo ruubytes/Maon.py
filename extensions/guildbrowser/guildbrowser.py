@@ -48,6 +48,8 @@ class GuildBrowser:
         print("[{}|{}] File browser created.".format(self.message.guild.name, self.message.guild.id))
 
     async def filebrowser_window(self, message):
+        """ The main loop of the file browser. Waits for a reaction and then updates the contents
+        accordingly. """ 
         self.running = True
         await self.client.wait_until_ready()
         await self.set_content()
@@ -72,6 +74,7 @@ class GuildBrowser:
             
 
     async def update(self, command):
+        """ Chains the functions to update the contents and edit the embed message. """
         if self.running:
             await self.execute(command)
             await self.set_content()
@@ -80,6 +83,7 @@ class GuildBrowser:
             self.filebrowser_task.cancel()
 
     async def execute(self, command):
+        """ Executes the requested command reaction and edits the browser contents accordingly. """
         if command.emoji in self.cmd_slot_list:         # A selection
             try:
                 i = self.cmd_slot_list.index(command.emoji)
@@ -120,6 +124,7 @@ class GuildBrowser:
             return print("{} not recognized...")
 
     async def display_window(self):
+        """ Builds the embed message view of the file browser. """
         content = "Directory: " + self.current_dir[1:] + "\n\n"
         if self.current_dir != self.home_dir:
             content += ":leftwards_arrow_with_hook: Back\n"
@@ -145,6 +150,7 @@ class GuildBrowser:
         return await self.window_message.edit(content="", embed=browser_embed)
 
     async def set_content(self):
+        """ Builds lists of the folder contents for the file browser. """
         self.dir_list.clear()
         for (root, dirs, files) in walk(self.current_dir):
             self.dir_list.extend(dirs)
@@ -174,6 +180,7 @@ class GuildBrowser:
                 self.slot_types.append(1)
 
     async def load_navigation(self, message):
+        """ Adds all the reactions to the browser message the user can navigate the browser with. """
         self.id = self.window_message.id
         await self.window_message.add_reaction("\u21A9")  # Back
         await self.window_message.add_reaction("\u0030\u20E3")  # 0

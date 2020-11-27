@@ -49,7 +49,7 @@ STATUS_TEXT_PLAYING = [
 QUESTION_TRIGGER = [
     "what", "wanna", "how", "may", "has", "have", "will", "should",
     "do", "does", "can", "am", "is", "are", "did", "could", "would",
-    "why"
+    "why", "you", "u"
 ]
 
 QUESTION_REPLY = [
@@ -174,6 +174,6 @@ SIGNATURE = '''
 | '__/ _` |/ _ \/ __|/ _ \| |_| __|
 | | | (_| |  __/\__ \ (_) |  _| |_ 
 |_|  \__,_|\___||___/\___/|_|  \__|
-          Maon v20.11.22
+          Maon v20.11.27
 '''
-VERSION = "Maon  v20.11.22"
+VERSION = "Maon  v20.11.27"
