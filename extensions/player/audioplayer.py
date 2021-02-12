@@ -70,8 +70,9 @@ class AudioPlayer:
 
                 if track["track_type"] != "sfx":
                     self.voice_client.source.volume = self.volume
-                    await self.message.send(":cd: Now playing: {}, at {}% volume.".format(
-                        track.get("title"), (int(self.volume * 100))))
+                    if self.looping != "song":
+                        await self.message.send(":cd: Now playing: {}, at {}% volume.".format(
+                            track.get("title"), (int(self.volume * 100))))
                 else:
                     self.voice_client.source.volume = self.sfx_volume
                 self.now_playing = track.get("title")
