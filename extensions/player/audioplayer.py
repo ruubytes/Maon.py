@@ -27,9 +27,9 @@ class AudioPlayer:
         self.next = asyncio.Event()
         self.running = True
 
-        print("[{}|{}] Creating audioplayer...".format(self.message.guild.name, self.message.guild.id))
+        print("[{}] Creating audioplayer...".format(self.message.guild.name))
         self.player_task = self.client.loop.create_task(self.player_loop())
-        print("[{}|{}] Audioplayer created.".format(self.message.guild.name, self.message.guild.id))
+        print("[{}] Audioplayer created.".format(self.message.guild.name))
 
     async def player_loop(self):
         await self.client.wait_until_ready()
@@ -85,14 +85,14 @@ class AudioPlayer:
                     await self.queue.put(track)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
-            print("[{}|{}] Cancelling audioplayer...".format(self.message.guild.name, self.message.guild.id))
+            print("[{}] Cancelling audioplayer...".format(self.message.guild.name))
             self.running = False
             self.active_task.cancel()
             await self.voice_client.disconnect()
             return self.audio.destroy_player(self.message)
         
         except ClientException:
-            print("[{}|{}] ClientException - Cancelling audioplayer...".format(self.message.guild.name, self.message.guild.id))
+            print("[{}] ClientException - Cancelling audioplayer...".format(self.message.guild.name))
             self.running = False
             self.active_task.cancel()
             try:
@@ -107,8 +107,7 @@ class AudioPlayer:
         try:
             while self.running:
                 if len(self.message.guild.voice_client.channel.voice_states) < 2:
-                    print("[{}|{}] Users left the voice channel, destroying audioplayer.".format(self.message.guild.name,
-                                                                                                self.message.guild.id))
+                    print("[{}] Users left the voice channel, destroying audioplayer.".format(self.message.guild.name))
                     self.running = False
                     return await self.player_task.cancel()
                     #await self.voice_client.disconnect()
