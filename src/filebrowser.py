@@ -1,7 +1,8 @@
-from extensions.guildbrowser import guildbrowser
-from discord.ext import commands
-import configuration as config
 import login as login
+from src import guildbrowser
+from discord.ext import commands
+from configs import custom
+from configs import settings
 
 
 class FileBrowser(commands.Cog):
@@ -29,13 +30,13 @@ class FileBrowser(commands.Cog):
                 self.filebrowsers[message.guild.id] = guildbrowser.GuildBrowser(self.client, message, 0)
             else:
                 return await message.send(
-                    "There is an active file browser in the server right now. You can close it with `" + config.PREFIX[0] + "browse exit`")
+                    "There is an active file browser in the server right now. You can close it with `" + custom.PREFIX[0] + "browse exit`")
         elif folder.lower() in self.call_sfx:
             if message.guild.id not in self.filebrowsers:
                 self.filebrowsers[message.guild.id] = guildbrowser.GuildBrowser(self.client, message, 1)
             else:
                 return await message.send(
-                    "There is an active file browser in the server right now. You can close it with `" + config.PREFIX[0] + "browse exit`")
+                    "There is an active file browser in the server right now. You can close it with `" + custom.PREFIX[0] + "browse exit`")
         elif folder.lower() in self.call_close:
             if message.guild.id in self.filebrowsers:
                 self.filebrowsers[message.guild.id].filebrowser_task.cancel()
@@ -43,13 +44,13 @@ class FileBrowser(commands.Cog):
                 return await message.send("There is no active file browser at the moment.")
         else:
             return await message.send(
-                "You can browse the `sfx` or `music` folder, or close an existing browser with `exit`. Command: `" + config.PREFIX[0] + "browse <option>`")
+                "You can browse the `sfx` or `music` folder, or close an existing browser with `exit`. Command: `" + custom.PREFIX[0] + "browse <option>`")
 
     # ═══ Helper Methods ═══════════════════════════════════════════════════════════════════════════════════════════════
     def browser_exit(self, message):
         if message.guild.id in self.filebrowsers:
             del self.filebrowsers[message.guild.id]
-            print("[{}|{}] File browser destroyed.".format(message.guild.name, message.guild.id))
+            print("[{}] File browser destroyed.".format(message.guild.name))
         else:
             print("Skipped something important")
 
@@ -57,7 +58,7 @@ class FileBrowser(commands.Cog):
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         if not user.id == login.MAON_ID:
-            if (reaction.emoji in config.CMD_SLOT_REACTIONS) or (reaction.emoji in config.CMD_NAV_REACTIONS):
+            if (reaction.emoji in settings.CMD_SLOT_REACTIONS) or (reaction.emoji in settings.CMD_NAV_REACTIONS):
                 if reaction.message.guild.id in self.filebrowsers:
                     if reaction.message.id == self.filebrowsers[reaction.message.guild.id].id:
                         await self.filebrowsers[reaction.message.guild.id].cmd_queue.put(reaction)
@@ -67,7 +68,7 @@ class FileBrowser(commands.Cog):
     async def on_reaction_remove(self, reaction, user):
         if not user.id == login.MAON_ID:
             if reaction.message.guild.id in self.filebrowsers:
-                if (reaction.emoji in config.CMD_SLOT_REACTIONS) or (reaction.emoji in config.CMD_NAV_REACTIONS):
+                if (reaction.emoji in settings.CMD_SLOT_REACTIONS) or (reaction.emoji in settings.CMD_NAV_REACTIONS):
                     if reaction.message.id == self.filebrowsers[reaction.message.guild.id].id:
                         await self.filebrowsers[reaction.message.guild.id].cmd_queue.put(reaction)
 

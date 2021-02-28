@@ -1,10 +1,11 @@
 import os.path
 import asyncio
 import subprocess
-import configuration as config
+from configs import custom
+from configs import settings
 from discord import Embed
 from discord.ext import commands
-from extensions.player import audioplayer
+from src import audioplayer
 from youtube_dl import YoutubeDL
 from youtube_dl.utils import DownloadError
 from tinytag import TinyTag, TinyTagException
@@ -43,9 +44,9 @@ class Audio(commands.Cog):
         
         # Look up video_id in cached_songs dictionary and build a track if an entry exists.
         filename = self.cached_songs.get(video_id)
-        if (filename is not None) and (os.path.exists(config.TEMP_PATH + filename)):
+        if (filename is not None) and (os.path.exists(settings.TEMP_PATH + filename)):
             track_title = filename[:len(filename) - 16]
-            track_url = config.TEMP_PATH + filename
+            track_url = settings.TEMP_PATH + filename
             track = {"title": track_title, "url": track_url, "track_type": "music", "message": message}
 
             await self.track_queue.put(track)
@@ -58,10 +59,10 @@ class Audio(commands.Cog):
 
     async def prep_local_track(self, message, url: str):
         """ Builds local track information for the audioplayer. """
-        tag = TinyTag.get(config.MUSIC_PATH + url)
+        tag = TinyTag.get(settings.MUSIC_PATH + url)
         if tag.title is None:
             tag.title = url
-        track = {"title": tag.title, "url": config.MUSIC_PATH + url, "track_type": "music", "message": message}
+        track = {"title": tag.title, "url": settings.MUSIC_PATH + url, "track_type": "music", "message": message}
         return await self.track_queue.put(track)
 
 
@@ -94,7 +95,7 @@ class Audio(commands.Cog):
                 video_info = {}
                 try:
                     video_info = await self.client.loop.run_in_executor(
-                        None, lambda: YoutubeDL(config.YTDL_INFO_OPTIONS).extract_info(req.get("url"), download=False))
+                        None, lambda: YoutubeDL(settings.YTDL_INFO_OPTIONS).extract_info(req.get("url"), download=False))
                 except DownloadError:
                     await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
                     continue
@@ -104,9 +105,9 @@ class Audio(commands.Cog):
                 
                 # Check if normal video has its duration stripped, sometimes this occures.
                 if (video_info.get("protocol") is None) and (video_info.get("duration") is None):
-                    video_info["duration"] = config.SONG_DURATION_MAX
+                    video_info["duration"] = settings.SONG_DURATION_MAX
 
-                if video_info.get("protocol") or (video_info.get("duration") >= config.SONG_DURATION_MAX) or (config.SONG_DURATION_MAX == 0):
+                if video_info.get("protocol") or (video_info.get("duration") >= settings.SONG_DURATION_MAX) or (settings.SONG_DURATION_MAX == 0):
                     track = {
                         "title": video_info.get("title"), 
                         "url": video_info.get("url"), 
@@ -116,7 +117,7 @@ class Audio(commands.Cog):
                         "video_info": video_info,
                         "time_stamp": time()
                     }
-                    if (video_info.get("duration") >= config.SONG_DURATION_MAX):
+                    if (video_info.get("duration") >= settings.SONG_DURATION_MAX):
                         formats = video_info.get("formats", [video_info])
                         for f in formats:
                             if f.get("format_id") == "251":
@@ -180,20 +181,20 @@ class Audio(commands.Cog):
         """ Removes items from the temp folder in FIFO order if a new addition would go over the 
         max-size stated in the configuration file """
         try:
-            size_in_mb = (sum(f.stat().st_size for f in Path(config.TEMP_PATH).glob('**/*') if f.is_file())) / (1024 * 1024)
+            size_in_mb = (sum(f.stat().st_size for f in Path(settings.TEMP_PATH).glob('**/*') if f.is_file())) / (1024 * 1024)
             filesize_in_mb = 0
             for f in req.get("formats"):
                 if f["format_id"] == req.get("format_id"):
                     if f.get("filesize"):
                         filesize_in_mb = (f.get("filesize") / (1024 * 1024))
-                        if filesize_in_mb > config.TEMP_FOLDER_MAX_SIZE_IN_MB:
-                            raise OSError("[Audio Ext] Requested download is larger than the allowed size of the temp folder. ({} > {})".format(filesize_in_mb, config.TEMP_FOLDER_MAX_SIZE_IN_MB))
+                        if filesize_in_mb > settings.TEMP_FOLDER_MAX_SIZE_IN_MB:
+                            raise OSError("[Audio Ext] Requested download is larger than the allowed size of the temp folder. ({} > {})".format(filesize_in_mb, settings.TEMP_FOLDER_MAX_SIZE_IN_MB))
                         break
                     else:
                         break
             size_in_mb += filesize_in_mb
-            while (config.TEMP_FOLDER_MAX_SIZE_IN_MB < size_in_mb):
-                first_file = min(Path(config.TEMP_PATH).glob('**/*'), key=os.path.getmtime)
+            while (settings.TEMP_FOLDER_MAX_SIZE_IN_MB < size_in_mb):
+                first_file = min(Path(settings.TEMP_PATH).glob('**/*'), key=os.path.getmtime)
                 size_first_file = os.path.getsize(first_file)
                 os.remove(first_file)
                 size_in_mb -= size_first_file
@@ -207,7 +208,7 @@ class Audio(commands.Cog):
                 req = await self.download_queue.get()
                 message = req.get("message")
 
-                command = config.AUDIO_DOWNLOAD_CMD_DEFAULT
+                command = settings.AUDIO_DOWNLOAD_CMD_DEFAULT
                 command[10] = req.get("format_id")
                 command[11] = req.get("url")
 
@@ -226,7 +227,7 @@ class Audio(commands.Cog):
         # Load the cache first
         temp_list = {}
         try:
-            temp_list = listdir(config.TEMP_PATH)
+            temp_list = listdir(settings.TEMP_PATH)
             for filename in temp_list:
                 if filename.endswith(".mp3"):
                     video_id = filename[len(filename) - 15 : len(filename) - 4]
@@ -242,12 +243,12 @@ class Audio(commands.Cog):
                 # Find file by video_id because the ytdl library filters chars out, title != filename
                 track_title = ""
                 track_url = ""
-                temp_list = listdir(config.TEMP_PATH)
+                temp_list = listdir(settings.TEMP_PATH)
                 for filename in temp_list:
                     if filename.endswith(video_id + ".mp3"):
                         self.cached_songs[video_id] = filename
                         track_title = filename[:len(filename) - 16]
-                        track_url = config.TEMP_PATH + filename
+                        track_url = settings.TEMP_PATH + filename
 
                 if (track_title == "") or (track_url == ""):
                     message = req.get("message")
@@ -288,9 +289,9 @@ class Audio(commands.Cog):
                 "You can browse the music folder with `browse music`, if you're looking for something specific.")
         elif url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/") or url.startswith("https://m.youtube.com/"):
             await self.prep_link_track(message, url)
-        elif os.path.exists(config.MUSIC_PATH + url + ".mp3"):
+        elif os.path.exists(settings.MUSIC_PATH + url + ".mp3"):
             await self.prep_local_track(message, url + ".mp3")
-        elif os.path.exists(config.MUSIC_PATH + url + ".wav"):
+        elif os.path.exists(settings.MUSIC_PATH + url + ".wav"):
             await self.prep_local_track(message, url + ".wav")
         else:
             return await message.send("I need a Youtube link or file path to play.")
@@ -300,7 +301,7 @@ class Audio(commands.Cog):
         # Check if the requested track is within the cache folder or not because cached mp3s
         # should not have meta data. The track title is in the filename, though.
         track_title = ""
-        if url[:url.rfind("/") + 1] == config.TEMP_PATH:
+        if url[:url.rfind("/") + 1] == settings.TEMP_PATH:
             track_title = url[url.rfind("/") + 1 : len(url) - 16]
 
         else:
@@ -339,10 +340,10 @@ class Audio(commands.Cog):
         if url is None:
             return await message.send(
                 "You can browse the sfx folder with `browse sfx`, if you're looking for something specific.")
-        elif os.path.exists(config.SFX_PATH + url + ".mp3"):
-            track["url"] = config.SFX_PATH + url + ".mp3"
-        elif os.path.exists(config.SFX_PATH + url + ".wav"):
-            track["url"] = config.SFX_PATH + url + ".wav"
+        elif os.path.exists(settings.SFX_PATH + url + ".mp3"):
+            track["url"] = settings.SFX_PATH + url + ".mp3"
+        elif os.path.exists(settings.SFX_PATH + url + ".wav"):
+            track["url"] = settings.SFX_PATH + url + ".wav"
         else:
             return await message.send("Couldn't find the sound effect you were looking for...")
 
@@ -561,11 +562,11 @@ class Audio(commands.Cog):
                 for item in q_list:
                     playlist_description += "  `" + str(i).zfill(2) + "`: " + item.get("title") + "\n"
                     i += 1
-                    if i > config.PLAYLIST_MSG_MAX_LEN:
+                    if i > settings.PLAYLIST_MSG_MAX_LEN:
                         playlist_description += "  •\n  •\n  •"
                         break
 
-            playlist_embed = Embed(title=now_playing_str, description=playlist_description, color=config.COLOR_HEX)
+            playlist_embed = Embed(title=now_playing_str, description=playlist_description, color=custom.COLOR_HEX)
             return await message.send(embed=playlist_embed)
 
         else:
@@ -640,7 +641,7 @@ class Audio(commands.Cog):
                     if args[0] in ["clear", "delete", "del", "d", "remove", "rm", "r"] and (len(args) == 1):
                         self.players[message.guild.id].queue = asyncio.Queue()
                         return await message.send("I've cleared the playlist.")
-                    await message.send("Usage for my playlist command is `" + config.PREFIX[0] + "playlist <1 - " + str(config.PLAYLIST_MSG_MAX_LEN) + ">` if you want to prioritize a song.")   
+                    await message.send("Usage for my playlist command is `" + custom.PREFIX[0] + "playlist <1 - " + str(settings.PLAYLIST_MSG_MAX_LEN) + ">` if you want to prioritize a song.")   
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
@@ -648,16 +649,16 @@ class Audio(commands.Cog):
         """ Event listener for the prefix- and command-less sound effect functionality. """
         if message.guild.id in self.players:
             if message.channel == self.players[message.guild.id].message.channel:
-                if os.path.exists(config.SFX_PATH + message.content + ".mp3"):
-                    return await self.fb_sfx(message, config.SFX_PATH + message.content + ".mp3")
-                elif os.path.exists(config.SFX_PATH + message.content + ".wav"):
-                    return await self.fb_sfx(message, config.SFX_PATH + message.content + ".wav")
+                if os.path.exists(settings.SFX_PATH + message.content + ".mp3"):
+                    return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".mp3")
+                elif os.path.exists(settings.SFX_PATH + message.content + ".wav"):
+                    return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".wav")
 
     # ═══ Helper Methods ═══════════════════════════════════════════════════════════════════════════════════════════════
     def destroy_player(self, message):
         if message.guild.id in self.players:
             del self.players[message.guild.id]
-            print("[{}|{}] Audioplayer destroyed.".format(message.guild.name, message.guild.id))
+            print("[{}] Audioplayer destroyed.".format(message.guild.name))
 
 
 # ═══ Functions ════════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -665,7 +666,7 @@ async def parse_playlist_positions(args, list_length: int):
     positions = []
     for a in args:
         a = int(a)
-        if (a > 0) and (a <= config.PLAYLIST_MSG_MAX_LEN) and (a <= list_length) and (a not in positions):
+        if (a > 0) and (a <= settings.PLAYLIST_MSG_MAX_LEN) and (a <= list_length) and (a not in positions):
             positions.append(int(a))
     if len(positions) > 0:
         return positions

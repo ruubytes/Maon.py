@@ -10,18 +10,21 @@
 ### Python Cache ###
 __pycache__
 *.pyc
+__init__.py
 
 ### Login and Configuration ###
 login.py
-configuration.py
 
 ### Media Folder Contents ###
 downloads/
+img/
 music/
 sfx/
 temp/
-*.txt
 
-### Test Files ###
-__tests__/
-__errors__/
+### Playback histories and other stuff
+src/data/
+
+### Logs and notes
+src/logs/
+*.txt

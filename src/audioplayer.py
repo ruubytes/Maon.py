@@ -1,3 +1,6 @@
+import asyncio
+from configs import custom
+from configs import settings
 from async_timeout import timeout
 from discord import PCMVolumeTransformer
 from discord import FFmpegPCMAudio
@@ -5,8 +8,6 @@ from discord.errors import ClientException
 from youtube_dl import YoutubeDL
 from youtube_dl.utils import DownloadError
 from time import time
-import configuration as config
-import asyncio
 
 
 class AudioPlayer:
@@ -20,8 +21,8 @@ class AudioPlayer:
         self.voice_client = message.guild.voice_client
         self.volume = 0.1
         self.looping = "off"  # off / song / playlist
-        self.sfx_volume = config.SFX_VOLUME
-        self.player_timeout = config.PLAYER_TIMEOUT
+        self.sfx_volume = settings.SFX_VOLUME
+        self.player_timeout = settings.PLAYER_TIMEOUT
         self.now_playing = ""
         self.queue = asyncio.Queue()
         self.next = asyncio.Event()
@@ -56,8 +57,8 @@ class AudioPlayer:
                         PCMVolumeTransformer(
                             FFmpegPCMAudio(
                                 track.get("url"),
-                                before_options=config.BEFORE_ARGS,
-                                options=config.FFMPEG_OPTIONS
+                                before_options=settings.BEFORE_ARGS,
+                                options=settings.FFMPEG_OPTIONS
                             )
                         ),
                         after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set)
@@ -65,7 +66,7 @@ class AudioPlayer:
                     
                 else:
                     self.voice_client.play(PCMVolumeTransformer(
-                        FFmpegPCMAudio(track.get("url"), options=config.FFMPEG_OPTIONS)),
+                        FFmpegPCMAudio(track.get("url"), options=settings.FFMPEG_OPTIONS)),
                         after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set))
 
                 if track["track_type"] != "sfx":
@@ -124,7 +125,7 @@ class AudioPlayer:
         message = track.get("message")
         try:
             video_info = await self.client.loop.run_in_executor(
-                None, lambda: YoutubeDL(config.YTDL_INFO_OPTIONS).extract_info(track.get("original_url"), download=False))
+                None, lambda: YoutubeDL(settings.YTDL_INFO_OPTIONS).extract_info(track.get("original_url"), download=False))
 
             if video_info.get("protocol"):
                 track["url"] = video_info.get("url")
