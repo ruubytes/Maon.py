@@ -1,11 +1,12 @@
+import discord
+import asyncio
 from async_timeout import timeout
 from os.path import isdir
 from os.path import isfile
 from math import ceil
 from os import walk
-import configuration as config
-import discord
-import asyncio
+from configs import custom
+from configs import settings
 
 
 class GuildBrowser:
@@ -25,10 +26,10 @@ class GuildBrowser:
         self.id = 0
         if browser_type == 0:
             self.title = "Music Browser"
-            self.home_dir = config.MUSIC_PATH
+            self.home_dir = settings.MUSIC_PATH
         else:
             self.title = "Sound Effects (SFX) Browser"
-            self.home_dir = config.SFX_PATH
+            self.home_dir = settings.SFX_PATH
         self.current_dir = self.home_dir
         self.dir_list = []
         self.dir_items = []
@@ -38,14 +39,14 @@ class GuildBrowser:
         self.slot_types = []
 
         self.cmd_queue = asyncio.Queue()
-        self.cmd_slot_list = config.CMD_SLOT_REACTIONS
-        self.cmd_nav_list = config.CMD_NAV_REACTIONS
-        self.emoji_list = config.EMOJI_LIST
+        self.cmd_slot_list = settings.CMD_SLOT_REACTIONS
+        self.cmd_nav_list = settings.CMD_NAV_REACTIONS
+        self.emoji_list = settings.EMOJI_LIST
         self.running = True
 
-        print("[{}|{}] Creating file browser...".format(self.message.guild.name, self.message.guild.id))
+        print("[{}] Creating file browser...".format(self.message.guild.name))
         self.filebrowser_task = self.client.loop.create_task(self.filebrowser_window(message))
-        print("[{}|{}] File browser created.".format(self.message.guild.name, self.message.guild.id))
+        print("[{}] File browser created.".format(self.message.guild.name))
 
     async def filebrowser_window(self, message):
         """ The main loop of the file browser. Waits for a reaction and then updates the contents
@@ -64,8 +65,8 @@ class GuildBrowser:
                 await self.update(command)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
-            print("[{}|{}] Closing file browser...".format(self.message.guild.name, self.message.guild.id))
-            browser_embed = discord.Embed(title="Media browser closed.", description="", color=config.COLOR_HEX)
+            print("[{}] Closing file browser...".format(self.message.guild.name))
+            browser_embed = discord.Embed(title="Media browser closed.", description="", color=custom.COLOR_HEX)
             try:
                 await self.window_message.edit(content="", embed=browser_embed)
             except (discord.NotFound, RuntimeError):
@@ -146,7 +147,7 @@ class GuildBrowser:
         if self.current_page < self.max_pages:
             content += ":arrow_right:"
 
-        browser_embed = discord.Embed(title=self.title, description=content, color=config.COLOR_HEX)
+        browser_embed = discord.Embed(title=self.title, description=content, color=custom.COLOR_HEX)
         return await self.window_message.edit(content="", embed=browser_embed)
 
     async def set_content(self):

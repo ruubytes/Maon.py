@@ -1,14 +1,17 @@
+import os
+import psutil
+import sys
+import discord
 from asyncio import sleep
 from asyncio import CancelledError
 from discord.ext import commands
 from random import choice
 from shutil import rmtree
 from os import path
-import configuration as config
-import discord
-import os
-import psutil
-import sys
+from src import version
+from configs import custom
+from configs import settings
+
 
 class Admin(commands.Cog):
     __slots__ = ["client", "status_task", "running"]
@@ -50,18 +53,18 @@ class Admin(commands.Cog):
         """ Reloads selected or all extension modules. """
         if extension is None:
             return await message.send("Do you want me to reload a specific extension or `all`?")
-        elif extension.lower() in config.EXTENSION_LIST:
+        elif extension.lower() in settings.EXTENSION_LIST:
             try:
                 print("Reloading {} extension...".format(extension.lower()))
-                self.client.reload_extension(config.EXTENSION_PATH + extension.lower())
+                self.client.reload_extension(settings.EXTENSION_PATH + extension.lower())
                 return await message.send("{} extension reloaded!".format(extension.lower()))
             except discord.ext.commands.errors.ExtensionNotLoaded:
                 return await message.send("Cannot reload {} because it is disabled. Did you want to `enable` it?".format(extension.lower()))
         elif extension.lower() == "all":
-            for ext in config.EXTENSION_LIST:
+            for ext in settings.EXTENSION_LIST:
                 try:
                     print("Reloading {} extension...".format(ext))
-                    self.client.reload_extension(config.EXTENSION_PATH + ext)
+                    self.client.reload_extension(settings.EXTENSION_PATH + ext)
                 except discord.ext.commands.errors.ExtensionNotLoaded:
                     pass
             return await message.send("All extensions reloaded!")
@@ -74,19 +77,19 @@ class Admin(commands.Cog):
         """ Disables a specified `extension` or `all` of them. """
         if extension is None:
             return await message.send("Do you want me to disable a specific extension or `all`?")
-        elif extension.lower() in config.EXTENSION_LIST:
+        elif extension.lower() in settings.EXTENSION_LIST:
             try:
                 print("Disabling {} extension...".format(extension.lower()))
-                self.client.unload_extension(config.EXTENSION_PATH + extension.lower())
+                self.client.unload_extension(settings.EXTENSION_PATH + extension.lower())
                 return await message.send("{} extension disabled!".format(extension.lower()))
             except discord.ext.commands.errors.ExtensionNotLoaded:
                 return await message.send("{} extension is already disabled!".format(extension.lower()))
 
         elif extension.lower() == "all":
-            for ext in config.EXTENSION_LIST:
+            for ext in settings.EXTENSION_LIST:
                 try:
                     print("Disabling {} extension...".format(ext))
-                    self.client.reload_extension(config.EXTENSION_PATH + ext)
+                    self.client.reload_extension(settings.EXTENSION_PATH + ext)
                 except discord.ext.commands.errors.ExtensionNotLoaded:
                     pass
             return await message.send("All extensions disabled, I is small brain now and need to be restarted...")
@@ -101,19 +104,19 @@ class Admin(commands.Cog):
         if extension is None:
             return await message.send("Do you want me to enable a specific extension or `all`?")
 
-        elif extension.lower() in config.EXTENSION_LIST:
+        elif extension.lower() in settings.EXTENSION_LIST:
             try:
                 print("Enabling {} extension...".format(extension.lower()))
-                self.client.load_extension(config.EXTENSION_PATH + extension.lower())
+                self.client.load_extension(settings.EXTENSION_PATH + extension.lower())
                 return await message.send("{} extension enabled!".format(extension.lower()))
             except discord.ext.commands.errors.ExtensionAlreadyLoaded:
                 return await message.send("{} extension is already enabled!".format(extension.lower()))
 
         elif extension.lower() == "all":
-            for ext in config.EXTENSION_LIST:
+            for ext in settings.EXTENSION_LIST:
                 try:
                     print("Enabling {} extension...".format(ext))
-                    self.client.load_extension(config.EXTENSION_PATH + ext)
+                    self.client.load_extension(settings.EXTENSION_PATH + ext)
                 except discord.ext.commands.errors.ExtensionAlreadyLoaded:
                     pass
             return await message.send("All disabled extensions are now enabled!")
@@ -179,8 +182,8 @@ class Admin(commands.Cog):
     @commands.is_owner()
     async def scrub(self, message):
         """ Empties the music cache folder. """
-        if path.exists(config.TEMP_PATH):
-            rmtree(config.TEMP_PATH)
+        if path.exists(settings.TEMP_PATH):
+            rmtree(settings.TEMP_PATH)
         return await message.send("Temp folder has been scrubbed.")
 
     @commands.command()
@@ -193,17 +196,17 @@ class Admin(commands.Cog):
         while self.running:
             activity = choice(["listening", "watching", "playing"])
             if activity == "listening":
-                text = choice(config.STATUS_TEXT_LISTENING_TO)
+                text = choice(custom.STATUS_TEXT_LISTENING_TO)
                 await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.listening, name=text))
 
             elif activity == "watching":
-                text = choice(config.STATUS_TEXT_WATCHING)
+                text = choice(custom.STATUS_TEXT_WATCHING)
                 await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.watching, name=text))
 
             else:
-                text = choice(config.STATUS_TEXT_PLAYING)
+                text = choice(custom.STATUS_TEXT_PLAYING)
                 await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.playing, name=text))
 

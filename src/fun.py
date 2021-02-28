@@ -4,8 +4,8 @@ from urllib.error import URLError, HTTPError
 from discord.ext import commands
 from random import choice
 from random import randint
-import configuration as config
-
+from configs import custom
+from configs import settings
 
 class Fun(commands.Cog):
     __slots__ = "client"
@@ -24,7 +24,7 @@ class Fun(commands.Cog):
         """ Rolls a number ranging from 1 to `numbers`. Rolls as many times as integers within `numbers`.
         Max amount of rolls is 20. Can also be shortened to a multiplication like `20x5`. """
         if numbers is None:
-            return await message.send("You can roll the dice for example with `" + config.PREFIX[0] + " roll 20` or several times with `" + config.PREFIX[0] + " roll 20 x5` or `" + config.PREFIX[0] + " roll 20 20 20`")
+            return await message.send("You can roll the dice for example with `" + custom.PREFIX[0] + " roll 20` or several times with `" + custom.PREFIX[0] + " roll 20 x5` or `" + custom.PREFIX[0] + " roll 20 20 20`")
 
         numbers_list = list(numbers.split(" "))
         roll_list = []
@@ -169,27 +169,27 @@ class Fun(commands.Cog):
             return await message.send("I need a positive number to roll. :eyes:")
         """
 
-    @commands.command(aliases=config.QUESTION_TRIGGER)
+    @commands.command(aliases=custom.QUESTION_TRIGGER)
     async def eightball(self, message, *, question:str = None):
         """ Maon replies with a variation of yes / no / maybe to the eightball command or aliases specified
         in the config file. Default settings simulate an answer to a closed question. """  
         if question is None:
-            return await message.send(choice(config.DEFAULT_REPLY))
+            return await message.send(choice(custom.DEFAULT_REPLY))
         else:
             if "why" in message.invoked_with:
-                return await message.send(choice(config.QUESTION_REPLY_WHY))
-            return await message.send(choice(config.QUESTION_REPLY))
+                return await message.send(choice(custom.QUESTION_REPLY_WHY))
+            return await message.send(choice(custom.QUESTION_REPLY))
 
     @commands.command(aliases=["anime", "animu", "hentai", "manga"])
     async def mal(self, message, *args: str):
         """ Looks up an anime or manga title on MyAnimeList specified by search terms in `args`. """
         if not args:
             return await message.send(
-                "You can search for an anime if you provide me a search term. I'll look for the closest one I can find `" + config.PREFIX[0] + "anime <key words>`")
+                "You can search for an anime if you provide me a search term. I'll look for the closest one I can find `" + custom.PREFIX[0] + "anime <key words>`")
         
         query = "%20".join(args)
         for char in query:
-            if config.RFC_3986_CHARS.find(char) < 1:
+            if settings.RFC_3986_CHARS.find(char) < 1:
                 query = query.replace(char, "")
         
         if len(query) < 3:
@@ -199,9 +199,9 @@ class Fun(commands.Cog):
         
         try:
             if "manga" in message.invoked_with:
-                resp = request.urlopen(request.Request(config.MAL_API_MANGA_SEARCH_URL + query))
+                resp = request.urlopen(request.Request(settings.MAL_API_MANGA_SEARCH_URL + query))
             else:
-                resp = request.urlopen(request.Request(config.MAL_API_ANIME_SEARCH_URL + query))
+                resp = request.urlopen(request.Request(settings.MAL_API_ANIME_SEARCH_URL + query))
             data = loads(resp.read().decode("utf-8"))
             first_entry = data.get("results")[0]
             return await message.send(first_entry.get("url"))
@@ -214,8 +214,8 @@ class Fun(commands.Cog):
     async def on_message(self, message):
         """ Maon replies with a variation of "what?" if only her prefix is called without any command. """ 
         if message.author.id != self.client.user.id:
-            if message.content.lower() == config.PREFIX_FAST:
-                return await message.channel.send(choice(config.DEFAULT_REPLY))
+            if message.content.lower() == custom.PREFIX_FAST:
+                return await message.channel.send(choice(custom.DEFAULT_REPLY))
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
