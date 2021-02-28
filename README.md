@@ -106,6 +106,9 @@ Skips the currently playing song or sound effect.
 #### `loop <song / playlist / queue / q / off>`
 Loops the currently playing song, or the whole playlist or turns the looping function off.
 
+#### `shuffle <off>`
+Shuffles the current playlist after every song.
+
 #### `pause`
 Pauses the currently playing song or sound effect.
 

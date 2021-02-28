@@ -486,6 +486,30 @@ class Audio(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
+    async def shuffle(self, message, *, option: str = None):
+        """ Shuffle play; prefix shuffle off to turn it off """
+        # Check if there even is an active audioplayer for this guild
+        if message.guild.id not in self.players:
+            return await message.channel.send("I don't have an active audioplayer for this server.")
+
+        elif option is None:
+            # Check if shuffle is already on
+            if not self.players[message.guild.id].shuffle:
+                self.players[message.guild.id].shuffle = True
+                return await message.channel.send(":twisted_rightwards_arrows: I've turned shuffle play on.")
+            else:
+                return await message.channel.send(":twisted_rightwards_arrows: Shuffle play is on. You can turn it off with `{}shuffle off`".format(custom.PREFIX[0]))
+
+        elif (option == "off") or (option == "stop") or (option == "quit"):
+            # Check if shuffle is on
+            if not self.players[message.guild.id].shuffle:
+                return await message.channel.send("Shuffle play is off.")
+            else:
+                self.players[message.guild.id].shuffle = False
+                return await message.channel.send("I've turned shuffle play off.")
+
+    @commands.command()
+    @commands.guild_only()
     async def pause(self, message):
         """ Pauses the currently playing song. """ 
         if not message.guild.voice_client or not message.guild.voice_client.is_connected():

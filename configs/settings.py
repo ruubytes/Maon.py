@@ -109,6 +109,7 @@ COMMANDLIST_EMBED_MUSIC_PREP = [
     ":white_small_square: " + PREFIX[0] + "stop - Turns off the music player and makes Maon leave.\n",
     ":white_small_square: " + PREFIX[0] + "skip - Skips the current song.\n",
     ":white_small_square: " + PREFIX[0] + "loop <song / playlist / off> - Loops the current song or playlist.\n",
+    ":white_small_square: " + PREFIX[0] + "shuffle <off> - Shuffles the current playlist after every song.\n",
     ":white_small_square: " + PREFIX[0] + "volume <0 - 100> - Changes the music player volume.\n",
     ":white_small_square: " + PREFIX[0] + "pause - Pauses the music player.\n",
     ":white_small_square: " + PREFIX[0] + "resume - Resumes the music player.\n",
