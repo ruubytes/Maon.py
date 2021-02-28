@@ -10,7 +10,7 @@ class ErrorManager(commands.Cog):
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
     async def on_command_error(self, message, error):
-        if isinstance(error, commands.CommandNotFound) or isinstance(error, commands.NotOwner):
+        if isinstance(error, commands.CommandNotFound) or isinstance(error, commands.NotOwner) or isinstance(error, commands.NoPrivateMessage):
             return
         else:
             raise error

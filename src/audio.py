@@ -647,12 +647,15 @@ class Audio(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message):
         """ Event listener for the prefix- and command-less sound effect functionality. """
-        if message.guild.id in self.players:
-            if message.channel == self.players[message.guild.id].message.channel:
-                if os.path.exists(settings.SFX_PATH + message.content + ".mp3"):
-                    return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".mp3")
-                elif os.path.exists(settings.SFX_PATH + message.content + ".wav"):
-                    return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".wav")
+        if message.author.id != self.client.user.id:
+            if not message.guild:
+                return
+            elif message.guild.id in self.players:
+                if message.channel == self.players[message.guild.id].message.channel:
+                    if os.path.exists(settings.SFX_PATH + message.content + ".mp3"):
+                        return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".mp3")
+                    elif os.path.exists(settings.SFX_PATH + message.content + ".wav"):
+                        return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".wav")
 
     # ═══ Helper Methods ═══════════════════════════════════════════════════════════════════════════════════════════════
     def destroy_player(self, message):

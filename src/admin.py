@@ -18,6 +18,7 @@ class Admin(commands.Cog):
 
     def __init__(self, client):
         self.client = client
+        self.status_task = {}
         self.running = True
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -220,7 +221,8 @@ class Admin(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print("\tI'm ready!\n")
-        self.status_task = self.client.loop.create_task(self.status_loop())
+        if not self.status_task:
+            self.status_task = self.client.loop.create_task(self.status_loop())
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
