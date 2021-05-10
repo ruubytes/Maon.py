@@ -96,8 +96,11 @@ class Audio(commands.Cog):
                 try:
                     video_info = await self.client.loop.run_in_executor(
                         None, lambda: YoutubeDL(settings.YTDL_INFO_OPTIONS).extract_info(req.get("url"), download=False))
-                except DownloadError:
-                    await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
+                except DownloadError as e:
+                    if "looks truncated." in str(e):
+                        await message.channel.send("Your link looks incomplete, paste the command again, please.")
+                    else:
+                        await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
                     continue
 
                 # Find out if the video is a live stream or is longer than n seconds (config)
@@ -685,7 +688,6 @@ class Audio(commands.Cog):
     def destroy_player(self, message):
         if message.guild.id in self.players:
             del self.players[message.guild.id]
-            print("[{}] Audioplayer destroyed.".format(message.guild.name))
 
 
 # ═══ Functions ════════════════════════════════════════════════════════════════════════════════════════════════════════

@@ -26,5 +26,6 @@ temp/
 src/data/
 
 ### Logs and notes
+errors/
 src/logs/
 *.txt

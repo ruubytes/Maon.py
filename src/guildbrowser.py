@@ -44,7 +44,6 @@ class GuildBrowser:
         self.emoji_list = settings.EMOJI_LIST
         self.running = True
 
-        print("[{}] Creating file browser...".format(self.message.guild.name))
         self.filebrowser_task = self.client.loop.create_task(self.filebrowser_window(message))
         print("[{}] File browser created.".format(self.message.guild.name))
 

@@ -3,7 +3,7 @@ SFX_VOLUME = 0.3            # Volume of special effects
 PLAYER_TIMEOUT = 5400       # Seconds until Maon disconnects from a voice channel without any interaction
 SONG_DURATION_MAX = 600     # How long songs can be in seconds to be downloaded and stored locally
 
-DOWNLOAD_RATE_LIMITER = "3M"    # Limit the bandwith when Maon downloads songs (e.g. 3M for 3 MegaBytes / s)
+DOWNLOAD_RATE_LIMITER = "3M"    # Limit the bandwith for downloading songs (e.g. 3M for 3 MegaBytes / s)
 
 # Media Paths:
 MUSIC_PATH = "./music/"

@@ -29,7 +29,6 @@ class AudioPlayer:
         self.next = asyncio.Event()
         self.running = True
 
-        print("[{}] Creating audioplayer...".format(self.message.guild.name))
         self.player_task = self.client.loop.create_task(self.player_loop())
         print("[{}] Audioplayer created.".format(self.message.guild.name))
 

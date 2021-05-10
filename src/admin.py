@@ -26,7 +26,7 @@ class Admin(commands.Cog):
     @commands.is_owner()
     async def shutdown(self, message):
         """ Shuts down Maon gracefully by first logging out and closing all event loops. """
-        await self.client.logout()
+        #await self.client.logout()
         await self.client.close()
         try:
             raise SystemExit
@@ -38,7 +38,7 @@ class Admin(commands.Cog):
     async def restart(self, message):
         """ Restarts Maon by killing all connections and then restarts the process with the same 
         arguments. """
-        await self.client.logout()
+        #await self.client.logout()
         await self.client.close()
         p = psutil.Process(os.getpid())
         for handler in p.open_files() + p.connections():
@@ -194,22 +194,32 @@ class Admin(commands.Cog):
 
     async def status_loop(self):
         """ Updates the status message of Maon hourly. """
+        server_count_flag = 0
         while self.running:
             activity = choice(["listening", "watching", "playing"])
-            if activity == "listening":
+            if server_count_flag == 0:
+                text = "on " + str(len(self.client.guilds)) + " servers!"
+                await self.client.change_presence(activity=discord.Activity(
+                    type=discord.ActivityType.playing, name=text))
+                server_count_flag = 1
+
+            elif activity == "listening":
                 text = choice(custom.STATUS_TEXT_LISTENING_TO)
                 await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.listening, name=text))
+                server_count_flag = 0
 
             elif activity == "watching":
                 text = choice(custom.STATUS_TEXT_WATCHING)
                 await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.watching, name=text))
+                server_count_flag = 0
 
             else:
                 text = choice(custom.STATUS_TEXT_PLAYING)
                 await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.playing, name=text))
+                server_count_flag = 0
 
             try:
                 await sleep(3600)
