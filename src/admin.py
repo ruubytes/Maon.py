@@ -26,7 +26,6 @@ class Admin(commands.Cog):
     @commands.is_owner()
     async def shutdown(self, message):
         """ Shuts down Maon gracefully by first logging out and closing all event loops. """
-        #await self.client.logout()
         await self.client.close()
         try:
             raise SystemExit
@@ -38,7 +37,6 @@ class Admin(commands.Cog):
     async def restart(self, message):
         """ Restarts Maon by killing all connections and then restarts the process with the same 
         arguments. """
-        #await self.client.logout()
         await self.client.close()
         p = psutil.Process(os.getpid())
         for handler in p.open_files() + p.connections():
@@ -188,41 +186,50 @@ class Admin(commands.Cog):
         return await message.send("Temp folder has been scrubbed.")
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_messages=True)
+    async def echo(self, message, *, args:str = None):
+        """ Delete the message issuing the command and post the message text """
+        if args and message.author.id != self.client.id:
+            await message.channel.send(args)
+            return await message.message.delete()
+
+    @commands.command()
     async def emojiname(self, message, emoji):
         """ Returns the ASCII encode of the emoji sent with the message. """
         return await message.send(emoji.encode('ascii', 'namereplace'))
 
     async def status_loop(self):
         """ Updates the status message of Maon hourly. """
-        server_count_flag = 0
+        server_count_flag:int = 0
         while self.running:
             activity = choice(["listening", "watching", "playing"])
-            if server_count_flag == 0:
+            
+            if server_count_flag >= 5:
                 text = "on " + str(len(self.client.guilds)) + " servers!"
                 await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.playing, name=text))
-                server_count_flag = 1
+                server_count_flag = 0
 
             elif activity == "listening":
                 text = choice(custom.STATUS_TEXT_LISTENING_TO)
                 await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.listening, name=text))
-                server_count_flag = 0
 
             elif activity == "watching":
                 text = choice(custom.STATUS_TEXT_WATCHING)
                 await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.watching, name=text))
-                server_count_flag = 0
 
             else:
                 text = choice(custom.STATUS_TEXT_PLAYING)
                 await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.playing, name=text))
-                server_count_flag = 0
 
             try:
+                server_count_flag += 1
                 await sleep(3600)
+
             except CancelledError:
                 self.running = False
                 return
