@@ -12,6 +12,8 @@ class ErrorManager(commands.Cog):
     async def on_command_error(self, message, error):
         if isinstance(error, commands.CommandNotFound) or isinstance(error, commands.NotOwner) or isinstance(error, commands.NoPrivateMessage):
             return
+        elif isinstance(error, commands.MissingPermissions):
+            return print("User lacks permissions for this command.")
         else:
             raise error
 

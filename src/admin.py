@@ -186,6 +186,14 @@ class Admin(commands.Cog):
         return await message.send("Temp folder has been scrubbed.")
 
     @commands.command()
+    @commands.is_owner()
+    @commands.guild_only()
+    async def admin_echo(self, message, *, args:str = None):
+        if args and message.author.id != self.client.id:
+            await message.channel.send(args)
+            return await message.message.delete()
+
+    @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_messages=True)
     async def echo(self, message, *, args:str = None):
