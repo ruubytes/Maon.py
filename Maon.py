@@ -23,6 +23,7 @@ class Maon:
             owner_id=login.OWNER_ID,
             intents=self.set_intents()
         )
+        self.client.id = login.MAON_ID
         self.client.remove_command("help")
 
     def set_intents(self):
