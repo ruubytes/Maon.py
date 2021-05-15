@@ -10,6 +10,7 @@ from youtube_dl.utils import DownloadError
 from time import time
 from random import shuffle
 
+
 class AudioPlayer:
     __slots__ = ["client", "audio", "message", "voice_client", "volume", "looping", "sfx_volume", "player_timeout",
                  "now_playing", "queue", "next", "running", "player_task", "active_task", "shuffle"]
@@ -32,6 +33,7 @@ class AudioPlayer:
         self.player_task = self.client.loop.create_task(self.player_loop())
         print("[{}] Audioplayer created.".format(self.message.guild.name))
 
+
     async def player_loop(self):
         await self.client.wait_until_ready()
 
@@ -47,7 +49,17 @@ class AudioPlayer:
                     async with timeout(self.player_timeout):
                         track = await self.queue.get()
 
-                if track["track_type"] == "stream":     # stream / music / sfx
+                if track.get("track_type") == "stream":
+                    # In case of a repeating song or multiple requested songs, check if it is available in the cache
+                    #   now and overwrite if yes
+                    filename = self.audio.cached_songs.get(track.get("video_id"))
+                    if filename:
+                        track["title"] = filename[:len(filename) - 16]
+                        track["url"] = settings.TEMP_PATH + filename
+                        track["track_type"] = "music"
+                        print("[AUDIO] Changed stream to local file stream for " + track.get("title"))
+
+                if track.get("track_type") == "stream":     # stream / music / sfx
                     # Refresh the streaming url if the track has been too long in the Q and is in danger of expiring
                     if (time() - track.get("time_stamp")) >  600:
                         track = await self.refresh_url(track)
@@ -65,11 +77,17 @@ class AudioPlayer:
                     )
                     
                 else:
-                    self.voice_client.play(PCMVolumeTransformer(
-                        FFmpegPCMAudio(track.get("url"), options=settings.FFMPEG_OPTIONS)),
-                        after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set))
+                    self.voice_client.play(
+                        PCMVolumeTransformer(
+                            FFmpegPCMAudio(
+                                track.get("url"), 
+                                options=settings.FFMPEG_OPTIONS
+                            )
+                        ),
+                        after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set)
+                    )
 
-                if track["track_type"] != "sfx":
+                if track.get("track_type") != "sfx":
                     self.voice_client.source.volume = self.volume
                     if self.looping != "song":
                         await self.message.send(":cd: Now playing: {}, at {}% volume.".format(
@@ -131,6 +149,7 @@ class AudioPlayer:
 
         except asyncio.CancelledError:
             pass
+
 
     async def refresh_url(self, track):
         """ Refreshes the stream url of a track in case it is in danger of expiring. """

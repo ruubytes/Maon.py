@@ -7,20 +7,21 @@ COLOR_HEX = 0xf8d386
 
 # Activity Texts:
 STATUS_TEXT_LISTENING_TO = [
-    "chillhop",
-    "city pop",
-    "the flushing toilet",
+    "Spotify",
+    "SAMURAI",
+    "the toilet flush",
     "the cats outside",
-    "botcasts"
+    "botcasts",
+    "the server fans"
 ]
 
 STATUS_TEXT_WATCHING = [
     "the invisible members", 
     "the server",
     "boring late night shows",
-    "animu",
     "Wudy's shenanigans",
-    "the toilet paper cache"
+    "Americans fill bags with gas",
+    "cryptos bounce"
 ]
 
 STATUS_TEXT_PLAYING = [
@@ -30,14 +31,17 @@ STATUS_TEXT_PLAYING = [
     "Valheim",
     "Minecraft",
     "Counter-Strike: Global Offensive",
-    "Cyberpunk 2077"
+    "Cyberpunk 2077",
+    "Terraria",
+    "with a doge coin",
+    "with my tail"
 ]
 
 # Dialogue Texts:
 QUESTION_TRIGGER = [
     "what", "wanna", "how", "may", "has", "have", "will", "should",
     "do", "does", "can", "am", "is", "are", "did", "could", "would",
-    "why", "you", "u"
+    "why", "you", "u", "another", "anotha", "anutha"
 ]
 
 QUESTION_REPLY = [
