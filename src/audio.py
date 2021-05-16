@@ -13,6 +13,7 @@ from time import sleep
 from time import time
 from pathlib import Path
 from os import listdir
+from os import walk
 
 
 class Audio(commands.Cog):
@@ -36,24 +37,81 @@ class Audio(commands.Cog):
 
     async def prep_local_track(self, message, url:str):
         """ Builds local track information for the audioplayer and queues it. """
-        tag = TinyTag.get(settings.MUSIC_PATH + url)
-        if tag.title is None:
-            tag.title = url
 
         track = {
             "message": message,
-            "title": tag.title, 
-            "url": settings.MUSIC_PATH + url, 
+            "title": "", 
+            "url": "", 
             "track_type": "music", 
         }
-        await self.queue_track(message, track)
+
+        # Check if it is a valid file path
+        if os.path.isfile(settings.MUSIC_PATH + url):
+            tag = TinyTag.get(settings.MUSIC_PATH + url)
+            if tag.title is None:
+                tag.title = url
+
+            track["title"] = tag.title
+            track["url"] = settings.MUSIC_PATH + url
+
+            await self.queue_track(message, track)
+
+        # Check if it is a directory and play the whole folder
+        elif os.path.isdir(settings.MUSIC_PATH + url):
+            print("[AUDIO] Playing a folder!")
+            playlist = []
+            for pack in os.walk(settings.MUSIC_PATH + url):
+                for f in pack[2]:
+                    if f.endswith(".mp3") or f.endswith(".wav"):
+                        playlist.append(pack[0] + "/" + f)
+
+            if len(playlist) <= 0:
+                return await message.channel.send("The folder was empty.")            
+
+            for i in playlist:
+                playlist_track = {
+                    "message": message,
+                    "title": i[i.rfind("/") + 1 : len(i) - 4],
+                    "url": i,
+                    "track_type": "music"
+                }
+                await self.queue_track(message, playlist_track, True)
+
+            await message.channel.send(url + " has been added to the queue.")
+
+        # Check if it is a command like "history" or "music" whereas everything is queued
+        elif url == "music":
+            print("[AUDIO] Playing everything!")
+            playlist = []
+            for pack in os.walk(settings.MUSIC_PATH):
+                for f in pack[2]:
+                    if f.endswith(".mp3") or f.endswith(".wav"):
+                        playlist.append(pack[0] + "/" + f)
+
+            if len(playlist) <= 0:
+                return await message.channel.send("My music folder is empty.")
+
+            for i in playlist:
+                playlist_track = {
+                    "message": message,
+                    "title": i[i.rfind("/") + 1 : len(i) - 4],
+                    "url": i,
+                    "track_type": "music"
+                }
+                await self.queue_track(message, playlist_track, True)
+
+            await message.channel.send(":notes: Playing my whole music folder now! :notes:")
+
+        elif url == "history":
+            print("history queue not implemented yet.")
+            return await message.channel.send("Coming soon!")
 
     
-    async def queue_track(self, message, track):
+    async def queue_track(self, message, track, suppress: bool = False):
         if message.guild.id not in self.players:
             self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
         await self.players[message.guild.id].queue.put(track)
-        if message.guild.voice_client.is_playing() or message.guild.voice_client.is_paused():
+        if (message.guild.voice_client.is_playing() or message.guild.voice_client.is_paused()) and not suppress:
             await message.channel.send("{} has been added to the queue.".format(track.get("title")))
 
 
@@ -298,6 +356,10 @@ class Audio(commands.Cog):
             await self.prep_local_track(message, url + ".mp3")
         elif os.path.exists(settings.MUSIC_PATH + url + ".wav"):
             await self.prep_local_track(message, url + ".wav")
+        elif os.path.isdir(settings.MUSIC_PATH + url):
+            await self.prep_local_track(message, url)
+        elif url == "history" or url == "music":
+            await self.prep_local_track(message, url)
         else:
             return await message.send("I need a Youtube link or file path to play.")
 
@@ -505,7 +567,7 @@ class Audio(commands.Cog):
         if message.guild.id not in self.players:
             return await message.channel.send("I don't have an active audioplayer for this server.")
 
-        elif option is None:
+        elif option is None or option == "on":
             # Check if shuffle is already on
             if not self.players[message.guild.id].shuffle:
                 self.players[message.guild.id].shuffle = True
@@ -520,6 +582,9 @@ class Audio(commands.Cog):
             else:
                 self.players[message.guild.id].shuffle = False
                 return await message.channel.send("I've turned shuffle play off.")
+        
+        else:
+            return await message.channel.send("You can turn shuffle play on and off with `{}shuffle on / off`".format(custom.PREFIX[0]))
 
 
     @commands.command()
