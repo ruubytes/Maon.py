@@ -142,32 +142,6 @@ class Fun(commands.Cog):
             
             return await message.send("{} rolled {}".format(message.author.display_name, rolled_str) + ".")
 
-    
-        """
-        false_input_count = 0
-        roll_list = list(numbers.split(" "))
-        for num in roll_list:
-            try:
-                num = int(num)
-                if num < 1:
-                    raise ValueError
-
-            except (TypeError, ValueError):
-                false_input_count += 1
-        
-        if false_input_count >= len(roll_list):
-            await message.send("I need a positive number to roll. :eyes:")
-        """
-
-        """
-        try:
-            number = int(number)
-            if number < 1:
-                return await message.send("I need a positive number to roll.")
-            return await message.send("{} rolled `{}`.".format(message.author.name, randint(1, number)))
-        except (TypeError, ValueError):
-            return await message.send("I need a positive number to roll. :eyes:")
-        """
 
     @commands.command(aliases=custom.QUESTION_TRIGGER)
     async def eightball(self, message, *, question:str = None):
@@ -189,7 +163,7 @@ class Fun(commands.Cog):
         
         query = "%20".join(args)
         for char in query:
-            if settings.RFC_3986_CHARS.find(char) < 1:
+            if settings.RFC_3986_CHARS.find(char) < 0:
                 query = query.replace(char, "")
         
         if len(query) < 3:

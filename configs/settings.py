@@ -3,7 +3,7 @@ SFX_VOLUME = 0.3            # Volume of special effects
 PLAYER_TIMEOUT = 5400       # Seconds until Maon disconnects from a voice channel without any interaction
 SONG_DURATION_MAX = 1200    # How long songs can be in seconds to be downloaded and stored locally, 0 to turn it off
 
-DOWNLOAD_RATE_LIMITER = "1M"    # Limit the bandwith for downloading songs (e.g. 3M for 3 MegaBytes / s)
+DOWNLOAD_RATE_LIMITER = "2M"    # Limit the bandwith for downloading songs (e.g. 3M for 3 MegaBytes / s)
 
 # Media Paths:
 MUSIC_PATH = "./music/"
@@ -47,6 +47,14 @@ RFC_3986_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 MAL_API_ANIME_SEARCH_URL = "https://api.jikan.moe/v3/search/anime?q="
 MAL_API_MANGA_SEARCH_URL = "https://api.jikan.moe/v3/search/manga?q="
 
+# Server Manager Settings:
+SM_ENABLED = False
+SM_ACCEPTED_GUILDS = [
+    1234567890
+]
+SM_MINECRAFT_URL = ""
+SM_MINECRAFT_API = "https://api.mojang.com/users/profiles/minecraft/"
+
 # Browser Configuration:
 CMD_SLOT_REACTIONS = [
     "0\N{COMBINING ENCLOSING KEYCAP}", "1\N{COMBINING ENCLOSING KEYCAP}",
@@ -66,7 +74,7 @@ EMOJI_LIST = [
 
 # Maon's Extensions:
 EXTENSION_PATH = "src." # Use . instead of / for folders as required by Discord.py
-EXTENSION_LIST = ["admin", "audio", "basic", "errormanager", "filebrowser", "fun"]
+EXTENSION_LIST = ["admin", "audio", "basic", "errormanager", "filebrowser", "fun", "servermanager"]
 
 # Logging Settings:
 LOGGING_DISCORD_PATH = "./src/logs/discord"
