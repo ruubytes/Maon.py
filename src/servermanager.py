@@ -4,7 +4,7 @@ import requests
 from configs import custom
 from configs import settings
 from discord.ext import commands
-from json.decoder import JSONDecodeError
+from simplejson.errors import JSONDecodeError
 
 
 class ServerManager(commands.Cog):
