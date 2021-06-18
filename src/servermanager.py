@@ -104,8 +104,14 @@ class ServerManager(commands.Cog):
 
                 with open(settings.SM_MINECRAFT_URL + "whitelist.json", "w") as f:
                     json.dump(whitelist, f, indent=4)
-                
-                return await message.channel.send(f"{username} removed from the whitelist.")
+
+                result = await self.client.loop.run_in_executor(
+                    None, lambda: subprocess.run(settings.SM_MINECRAFT_WL_RELOAD, stdout=subprocess.PIPE).returncode
+                )
+                if result == 0:
+                    return await message.channel.send(f"{username} removed from the whitelist.")
+                else:
+                    return await message.channel.send(f"{username} should have been removed but I couldn't reload the whitelist.")
 
         return await message.channel.send(f"Could not find {username} in the whitelist.")
     
