@@ -54,6 +54,7 @@ SM_ACCEPTED_GUILDS = [
 ]
 SM_MINECRAFT_URL = ""
 SM_MINECRAFT_API = "https://api.mojang.com/users/profiles/minecraft/"
+SM_MINECRAFT_WL_RELOAD = ""
 
 # Browser Configuration:
 CMD_SLOT_REACTIONS = [

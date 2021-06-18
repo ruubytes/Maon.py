@@ -1,5 +1,6 @@
 import os
 import json
+import subprocess
 import requests
 from configs import custom
 from configs import settings
@@ -64,7 +65,13 @@ class ServerManager(commands.Cog):
         with open(settings.SM_MINECRAFT_URL + "whitelist.json", "w") as f:
             json.dump(whitelist, f, indent=4)
 
-        return await message.channel.send(f":thumbsup: {username} has been registered.")
+        result = await self.client.loop.run_in_executor(
+            None, lambda: subprocess.run(settings.SM_MINECRAFT_WL_RELOAD, stdout=subprocess.PIPE).returncode
+        )
+        if result == 0:
+            return await message.channel.send(f":thumbsup: {username} has been registered.")
+        else:
+            return await message.channel.send(f":grey_question: {username} should be registered now but I could not refresh the whitelist.")
 
 
     @commands.command(aliases=["unreg"])
