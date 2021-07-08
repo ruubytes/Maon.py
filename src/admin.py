@@ -2,6 +2,7 @@ import os
 import psutil
 import sys
 import discord
+from asyncio import Task
 from asyncio import sleep
 from asyncio import CancelledError
 from discord.ext import commands
@@ -18,7 +19,7 @@ class Admin(commands.Cog):
 
     def __init__(self, client):
         self.client = client
-        self.status_task = {}
+        self.status_task: Task = None
         self.running = True
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -152,9 +153,16 @@ class Admin(commands.Cog):
 
         try:
             if activity.lower().startswith("cancel"):
-                print("[{}|{}] Cancelling status loop...".format(message.guild.name, message.guild.id))
-                self.status_task.cancel()
+                if self.status_task is not None:
+                    print("[{}|{}] Cancelling status task...".format(message.guild.name, message.guild.id))
+                    self.status_task.cancel()
+                    self.status_task = None
                 return await message.send("Cancelled my status update loop.")
+            elif activity.lower().startswith("resume") or activity.lower().startswith("continue"):
+                if self.status_task is None:
+                    print("[{}|{}] Resuming status task.".format(message.guild.name, message.guild.id))
+                    self.status_task = self.client.loop.create_task(self.status_loop())
+                return await message.send("Resuming my status update loop.")
 
             text = activity.split(" ", 1)[1]
             if activity.lower().startswith("listening"):
