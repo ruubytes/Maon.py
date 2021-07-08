@@ -765,6 +765,17 @@ class Audio(commands.Cog):
                         return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".wav")
 
 
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member, before, after):
+        if member.id == self.client.user.id:
+            if after.channel is None:
+                try:
+                    self.players[before.channel.guild.id].player_task.cancel()
+                    print("[AUDIO] Got kicked! Cancelled audioplayer.")
+                except KeyError:
+                    pass
+
+
     # ═══ Helper Methods ═══════════════════════════════════════════════════════════════════════════════════════════════
     def destroy_player(self, message):
         if message.guild.id in self.players:

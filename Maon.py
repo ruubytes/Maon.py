@@ -32,6 +32,7 @@ class Maon:
         intents.typing = False
         intents.presences = False
         intents.members = True
+        intents.voice_states = True
         return intents
 
     def check_ids(self):
