@@ -166,6 +166,8 @@ class Audio(commands.Cog):
                 except DownloadError as e:
                     if "looks truncated." in str(e):
                         await message.channel.send("Your link looks incomplete, paste the command again, please.")
+                    elif "to confirm your age" in str(e):
+                        await message.channel.send("The video is age gated and I couldn't proxy my way around it.")
                     else:
                         await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
                     continue
