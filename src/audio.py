@@ -400,7 +400,7 @@ class Audio(commands.Cog):
         elif message.author.voice.channel != message.guild.voice_client.channel:
             return await message.channel.send("Come in here if you want me to play something. :eyes:")
 
-        await self.track_queue.put(track)
+        await self.queue_track(message, track)
 
 
     @commands.command(aliases=["s", "effects", "effect"])
@@ -463,9 +463,7 @@ class Audio(commands.Cog):
             tag.title = url[url.rfind("/") + 1:]
         track = {"title": tag.title, "url": url, "track_type": "sfx"}
 
-        if message.guild.id not in self.players:
-            self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
-        await self.players[message.guild.id].queue.put(track)
+        await self.queue_track(message, track)
 
 
     @commands.command(aliases=["v", "vol"])
