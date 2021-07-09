@@ -168,6 +168,8 @@ class Audio(commands.Cog):
                         await message.channel.send("Your link looks incomplete, paste the command again, please.")
                     elif "to confirm your age" in str(e):
                         await message.channel.send("The video is age gated and I couldn't proxy my way around it.")
+                    elif "HTTP Error 403" in str(e):
+                        await message.channel.send("I received a `forbidden` error, I was locked out from downloading meta data...\nYou could try again in a few seconds, though!")
                     else:
                         await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
                     continue
@@ -244,7 +246,8 @@ class Audio(commands.Cog):
                 if result == 0:
                     await self.cache_queue.put(req)
                 else:
-                    await message.channel.send("I ran into an error during my background download.")
+                    print(f"[AUDIO] Error during background download. Error code: {result}")
+                    await message.channel.send(f"I ran into an error during my background download.")
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
             pass

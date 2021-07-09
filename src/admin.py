@@ -154,13 +154,13 @@ class Admin(commands.Cog):
         try:
             if activity.lower().startswith("cancel"):
                 if self.status_task is not None:
-                    print("[{}|{}] Cancelling status task...".format(message.guild.name, message.guild.id))
+                    print("[{}] Cancelling status task...".format(message.guild.name))
                     self.status_task.cancel()
                     self.status_task = None
                 return await message.send("Cancelled my status update loop.")
             elif activity.lower().startswith("resume") or activity.lower().startswith("continue"):
                 if self.status_task is None:
-                    print("[{}|{}] Resuming status task.".format(message.guild.name, message.guild.id))
+                    print("[{}] Resuming status task.".format(message.guild.name))
                     self.status_task = self.client.loop.create_task(self.status_loop())
                 return await message.send("Resuming my status update loop.")
 
