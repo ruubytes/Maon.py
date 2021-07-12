@@ -342,6 +342,8 @@ class Audio(commands.Cog):
         specified in `url`. Maon joins the requestee's voice channel and parses the `url`. """ 
         if message.guild.voice_client is None:
             if message.author.voice:
+                if message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
+                    return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
                 await message.author.voice.channel.connect()
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
@@ -393,6 +395,8 @@ class Audio(commands.Cog):
         # Connection check
         if message.guild.voice_client is None:
             if message.author.voice:
+                if message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
+                    return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
                 await message.author.voice.channel.connect()
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
@@ -427,6 +431,8 @@ class Audio(commands.Cog):
         # Connection check
         if message.guild.voice_client is None:
             if message.author.voice:
+                if message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
+                    return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
                 await message.author.voice.channel.connect()
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
@@ -452,6 +458,8 @@ class Audio(commands.Cog):
         # Connection check
         if message.guild.voice_client is None:
             if message.author.voice:
+                if message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
+                    return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
                 await message.author.voice.channel.connect()
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
@@ -501,6 +509,8 @@ class Audio(commands.Cog):
         # Connection check
         if message.guild.voice_client is None:
             if message.author.voice:
+                if message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
+                    return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
                 await message.author.voice.channel.connect()
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
