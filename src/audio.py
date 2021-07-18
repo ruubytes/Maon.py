@@ -247,7 +247,8 @@ class Audio(commands.Cog):
                     await self.cache_queue.put(req)
                 else:
                     print(f"[AUDIO] Error during background download. Error code: {result}")
-                    await message.channel.send(f"I ran into an error during my background download.")
+                    self.still_preparing.remove(req.get("video_id"))
+                    await message.channel.send(f"Background caching of the song failed, I probably got denied access.")
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
             pass

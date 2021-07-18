@@ -41,7 +41,7 @@ STATUS_TEXT_PLAYING = [
 QUESTION_TRIGGER = [
     "what", "wanna", "how", "may", "has", "have", "will", "should",
     "do", "does", "can", "am", "is", "are", "did", "could", "would",
-    "why", "you", "u", "another", "anotha", "anutha"
+    "why", "you", "u", "another", "anotha", "anutha", "was", "were"
 ]
 
 QUESTION_REPLY = [
