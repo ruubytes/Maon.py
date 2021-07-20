@@ -2,6 +2,7 @@ import os
 import json
 import subprocess
 import requests
+from src import minfo
 from configs import custom
 from configs import settings
 from discord.ext import commands
@@ -9,11 +10,11 @@ from simplejson.errors import JSONDecodeError
 
 
 class ServerManager(commands.Cog):
-    __slots__ = "client"
-
+    __slots__ = ["client", "log"]
 
     def __init__(self, client: 'commands.Bot'):
         self.client: commands.Bot = client
+        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
     
 
     @commands.command(aliases=["reg", "whitelist"])

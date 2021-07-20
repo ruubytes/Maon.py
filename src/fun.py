@@ -6,18 +6,23 @@ from random import choice
 from random import randint
 from configs import custom
 from configs import settings
+from src import minfo
+
 
 class Fun(commands.Cog):
-    __slots__ = "client"
+    __slots__ = ["client", "log"]
 
     def __init__(self, client):
         self.client = client
+        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
+
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.command(aliases=["coin", "toss"])
     async def flip(self, message):
         coin = ["heads", "tails"]
         return await message.send("It's {}!".format(choice(coin)))
+
 
     @commands.command(aliases=["dice", "roll", "r"])
     async def rng(self, message, *, numbers: str = None):
@@ -154,6 +159,7 @@ class Fun(commands.Cog):
                 return await message.send(choice(custom.QUESTION_REPLY_WHY))
             return await message.send(choice(custom.QUESTION_REPLY))
 
+
     @commands.command(aliases=["anime", "animu", "hentai", "manga"])
     async def mal(self, message, *args: str):
         """ Looks up an anime or manga title on MyAnimeList specified by search terms in `args`. """
@@ -182,6 +188,7 @@ class Fun(commands.Cog):
 
         except (URLError, HTTPError):
             return await message.send("I could not fetch any information, maybe try again in a few seconds.")
+
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()

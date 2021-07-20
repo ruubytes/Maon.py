@@ -1,4 +1,5 @@
 import asyncio
+from src import minfo
 from configs import custom
 from configs import settings
 from async_timeout import timeout
@@ -10,28 +11,33 @@ from youtube_dl.utils import DownloadError
 from time import time
 from random import shuffle
 
+from discord.voice_client import VoiceClient
+from discord.message import Message
+from discord.ext.commands import Bot
+from src.audio import Audio
+
 
 class AudioPlayer:
-    __slots__ = ["client", "audio", "message", "voice_client", "volume", "looping", "sfx_volume", "player_timeout",
+    __slots__ = ["client", "log", "audio", "message", "voice_client", "volume", "looping", "sfx_volume", "player_timeout",
                  "now_playing", "queue", "next", "running", "player_task", "active_task", "shuffle"]
 
     def __init__(self, client, message):
-        self.client = client
-        self.audio = self.client.get_cog("Audio")
-        self.message = message
-        self.voice_client = message.guild.voice_client
-        self.volume = 0.1
-        self.looping = "off"  # off / song / playlist
-        self.shuffle = False
-        self.sfx_volume = settings.SFX_VOLUME
-        self.player_timeout = settings.PLAYER_TIMEOUT
-        self.now_playing = ""
-        self.queue = asyncio.Queue()
-        self.next = asyncio.Event()
-        self.running = True
-
-        self.player_task = self.client.loop.create_task(self.player_loop())
-        print("[{}] Audioplayer created.".format(self.message.guild.name))
+        self.client: Bot = client
+        self.audio: Audio = self.client.get_cog("Audio")
+        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0, True, True)
+        self.message: Message = message
+        self.voice_client: VoiceClient = message.guild.voice_client
+        self.volume: float = 0.1
+        self.looping: str = "off"  # off / song / playlist
+        self.shuffle: bool = False
+        self.sfx_volume: float = settings.SFX_VOLUME
+        self.player_timeout: int = settings.PLAYER_TIMEOUT
+        self.now_playing: str = ""
+        self.queue: asyncio.Queue = asyncio.Queue()
+        self.next: asyncio.Event = asyncio.Event()
+        self.running: bool = True
+        self.player_task: asyncio.Task = self.client.loop.create_task(self.player_loop())
+        self.log.info(f"{self.message.guild.name}: Audioplayer created.")
 
 
     async def player_loop(self):
@@ -57,7 +63,7 @@ class AudioPlayer:
                         track["title"] = filename[:len(filename) - 16]
                         track["url"] = settings.TEMP_PATH + filename
                         track["track_type"] = "music"
-                        print("[AUDIO] Changed stream to local file stream for " + track.get("title"))
+                        self.log.debug(f"{self.message.guild.name}: Changed stream to local file stream for {track.get('title')}")
 
                 if track.get("track_type") == "stream":     # stream / music / sfx
                     # Refresh the streaming url if the track has been too long in the Q and is in danger of expiring
@@ -116,14 +122,14 @@ class AudioPlayer:
                 
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
-            print("[{}] Cancelling audioplayer...".format(self.message.guild.name))
+            self.log.info(f"{self.message.guild.name}: Cancelling audioplayer...")
             self.running = False
             self.active_task.cancel()
             await self.voice_client.disconnect()
             return self.audio.destroy_player(self.message)
         
         except ClientException:
-            print("[{}] ClientException - Cancelling audioplayer...".format(self.message.guild.name))
+            self.log.error(f"{self.message.guild.name}: ClientException - Cancelling audioplayer...")
             self.running = False
             self.active_task.cancel()
             try:
@@ -138,7 +144,7 @@ class AudioPlayer:
         try:
             while self.running:
                 if len(self.message.guild.voice_client.channel.voice_states) < 2:
-                    print("[{}] Users left the voice channel, destroying audioplayer.".format(self.message.guild.name))
+                    self.log.info(f"{self.message.guild.name}: Users left the voice channel, destroying audioplayer.")
                     self.running = False
                     return await self.player_task.cancel()
                     #await self.voice_client.disconnect()

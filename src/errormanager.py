@@ -1,11 +1,14 @@
 from discord.ext import commands
+from src import minfo
 
 
 class ErrorManager(commands.Cog):
-    __slots__ = "client"
+    __slots__ = ["client", "log"]
 
     def __init__(self, client):
         self.client = client
+        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
+
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
@@ -13,7 +16,7 @@ class ErrorManager(commands.Cog):
         if isinstance(error, commands.CommandNotFound) or isinstance(error, commands.NotOwner) or isinstance(error, commands.NoPrivateMessage):
             return
         elif isinstance(error, commands.MissingPermissions):
-            return print("User lacks permissions for this command.")
+            return self.log.error("I lack permissions for this command.")
         else:
             raise error
 

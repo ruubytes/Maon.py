@@ -7,16 +7,18 @@ from math import ceil
 from os import walk
 from configs import custom
 from configs import settings
+from src import minfo
 
 
 class GuildBrowser:
-    __slots__ = ["client", "audio", "filebrowser", "browser_type", "message", "channel", "window_message", "id",
+    __slots__ = ["client", "log", "audio", "filebrowser", "browser_type", "message", "channel", "window_message", "id",
                  "title", "home_dir", "current_dir", "dir_list", "dir_items", "current_page", "max_pages", "slot_names",
                  "slot_types", "cmd_queue", "cmd_reaction", "cmd_slot_list", "cmd_nav_list", "emoji_list", "running",
                  "filebrowser_task"]
 
     def __init__(self, client, message, browser_type: int):
         self.client = client
+        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
         self.audio = self.client.get_cog("Audio")
         self.filebrowser = self.client.get_cog("FileBrowser")
         self.browser_type = browser_type
@@ -45,7 +47,7 @@ class GuildBrowser:
         self.running = True
 
         self.filebrowser_task = self.client.loop.create_task(self.filebrowser_window(message))
-        print("[{}] File browser created.".format(self.message.guild.name))
+        self.log.info(f"{self.message.guild.name}: File browser created.")
 
     async def filebrowser_window(self, message):
         """ The main loop of the file browser. Waits for a reaction and then updates the contents
@@ -64,7 +66,7 @@ class GuildBrowser:
                 await self.update(command)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
-            print("[{}] Closing file browser...".format(self.message.guild.name))
+            self.log.info(f"{self.message.guild.name}: Closing file browser...")
             browser_embed = discord.Embed(title="Media browser closed.", description="", color=custom.COLOR_HEX)
             try:
                 await self.window_message.edit(content="", embed=browser_embed)
@@ -121,7 +123,7 @@ class GuildBrowser:
             return
 
         else:
-            return print("{} not recognized...")
+            return self.log.warn(f"{self.message.guild.name}: {command.emoji} not recognized...")
 
     async def display_window(self):
         """ Builds the embed message view of the file browser. """

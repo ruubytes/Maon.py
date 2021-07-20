@@ -1,6 +1,7 @@
 import os.path
 import asyncio
 import subprocess
+from src import minfo
 from configs import custom
 from configs import settings
 from discord import Embed
@@ -17,12 +18,13 @@ from os import walk
 
 
 class Audio(commands.Cog):
-    __slots__ = ["client", "players", "cached_songs", "running", "still_preparing",
+    __slots__ = ["client", "log", "players", "cached_songs", "running", "still_preparing",
                 "info_queue", "info_task", "download_queue", "download_task", "cache_queue",
                 "cache_task"]
 
     def __init__(self, client):
         self.client = client
+        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
         self.players = {}
         self.cached_songs = {}
         self.running = True
@@ -58,7 +60,7 @@ class Audio(commands.Cog):
 
         # Check if it is a directory and play the whole folder
         elif os.path.isdir(settings.MUSIC_PATH + url):
-            print("[AUDIO] Playing a folder!")
+            self.log.debug(f"{message.guild.name}: Playing a folder!")
             playlist = []
             for pack in os.walk(settings.MUSIC_PATH + url):
                 for f in pack[2]:
@@ -81,7 +83,7 @@ class Audio(commands.Cog):
 
         # Check if it is a command like "history" or "music" whereas everything is queued
         elif url == "music":
-            print("[AUDIO] Playing everything!")
+            self.log.debug(f"{message.guild.name}: Playing everything!")
             playlist = []
             for pack in os.walk(settings.MUSIC_PATH):
                 for f in pack[2]:
@@ -103,7 +105,7 @@ class Audio(commands.Cog):
             await message.channel.send(":notes: Playing my whole music folder now! :notes:")
 
         elif url == "history":
-            print("history queue not implemented yet.")
+            self.log.warn(f"{message.guild.name}: history queue not implemented yet.")
             return await message.channel.send("Coming soon!")
 
     
@@ -221,7 +223,7 @@ class Audio(commands.Cog):
                     
                     else:
                         # Stream and download at the same time
-                        print("[AUDIO] Going to stream and download at the same time...")
+                        self.log.debug(f"{message.guild.name}: Going to stream and download at the same time...")
                         self.still_preparing.append(req.get("video_id"))
                         await self.queue_track(message, track)
                         await self.download_queue.put(req)
@@ -246,7 +248,7 @@ class Audio(commands.Cog):
                 if result == 0:
                     await self.cache_queue.put(req)
                 else:
-                    print(f"[AUDIO] Error during background download. Error code: {result}")
+                    self.log.error(f"{message.guild.name}: Error during background download. Error code: {result}")
                     self.still_preparing.remove(req.get("video_id"))
                     await message.channel.send(f"Background caching of the song failed, I probably got denied access.")
 
@@ -265,7 +267,7 @@ class Audio(commands.Cog):
                     video_id = filename[len(filename) - 15 : len(filename) - 4]
                     self.cached_songs[video_id] = filename
         except FileNotFoundError:
-            print("[Audio] The temp folder does not exist, skipped loading the cache.")
+            self.log.info("The temp folder does not exist, skipped loading the cache.")
 
         try:
             while self.running:
@@ -285,11 +287,11 @@ class Audio(commands.Cog):
                 if (track_title == "") or (track_url == ""):
                     message = req.get("message")
                     await message.channel.send("I managed to lose the downloaded song within my cache... sorry!")
-                    print("[AUDIO] The download went missing in my cache... how?")
+                    self.log.error(f"{message.guild.name}: The download went missing in my cache... how?")
                     self.still_preparing.remove(video_id)
                     continue
 
-                print("[AUDIO] Background download finished for " + track_title)
+                self.log.debug(f"{message.guild.name}: Background download finished for {track_title}")
                 self.still_preparing.remove(video_id)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
@@ -324,11 +326,11 @@ class Audio(commands.Cog):
             return True
 
         except ValueError:
-            print("[Audio Ext] Temp folder is empty or does not exist.")
+            self.log.warn("Temp folder is empty or does not exist.")
             return True
 
         except OSError as e:
-            print(e)
+            self.log.error(e.strerror)
             await message.channel.send("The requested download is larger than what I'm allowed to have, defaulting to stream.")
             return False
 
@@ -785,7 +787,7 @@ class Audio(commands.Cog):
             if after.channel is None:
                 try:
                     self.players[before.channel.guild.id].player_task.cancel()
-                    print("[AUDIO] Got kicked! Cancelled audioplayer.")
+                    self.log.info(f"{before.channel.guild.name}: I got kicked from a voice channel!")
                 except KeyError:
                     pass
 

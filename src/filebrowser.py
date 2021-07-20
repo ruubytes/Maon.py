@@ -1,15 +1,17 @@
 import login as login
 from src import guildbrowser
+from src import minfo
 from discord.ext import commands
 from configs import custom
 from configs import settings
 
 
 class FileBrowser(commands.Cog):
-    __slots__ = ["client", "CALL_MUSIC", "CALL_SFX", "CALL_CLOSE", "filebrowsers"]
+    __slots__ = ["client", "log", "CALL_MUSIC", "CALL_SFX", "CALL_CLOSE", "filebrowsers"]
 
     def __init__(self, client):
         self.client = client
+        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
         self.call_music = ["music", "audio"]
         self.call_sfx = ["sfx", "effects", "sound effects"]
         self.call_close = ["exit", "quit", "close"]
@@ -50,9 +52,9 @@ class FileBrowser(commands.Cog):
     def browser_exit(self, message):
         if message.guild.id in self.filebrowsers:
             del self.filebrowsers[message.guild.id]
-            print("[{}] File browser destroyed.".format(message.guild.name))
+            self.log.info(f"{message.guild.name}: File browser destroyed.")
         else:
-            print("Skipped something important")
+            self.log.warn(f"{message.guild.name}: Skipped browser exit.")
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()

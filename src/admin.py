@@ -9,18 +9,20 @@ from discord.ext import commands
 from random import choice
 from shutil import rmtree
 from os import path
-from src import version
+from src import minfo
 from configs import custom
 from configs import settings
 
 
 class Admin(commands.Cog):
-    __slots__ = ["client", "status_task", "running"]
+    __slots__ = ["client", "log", "status_task", "running"]
 
     def __init__(self, client):
         self.client = client
+        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
         self.status_task: Task = None
         self.running = True
+
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.command(aliases=["kill"])
@@ -29,9 +31,11 @@ class Admin(commands.Cog):
         """ Shuts down Maon gracefully by first logging out and closing all event loops. """
         await self.client.close()
         try:
+            self.log.raw("\nMaybe I'll take over the world some other time.\n")
             raise SystemExit
         except SystemExit:
-            print("\nMaybe I'll take over the world some other time.\n")
+            pass
+            
 
     @commands.command()
     @commands.is_owner()
@@ -44,7 +48,7 @@ class Admin(commands.Cog):
             try:
                 os.close(handler.fd)
             except Exception as e:
-                print(e.__str__())
+                self.log.error(e.__str__())
         os.execl(sys.executable, sys.executable, *sys.argv)
 
     @commands.command()
@@ -55,7 +59,7 @@ class Admin(commands.Cog):
             return await message.send("Do you want me to reload a specific extension or `all`?")
         elif extension.lower() in settings.EXTENSION_LIST:
             try:
-                print("Reloading {} extension...".format(extension.lower()))
+                self.log.info("Reloading {} extension...".format(extension.lower()))
                 self.client.reload_extension(settings.EXTENSION_PATH + extension.lower())
                 return await message.send("{} extension reloaded!".format(extension.lower()))
             except discord.ext.commands.errors.ExtensionNotLoaded:
@@ -63,7 +67,7 @@ class Admin(commands.Cog):
         elif extension.lower() == "all":
             for ext in settings.EXTENSION_LIST:
                 try:
-                    print("Reloading {} extension...".format(ext))
+                    self.log.info("Reloading {} extension...".format(ext))
                     self.client.reload_extension(settings.EXTENSION_PATH + ext)
                 except discord.ext.commands.errors.ExtensionNotLoaded:
                     pass
@@ -79,7 +83,7 @@ class Admin(commands.Cog):
             return await message.send("Do you want me to disable a specific extension or `all`?")
         elif extension.lower() in settings.EXTENSION_LIST:
             try:
-                print("Disabling {} extension...".format(extension.lower()))
+                self.log.warn("Disabling {} extension...".format(extension.lower()))
                 self.client.unload_extension(settings.EXTENSION_PATH + extension.lower())
                 return await message.send("{} extension disabled!".format(extension.lower()))
             except discord.ext.commands.errors.ExtensionNotLoaded:
@@ -88,7 +92,7 @@ class Admin(commands.Cog):
         elif extension.lower() == "all":
             for ext in settings.EXTENSION_LIST:
                 try:
-                    print("Disabling {} extension...".format(ext))
+                    self.log.warn("Disabling {} extension...".format(ext))
                     self.client.reload_extension(settings.EXTENSION_PATH + ext)
                 except discord.ext.commands.errors.ExtensionNotLoaded:
                     pass
@@ -106,7 +110,7 @@ class Admin(commands.Cog):
 
         elif extension.lower() in settings.EXTENSION_LIST:
             try:
-                print("Enabling {} extension...".format(extension.lower()))
+                self.log.info("Enabling {} extension...".format(extension.lower()))
                 self.client.load_extension(settings.EXTENSION_PATH + extension.lower())
                 return await message.send("{} extension enabled!".format(extension.lower()))
             except discord.ext.commands.errors.ExtensionAlreadyLoaded:
@@ -115,7 +119,7 @@ class Admin(commands.Cog):
         elif extension.lower() == "all":
             for ext in settings.EXTENSION_LIST:
                 try:
-                    print("Enabling {} extension...".format(ext))
+                    self.log.info("Enabling {} extension...".format(ext))
                     self.client.load_extension(settings.EXTENSION_PATH + ext)
                 except discord.ext.commands.errors.ExtensionAlreadyLoaded:
                     pass
@@ -154,13 +158,13 @@ class Admin(commands.Cog):
         try:
             if activity.lower().startswith("cancel"):
                 if self.status_task is not None:
-                    print("[{}] Cancelling status task...".format(message.guild.name))
+                    self.log.warn("[{}] Cancelling status task...".format(message.guild.name))
                     self.status_task.cancel()
                     self.status_task = None
                 return await message.send("Cancelled my status update loop.")
             elif activity.lower().startswith("resume") or activity.lower().startswith("continue"):
                 if self.status_task is None:
-                    print("[{}] Resuming status task.".format(message.guild.name))
+                    self.log.info("[{}] Resuming status task.".format(message.guild.name))
                     self.status_task = self.client.loop.create_task(self.status_loop())
                 return await message.send("Resuming my status update loop.")
 
@@ -253,7 +257,7 @@ class Admin(commands.Cog):
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
     async def on_ready(self):
-        print("\tI'm ready!\n")
+        self.log.raw("\tI'm ready!\n")
         if not self.status_task:
             self.status_task = self.client.loop.create_task(self.status_loop())
 

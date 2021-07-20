@@ -2,15 +2,17 @@ import discord
 from discord.ext import commands
 from asyncio import sleep
 from src import version
+from src import minfo
 from configs import custom
 from configs import settings
 
 
 class Basic(commands.Cog):
-    __slots__ = ["client"]
+    __slots__ = ["client", "log"]
 
     def __init__(self, client):
         self.client = client
+        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
         self.corona_last_message = ""
         self.running = True
 
