@@ -14,7 +14,7 @@ from random import shuffle
 from discord.voice_client import VoiceClient
 from discord.message import Message
 from discord.ext.commands import Bot
-from src.audio import Audio
+from src import audio
 
 
 class AudioPlayer:
@@ -23,7 +23,7 @@ class AudioPlayer:
 
     def __init__(self, client, message):
         self.client: Bot = client
-        self.audio: Audio = self.client.get_cog("Audio")
+        self.audio: audio.Audio = self.client.get_cog("Audio")
         self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0, True, True)
         self.message: Message = message
         self.voice_client: VoiceClient = message.guild.voice_client
