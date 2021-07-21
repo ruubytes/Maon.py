@@ -15,7 +15,7 @@ class Maon:
     __slots__ = ["client", "log"]
 
     def __init__(self):
-        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True, "./src/logs/")
+        self.log = minfo.getLogger(self.__class__.__name__, 0, "./src/logs/")
         self.check_ids()
         self.log.raw(version.SIGNATURE)
         self.log.info(f"Discord.py Version: {discord.__version__}")

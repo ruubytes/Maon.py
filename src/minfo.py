@@ -19,42 +19,64 @@ class CColors:
 
 
 class Minfo():
-    def __init__(self, log_to_term: bool = True, log_to_file: bool = False, file_dir: str = "./logs/"):
+    def __init__(self, file_dir: str = "./logs/"):
         self.loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
-        self.term_flag: bool = log_to_term
-        self.file_flag: bool = log_to_file
         self.file_dir: str = file_dir
-        self.file_name: str = f"minfo-{datetime.date.today().strftime('%y%m%d')}.log"
+        self.file_name: str = ""
         self.f: TextIOWrapper = None
+        self.e_file_ready: asyncio.Event = asyncio.Event()
+        self.set_file()
         self.dispatchers: list['Minstance'] = []
         self.log_q: asyncio.Queue = asyncio.Queue()
         self.logging_task: asyncio.Task = self.loop.create_task(self.logging_loop(), name="logging_task")
+        self.dawn_task: asyncio.Task = self.loop.create_task(self.dawn_loop(), name="dawn_task")
+        atexit.register(self.dawn_task.cancel)
         atexit.register(self.logging_task.cancel)
+        
+
+    def set_file(self):
+        self.e_file_ready.clear()
+
+        if self.f:
+            self.f.close()
+        self.file_name = f"minfo-{datetime.date.today().strftime('%y%m%d')}.log"
+        self.f = open(self.file_dir + self.file_name, 'a+')
+
+        self.e_file_ready.set()
 
 
     async def logging_loop(self):
-        try:
-            if self.file_flag:
-                self.f = open(self.file_dir + self.file_name, 'a+')
-                    
+        try:    
             while True:
                 message = await self.log_q.get()
-                if self.term_flag:
-                    print(message.get("term_text"))
-                if self.file_flag:
+                await self.e_file_ready.wait()
+
+                print(message.get("term_text"))
+                try:
                     self.f.write(f"{message.get('file_text')}\n")
                     self.f.flush()
+                except ValueError:
+                    pass
 
         except asyncio.CancelledError:
             pass
 
         finally:
-            disp: Minstance
             for disp in self.dispatchers:
                 del disp
-            if self.file_flag:
-                if not self.f.closed:
-                    self.f.close()
+            if not self.f.closed:
+                self.f.close()
+
+    
+    async def dawn_loop(self):
+        try:
+            while True:
+                await asyncio.sleep(1200)
+                if f"minfo-{datetime.date.today().strftime('%y%m%d')}.log" != self.file_name:
+                    self.set_file()
+
+        except asyncio.CancelledError:
+            pass
 
 
 class Minstance():
@@ -109,19 +131,17 @@ class Minstance():
             asyncio.ensure_future(self._master.log_q.put(message))
 
 
-def getLogger(name: str, level: int = 1, log_to_term: bool = True, log_to_file: bool = False, file_dir: str = "./logs/"):
+def getLogger(name: str, level: int = 1, file_dir: str = "./logs/"):
     """Get a logging object.\n
     Level determines what will be written to file and / or console.\n
     0 logs from DEBUG to ERR, 1 logs INFO - ERR, 2 logs WARN - ERR, 3 logs ERR only.\n
-    If `log_to_term` is `True`, log to console.\n
-    If `log_to_file` is `True`, log to a file.\n
     Set the logs directory with `file_dir`. It should be set with the first getLogger call,
     subsequent file_dir changes will be ignored for now."""
     global _instance
     if _instance is None:
-        if not os.path.exists(file_dir) and log_to_file:
+        if not os.path.exists(file_dir):
             os.makedirs(file_dir, exist_ok=True)
-        _instance = Minfo(log_to_term, log_to_file, file_dir)
+        _instance = Minfo(file_dir)
 
     logger = Minstance(name, level)
     _instance.dispatchers.append(logger)

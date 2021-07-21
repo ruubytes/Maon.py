@@ -14,7 +14,7 @@ class ServerManager(commands.Cog):
 
     def __init__(self, client: 'commands.Bot'):
         self.client: commands.Bot = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
+        self.log = minfo.getLogger(self.__class__.__name__, 0)
     
 
     @commands.command(aliases=["reg", "whitelist"])

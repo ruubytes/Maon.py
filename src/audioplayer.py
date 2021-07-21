@@ -24,7 +24,7 @@ class AudioPlayer:
     def __init__(self, client, message):
         self.client: Bot = client
         self.audio: audio.Audio = self.client.get_cog("Audio")
-        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0, True, True)
+        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0)
         self.message: Message = message
         self.voice_client: VoiceClient = message.guild.voice_client
         self.volume: float = 0.1

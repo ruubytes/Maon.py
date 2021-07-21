@@ -18,7 +18,7 @@ class GuildBrowser:
 
     def __init__(self, client, message, browser_type: int):
         self.client = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
+        self.log = minfo.getLogger(self.__class__.__name__, 0)
         self.audio = self.client.get_cog("Audio")
         self.filebrowser = self.client.get_cog("FileBrowser")
         self.browser_type = browser_type

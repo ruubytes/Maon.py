@@ -11,7 +11,7 @@ class FileBrowser(commands.Cog):
 
     def __init__(self, client):
         self.client = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
+        self.log = minfo.getLogger(self.__class__.__name__, 0)
         self.call_music = ["music", "audio"]
         self.call_sfx = ["sfx", "effects", "sound effects"]
         self.call_close = ["exit", "quit", "close"]

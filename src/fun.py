@@ -14,7 +14,7 @@ class Fun(commands.Cog):
 
     def __init__(self, client):
         self.client = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0, True, True)
+        self.log = minfo.getLogger(self.__class__.__name__, 0)
 
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
