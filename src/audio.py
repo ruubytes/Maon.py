@@ -272,6 +272,7 @@ class Audio(commands.Cog):
         try:
             while self.running:
                 req = await self.cache_queue.get()
+                message = req.get("message")
                 video_id = req.get("video_id")
                 
                 # Find file by video_id because the ytdl library filters chars out, title != filename
@@ -285,7 +286,6 @@ class Audio(commands.Cog):
                         track_url = settings.TEMP_PATH + filename
 
                 if (track_title == "") or (track_url == ""):
-                    message = req.get("message")
                     await message.channel.send("I managed to lose the downloaded song within my cache... sorry!")
                     self.log.error(f"{message.guild.name}: The download went missing in my cache... how?")
                     self.still_preparing.remove(video_id)

@@ -18,7 +18,7 @@ class Admin(commands.Cog):
     __slots__ = ["client", "log", "status_task", "running"]
 
     def __init__(self, client):
-        self.client = client
+        self.client: commands.Bot = client
         self.log = minfo.getLogger(self.__class__.__name__, 0)
         self.status_task: Task = None
         self.running = True
@@ -27,9 +27,13 @@ class Admin(commands.Cog):
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.command(aliases=["kill"])
     @commands.is_owner()
-    async def shutdown(self, message):
+    async def shutdown(self, message = None):
         """ Shuts down Maon gracefully by first logging out and closing all event loops. """
+        for g in self.client.guilds:
+            if g.voice_client:
+                await g.voice_client.disconnect()
         await self.client.close()
+        
         try:
             self.log.raw("\nMaybe I'll take over the world some other time.\n")
             raise SystemExit
@@ -39,7 +43,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def restart(self, message):
+    async def restart(self, message = None):
         """ Restarts Maon by killing all connections and then restarts the process with the same 
         arguments. """
         await self.client.close()
