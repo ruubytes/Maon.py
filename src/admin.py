@@ -19,9 +19,9 @@ class Admin(commands.Cog):
 
     def __init__(self, client):
         self.client: commands.Bot = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0)
+        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0)
         self.status_task: Task = None
-        self.running = True
+        self.running: bool = True
 
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -29,16 +29,22 @@ class Admin(commands.Cog):
     @commands.is_owner()
     async def shutdown(self, message = None):
         """ Shuts down Maon gracefully by first logging out and closing all event loops. """
-        for g in self.client.guilds:
-            if g.voice_client:
-                await g.voice_client.disconnect()
+        vc: discord.VoiceClient
+        for vc in self.client.voice_clients:
+            await vc.disconnect()
         await self.client.close()
+
+        p = psutil.Process(os.getpid())
+        for handler in p.open_files() + p.connections():
+            try:
+                os.close(handler.fd)
+            except Exception as e:
+                self.log.error(e.__str__())
         
         try:
-            self.log.raw("\nMaybe I'll take over the world some other time.\n")
             raise SystemExit
         except SystemExit:
-            pass
+            print("\nMaybe I'll take over the world some other time.\n")
             
 
     @commands.command()
@@ -46,14 +52,20 @@ class Admin(commands.Cog):
     async def restart(self, message = None):
         """ Restarts Maon by killing all connections and then restarts the process with the same 
         arguments. """
+        vc: discord.VoiceClient
+        for vc in self.client.voice_clients:
+            await vc.disconnect()
         await self.client.close()
+
         p = psutil.Process(os.getpid())
         for handler in p.open_files() + p.connections():
             try:
                 os.close(handler.fd)
             except Exception as e:
                 self.log.error(e.__str__())
+
         os.execl(sys.executable, sys.executable, *sys.argv)
+
 
     @commands.command()
     @commands.is_owner()
@@ -78,6 +90,7 @@ class Admin(commands.Cog):
             return await message.send("All extensions reloaded!")
         else:
             return await message.send("I don't think I have an extension called {}.".format(extension.lower()))
+
 
     @commands.command()
     @commands.is_owner()
@@ -105,6 +118,7 @@ class Admin(commands.Cog):
         else:
             return await message.send("I don't think I have an extension called {}.".format(extension.lower()))
         
+
     @commands.command()
     @commands.is_owner()
     async def enable(self, message, *, extension: str = None):
@@ -132,6 +146,7 @@ class Admin(commands.Cog):
         else:
             return await message.send("I don't think I have an extension called {}.".format(extension.lower()))
 
+
     @commands.command(aliases=["clear", "delete"])
     @commands.is_owner()
     @commands.guild_only()
@@ -150,6 +165,7 @@ class Admin(commands.Cog):
                     return await message.send("How many messages do you want me to delete? (max 50 messages)")
             except (TypeError, ValueError):
                 return await message.send("How many messages do you want me to delete? (max 50 messages)")
+
 
     @commands.command()
     @commands.is_owner()
@@ -193,6 +209,7 @@ class Admin(commands.Cog):
         except IndexError:
             return await message.send("Usage: <prefix> status `listening`/`playing`/`watching` <text>")
 
+
     @commands.command()
     @commands.is_owner()
     async def scrub(self, message):
@@ -201,6 +218,7 @@ class Admin(commands.Cog):
             rmtree(settings.TEMP_PATH)
         return await message.send("Temp folder has been scrubbed.")
 
+
     @commands.command()
     @commands.is_owner()
     @commands.guild_only()
@@ -208,6 +226,7 @@ class Admin(commands.Cog):
         if args and message.author.id != self.client.id:
             await message.channel.send(args)
             return await message.message.delete()
+
 
     @commands.command()
     @commands.guild_only()
@@ -218,10 +237,12 @@ class Admin(commands.Cog):
             await message.channel.send(args)
             return await message.message.delete()
 
+
     @commands.command()
     async def emojiname(self, message, emoji):
         """ Returns the ASCII encode of the emoji sent with the message. """
         return await message.send(emoji.encode('ascii', 'namereplace'))
+
 
     async def status_loop(self):
         """ Updates the status message of Maon hourly. """
@@ -257,6 +278,7 @@ class Admin(commands.Cog):
             except CancelledError:
                 self.running = False
                 return
+
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()

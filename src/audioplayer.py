@@ -42,7 +42,6 @@ class AudioPlayer:
 
     async def player_loop(self):
         await self.client.wait_until_ready()
-
         # To close the player if the channel is empty
         self.active_task = self.client.loop.create_task(self.active_loop())
         track = None

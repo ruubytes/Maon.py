@@ -23,18 +23,18 @@ class Audio(commands.Cog):
                 "cache_task"]
 
     def __init__(self, client):
-        self.client = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0)
-        self.players = {}
+        self.client: commands.Bot = client
+        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0)
+        self.players: dict[int, audioplayer.AudioPlayer] = {}
         self.cached_songs = {}
-        self.running = True
-        self.still_preparing = []
-        self.info_queue = asyncio.Queue()
-        self.info_task = self.client.loop.create_task(self.info_loop())
-        self.download_queue = asyncio.Queue()
-        self.download_task = self.client.loop.create_task(self.download_loop())
-        self.cache_queue = asyncio.Queue()
-        self.cache_task = self.client.loop.create_task(self.cache_loop())
+        self.running: bool = True
+        self.still_preparing: list[str] = []
+        self.info_queue: asyncio.Queue = asyncio.Queue()
+        self.download_queue: asyncio.Queue = asyncio.Queue()
+        self.cache_queue: asyncio.Queue = asyncio.Queue()
+        self.info_task: asyncio.Task = self.client.loop.create_task(self.info_loop())
+        self.download_task: asyncio.Task = self.client.loop.create_task(self.download_loop())
+        self.cache_task: asyncio.Task = self.client.loop.create_task(self.cache_loop())
 
 
     async def prep_local_track(self, message, url:str):
@@ -155,6 +155,7 @@ class Audio(commands.Cog):
 
     async def info_loop(self):
         """ Gather information about the requested song and process it. """
+        await self.client.wait_until_ready()
         try:
             while self.running:
                 req = await self.info_queue.get()
@@ -233,7 +234,8 @@ class Audio(commands.Cog):
 
 
     async def download_loop(self):
-        """ Downloads a requested song and stores it in the music cache folder for ease of access and replayability """ 
+        """ Downloads a requested song and stores it in the music cache folder for ease of access and replayability """
+        await self.client.wait_until_ready() 
         try:
             while self.running:
                 req = await self.download_queue.get()
@@ -269,6 +271,7 @@ class Audio(commands.Cog):
         except FileNotFoundError:
             self.log.info("The temp folder does not exist, skipped loading the cache.")
 
+        await self.client.wait_until_ready()
         try:
             while self.running:
                 req = await self.cache_queue.get()
