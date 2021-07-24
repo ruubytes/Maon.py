@@ -1,3 +1,4 @@
+import discord
 import asyncio
 from src import minfo
 from src import admin
@@ -17,7 +18,8 @@ class Console(commands.Cog):
             "kill": self.shutdown,
             "quit": self.shutdown,
             "stop": self.shutdown,
-            "exit": self.shutdown
+            "exit": self.shutdown,
+            "restart": self.restart
         }
         self.console_task: asyncio.Task = self.client.loop.create_task(self.console_loop(), name="console_task")
 
@@ -46,6 +48,11 @@ class Console(commands.Cog):
     async def shutdown(self, argv: 'list[str]' = None):
         admin_cog: admin.Admin = self.client.get_cog("Admin")
         await admin_cog.shutdown()
+
+    
+    async def restart(self, argv: 'list[str]' = None):
+        admin_cog: admin.Admin = self.client.get_cog("Admin")
+        await admin_cog.restart()
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════

@@ -1,13 +1,17 @@
+import asyncio
+from discord import errors
 from discord.ext import commands
 from src import minfo
+from src import admin
 
 
 class ErrorManager(commands.Cog):
     __slots__ = ["client", "log"]
 
     def __init__(self, client):
-        self.client = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0)
+        self.client: commands.Bot = client
+        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0)
+        self.admin: admin.Admin = self.client.get_cog("Admin")
 
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════

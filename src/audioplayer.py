@@ -1,4 +1,5 @@
 import asyncio
+import traceback
 from src import minfo
 from configs import custom
 from configs import settings
@@ -125,8 +126,8 @@ class AudioPlayer:
             await self.voice_client.disconnect()
             return self.audio.destroy_player(self.message)
         
-        except ClientException:
-            self.log.error(f"{self.message.guild.name}: ClientException - Cancelling audioplayer...")
+        except ClientException as e:
+            self.log.error(f"{self.message.guild.name}: ClientException - Cancelling audioplayer...\n{traceback.format_exc()}")
             self.running = False
             self.active_task.cancel()
             try:
@@ -143,9 +144,7 @@ class AudioPlayer:
                 if len(self.message.guild.voice_client.channel.voice_states) < 2:
                     self.log.info(f"{self.message.guild.name}: Users left the voice channel, destroying audioplayer.")
                     self.running = False
-                    return await self.player_task.cancel()
-                    #await self.voice_client.disconnect()
-                    #return self.audio.destroy_player(self.message)
+                    return self.player_task.cancel()
                 
                 else:
                     await asyncio.sleep(10)
