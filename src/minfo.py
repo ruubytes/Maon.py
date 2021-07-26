@@ -64,8 +64,6 @@ class Minfo():
         finally:
             for disp in self.dispatchers:
                 del disp
-            if not self.f.closed:
-                self.f.close()
 
     
     async def dawn_loop(self):

@@ -34,13 +34,6 @@ class Admin(commands.Cog):
             await vc.disconnect()
         await self.client.close()
 
-        p = psutil.Process(os.getpid())
-        for handler in p.open_files() + p.connections():
-            try:
-                os.close(handler.fd)
-            except Exception as e:
-                self.log.error(e.__str__())
-        
         try:
             raise SystemExit
         except SystemExit:
