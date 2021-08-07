@@ -6,7 +6,7 @@ from src import minfo
 from configs import custom
 from configs import settings
 from discord.ext import commands
-from simplejson.errors import JSONDecodeError
+from json import JSONDecodeError
 
 
 class ServerManager(commands.Cog):

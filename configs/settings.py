@@ -1,9 +1,9 @@
 # Audio Settings:
 SFX_VOLUME = 0.25            # Volume of special effects
 PLAYER_TIMEOUT = 5400       # Seconds until Maon disconnects from a voice channel without any interaction
-SONG_DURATION_MAX = 1200    # How long songs can be in seconds to be downloaded and stored locally, 0 to turn it off
+SONG_DURATION_MAX = 3600    # How long songs can be in seconds to be downloaded and stored locally, 0 to turn it off
 
-DOWNLOAD_RATE_LIMITER = "2M"    # Limit the bandwith for downloading songs (e.g. 3M for 3 MegaBytes / s)
+DOWNLOAD_RATE_LIMITER = "3M"    # Limit the bandwith for downloading songs (e.g. 3M for 3 MegaBytes / s)
 
 # Media Paths:
 MUSIC_PATH = "./music/"
@@ -28,7 +28,8 @@ AUDIO_DOWNLOAD_CMD_DEFAULT = [
     "format id goes into 10",
     "url goes into 11", 
     "--limit-rate",
-    DOWNLOAD_RATE_LIMITER
+    DOWNLOAD_RATE_LIMITER,
+    "--embed-thumbnail"
 ]
 
 BEFORE_ARGS = "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10"
