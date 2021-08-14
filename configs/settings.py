@@ -112,6 +112,7 @@ COMMANDLIST_EMBED_BASIC_PREP = [
 
 COMMANDLIST_EMBED_MUSIC_PREP = [
     ":notes: ***Music Commands:***\n",
+    f":white_small_square: {PREFIX[0]}reset - In case the audio module gets stuck\n",
     f":white_small_square: {PREFIX[0]}browse <music / sfx> - Opens the file browser.\n",
     f":white_small_square: {PREFIX[0]}play <link / filepath / filename> - Plays a Youtube video or local file.\n",
     f":white_small_square: {PREFIX[0]}sfx <filepath / filename> - Plays a local sound effect.\n",
