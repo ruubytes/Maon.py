@@ -40,8 +40,8 @@ class Admin(commands.Cog):
             print("\nMaybe I'll take over the world some other time.\n")
             
 
-    @commands.command()
-    @commands.is_owner()
+    @commands.command(aliases=["reset", "repair"])
+    #@commands.is_owner()
     async def restart(self, message = None):
         """ Restarts Maon by killing all connections and then restarts the process with the same 
         arguments. """
