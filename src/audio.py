@@ -787,12 +787,13 @@ class Audio(commands.Cog):
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         if member.id == self.client.user.id:
-            if after.channel is None:
-                try:
-                    self.players[before.channel.guild.id].player_task.cancel()
-                    self.log.info(f"{before.channel.guild.name}: I got kicked from a voice channel!")
-                except KeyError:
-                    pass
+            pass
+        #    if after.channel is None:
+        #        try:
+        #            self.players[before.channel.guild.id].player_task.cancel()
+        #            self.log.info(f"{before.channel.guild.name}: I got kicked from a voice channel!")
+        #        except KeyError:
+        #            pass
 
 
     # ═══ Helper Methods ═══════════════════════════════════════════════════════════════════════════════════════════════
