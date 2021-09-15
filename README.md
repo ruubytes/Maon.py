@@ -209,7 +209,7 @@ Use the following in a command prompt from Maon's main directory:
 
     python Maon.py
 	
-[issues-shield]: https://img.shields.io/github/issues/RaeNon/Maon.py?style=flat-square
-[issues-url]: https://github.com/RaeNon/Maon.py/issues
-[issues-closed-shield]: https://img.shields.io/github/issues-closed/raesoft/Maon.py?color=green&style=flat-square
-[issues-closed-url]: https://github.com/RaeNon/Maon.py/issues?q=is%3Aissue+is%3Aclosed
+[issues-shield]: https://img.shields.io/github/issues-raw/raesoft/Maon.py?color=F8D386&style=flat-square
+[issues-url]: https://github.com/raesoft/Maon.py/issues
+[issues-closed-shield]: https://img.shields.io/github/issues-closed-raw/raesoft/Maon.py?color=AAF786&style=flat-square
+[issues-closed-url]: https://github.com/raesoft/Maon.py/issues?q=is%3Aissue+is%3Aclosed
