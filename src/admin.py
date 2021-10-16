@@ -276,6 +276,10 @@ class Admin(commands.Cog):
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
     async def on_ready(self):
+        if len(self.client.guilds) <= 10:
+            self.log.info("Member of guilds: ")
+            for g in self.client.guilds:
+                self.log.info(f"{g.id} | {g.name}")
         self.log.raw("\tI'm ready!\n")
         if not self.status_task:
             self.status_task = self.client.loop.create_task(self.status_loop())

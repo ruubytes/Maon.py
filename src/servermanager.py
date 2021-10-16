@@ -7,6 +7,7 @@ from configs import custom
 from configs import settings
 from discord.ext import commands
 from json import JSONDecodeError
+from simplejson import JSONDecodeError
 
 
 class ServerManager(commands.Cog):
@@ -34,7 +35,7 @@ class ServerManager(commands.Cog):
             if settings.RFC_3986_CHARS[:len(settings.RFC_3986_CHARS) - 20].find(char) < 0:
                 return await message.channel.send("Please only user valid characters.")
         if not os.path.exists(settings.SM_MINECRAFT_URL + "whitelist.json"):
-            return
+            return await message.channel.send(f"I can't find the minecraft server whitelist...")
 
         whitelist = {}
         with open(settings.SM_MINECRAFT_URL + "whitelist.json", "r") as f:
@@ -62,18 +63,22 @@ class ServerManager(commands.Cog):
             uuid = uuid_raw
         new_player = {"uuid": uuid, "name": data.get("name")}
         whitelist.append(new_player)
+        self.log.info(f"{message.author.name}#{message.author.discriminator} registered {username} for the minecraft server.")
 
         with open(settings.SM_MINECRAFT_URL + "whitelist.json", "w") as f:
             json.dump(whitelist, f, indent=4)
 
+        if not os.path.exists(f"{settings.SM_MINECRAFT_URL}whitelistreload"):
+            self.log.warn(f"{username} has been registered but the whitelist reload script is missing.")
+            return await message.channel.send(f":trident: {username} has been whitelisted for the minecraft server.")
+        
         result = await self.client.loop.run_in_executor(
             None, lambda: subprocess.run(settings.SM_MINECRAFT_WL_RELOAD, stdout=subprocess.PIPE).returncode
         )
-        if result == 0:
-            return await message.channel.send(f":thumbsup: {username} has been registered.")
-        else:
-            return await message.channel.send(f":grey_question: {username} should be registered now but I could not refresh the whitelist.")
-
+        if result != 0:
+            self.log.warn(f"{username} has been registered but I failed to reload the whitelist.")
+        await message.channel.send(f":trident: {username} has been whitelisted for the minecraft server.")
+        
 
     @commands.command(aliases=["unreg"])
     @commands.guild_only()
@@ -93,7 +98,7 @@ class ServerManager(commands.Cog):
             if settings.RFC_3986_CHARS[:len(settings.RFC_3986_CHARS) - 20].find(char) < 0:
                 return await message.channel.send("Please only user valid characters.")
         if not os.path.exists(settings.SM_MINECRAFT_URL + "whitelist.json"):
-            return
+            return await message.channel.send(f"I can't find the minecraft server whitelist...")
 
         whitelist = {}
         with open(settings.SM_MINECRAFT_URL + "whitelist.json", "r") as f:
@@ -106,13 +111,17 @@ class ServerManager(commands.Cog):
                 with open(settings.SM_MINECRAFT_URL + "whitelist.json", "w") as f:
                     json.dump(whitelist, f, indent=4)
 
+                self.log.info(f"{message.author.name}#{message.author.discriminator} removed {username} from the minecraft server.")
+
+                if not os.path.exists(f"{settings.SM_MINECRAFT_URL}whitelistreload"):
+                    return await message.channel.send(f"ミ:person_doing_cartwheel: {username} should be removed now but I could not refresh the whitelist.")
+        
                 result = await self.client.loop.run_in_executor(
                     None, lambda: subprocess.run(settings.SM_MINECRAFT_WL_RELOAD, stdout=subprocess.PIPE).returncode
                 )
-                if result == 0:
-                    return await message.channel.send(f"{username} removed from the whitelist.")
-                else:
-                    return await message.channel.send(f"{username} should have been removed but I couldn't reload the whitelist.")
+                if result != 0:
+                    self.log.warn(f"{username} has been removed but I failed to reload the whitelist.")
+                await message.channel.send(f"ミ:person_doing_cartwheel: {username} has been removed from the whitelist.")
 
         return await message.channel.send(f"Could not find {username} in the whitelist.")
     
