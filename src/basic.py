@@ -1,13 +1,18 @@
+import discord
 from discord.ext import commands
 from asyncio import sleep
-import configuration as config
-import discord
+from src import version
+from src import minfo
+from configs import custom
+from configs import settings
+
 
 class Basic(commands.Cog):
-    __slots__ = ["client"]
+    __slots__ = ["client", "log"]
 
     def __init__(self, client):
         self.client = client
+        self.log = minfo.getLogger(self.__class__.__name__, 0)
         self.corona_last_message = ""
         self.running = True
 
@@ -18,10 +23,12 @@ class Basic(commands.Cog):
 
     @commands.command(aliases=["info", "infocard", "version"])
     async def help(self, message):
+        """ Returns an embed message with all the available commands. If the owner is the requestee, also 
+        adds the admin commands. """ 
         if "version" in message.invoked_with:
-            return await message.send("`{}`".format(config.VERSION))
+            return await message.send("`{}`".format(version.VERSION))
 
-        commands_print_bot = config.COMMANDLIST_EMBED_PREP_START
+        commands_print_bot = settings.COMMANDLIST_EMBED_PREP_START
 
         # In case of footer with owner ID
         """
@@ -41,18 +48,18 @@ class Basic(commands.Cog):
         """
 
         if message.author.id == self.client.owner_id:
-            commands_print_bot += "".join(config.COMMANDLIST_EMBED_ADMIN_PREP)
+            commands_print_bot += "".join(settings.COMMANDLIST_EMBED_ADMIN_PREP)
         help_embed_bot = discord.Embed(
-                title=config.VERSION,
+                title=version.VERSION,
                 description=commands_print_bot,
-                color=config.COLOR_HEX)
+                color=custom.COLOR_HEX)
         help_embed_bot.set_thumbnail(url=self.client.user.avatar_url)
 
-        commands_print_basic = "".join(config.COMMANDLIST_EMBED_BASIC_PREP)
-        help_embed_basic = discord.Embed(description=commands_print_basic, color=config.COLOR_HEX)
+        commands_print_basic = "".join(settings.COMMANDLIST_EMBED_BASIC_PREP)
+        help_embed_basic = discord.Embed(description=commands_print_basic, color=custom.COLOR_HEX)
         
-        commands_print_music = "".join(config.COMMANDLIST_EMBED_MUSIC_PREP)
-        help_embed_music = discord.Embed(description=commands_print_music, color=config.COLOR_HEX)
+        commands_print_music = "".join(settings.COMMANDLIST_EMBED_MUSIC_PREP)
+        help_embed_music = discord.Embed(description=commands_print_music, color=custom.COLOR_HEX)
         
         await message.send(embed=help_embed_bot)
         await sleep(0.25)

@@ -1,21 +1,24 @@
+import discord
+import asyncio
 from async_timeout import timeout
 from os.path import isdir
 from os.path import isfile
 from math import ceil
 from os import walk
-import configuration as config
-import discord
-import asyncio
+from configs import custom
+from configs import settings
+from src import minfo
 
 
 class GuildBrowser:
-    __slots__ = ["client", "audio", "filebrowser", "browser_type", "message", "channel", "window_message", "id",
+    __slots__ = ["client", "log", "audio", "filebrowser", "browser_type", "message", "channel", "window_message", "id",
                  "title", "home_dir", "current_dir", "dir_list", "dir_items", "current_page", "max_pages", "slot_names",
                  "slot_types", "cmd_queue", "cmd_reaction", "cmd_slot_list", "cmd_nav_list", "emoji_list", "running",
                  "filebrowser_task"]
 
     def __init__(self, client, message, browser_type: int):
         self.client = client
+        self.log = minfo.getLogger(self.__class__.__name__, 0)
         self.audio = self.client.get_cog("Audio")
         self.filebrowser = self.client.get_cog("FileBrowser")
         self.browser_type = browser_type
@@ -25,10 +28,10 @@ class GuildBrowser:
         self.id = 0
         if browser_type == 0:
             self.title = "Music Browser"
-            self.home_dir = config.MUSIC_PATH
+            self.home_dir = settings.MUSIC_PATH
         else:
             self.title = "Sound Effects (SFX) Browser"
-            self.home_dir = config.SFX_PATH
+            self.home_dir = settings.SFX_PATH
         self.current_dir = self.home_dir
         self.dir_list = []
         self.dir_items = []
@@ -38,16 +41,17 @@ class GuildBrowser:
         self.slot_types = []
 
         self.cmd_queue = asyncio.Queue()
-        self.cmd_slot_list = config.CMD_SLOT_REACTIONS
-        self.cmd_nav_list = config.CMD_NAV_REACTIONS
-        self.emoji_list = config.EMOJI_LIST
+        self.cmd_slot_list = settings.CMD_SLOT_REACTIONS
+        self.cmd_nav_list = settings.CMD_NAV_REACTIONS
+        self.emoji_list = settings.EMOJI_LIST
         self.running = True
 
-        print("[{}|{}] Creating file browser...".format(self.message.guild.name, self.message.guild.id))
         self.filebrowser_task = self.client.loop.create_task(self.filebrowser_window(message))
-        print("[{}|{}] File browser created.".format(self.message.guild.name, self.message.guild.id))
+        self.log.info(f"{self.message.guild.name}: File browser created.")
 
     async def filebrowser_window(self, message):
+        """ The main loop of the file browser. Waits for a reaction and then updates the contents
+        accordingly. """ 
         self.running = True
         await self.client.wait_until_ready()
         await self.set_content()
@@ -62,8 +66,8 @@ class GuildBrowser:
                 await self.update(command)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
-            print("[{}|{}] Closing file browser...".format(self.message.guild.name, self.message.guild.id))
-            browser_embed = discord.Embed(title="Media browser closed.", description="", color=config.COLOR_HEX)
+            self.log.info(f"{self.message.guild.name}: Closing file browser...")
+            browser_embed = discord.Embed(title="Media browser closed.", description="", color=custom.COLOR_HEX)
             try:
                 await self.window_message.edit(content="", embed=browser_embed)
             except (discord.NotFound, RuntimeError):
@@ -72,6 +76,7 @@ class GuildBrowser:
             
 
     async def update(self, command):
+        """ Chains the functions to update the contents and edit the embed message. """
         if self.running:
             await self.execute(command)
             await self.set_content()
@@ -80,6 +85,7 @@ class GuildBrowser:
             self.filebrowser_task.cancel()
 
     async def execute(self, command):
+        """ Executes the requested command reaction and edits the browser contents accordingly. """
         if command.emoji in self.cmd_slot_list:         # A selection
             try:
                 i = self.cmd_slot_list.index(command.emoji)
@@ -117,9 +123,10 @@ class GuildBrowser:
             return
 
         else:
-            return print("{} not recognized...")
+            return self.log.warn(f"{self.message.guild.name}: {command.emoji} not recognized...")
 
     async def display_window(self):
+        """ Builds the embed message view of the file browser. """
         content = "Directory: " + self.current_dir[1:] + "\n\n"
         if self.current_dir != self.home_dir:
             content += ":leftwards_arrow_with_hook: Back\n"
@@ -141,10 +148,11 @@ class GuildBrowser:
         if self.current_page < self.max_pages:
             content += ":arrow_right:"
 
-        browser_embed = discord.Embed(title=self.title, description=content, color=config.COLOR_HEX)
+        browser_embed = discord.Embed(title=self.title, description=content, color=custom.COLOR_HEX)
         return await self.window_message.edit(content="", embed=browser_embed)
 
     async def set_content(self):
+        """ Builds lists of the folder contents for the file browser. """
         self.dir_list.clear()
         for (root, dirs, files) in walk(self.current_dir):
             self.dir_list.extend(dirs)
@@ -174,6 +182,7 @@ class GuildBrowser:
                 self.slot_types.append(1)
 
     async def load_navigation(self, message):
+        """ Adds all the reactions to the browser message the user can navigate the browser with. """
         self.id = self.window_message.id
         await self.window_message.add_reaction("\u21A9")  # Back
         await self.window_message.add_reaction("\u0030\u20E3")  # 0
