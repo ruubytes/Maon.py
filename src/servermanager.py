@@ -6,6 +6,7 @@ from src import minfo
 from configs import custom
 from configs import settings
 from discord.ext import commands
+from discord.ext.commands import CommandInvokeError
 from json import JSONDecodeError
 from simplejson import JSONDecodeError
 
@@ -76,8 +77,8 @@ class ServerManager(commands.Cog):
             None, lambda: subprocess.run(settings.SM_MINECRAFT_WL_RELOAD, stdout=subprocess.PIPE).returncode
         )
         if result != 0:
-            self.log.warn(f"{username} has been registered but I failed to reload the whitelist.")
-        await message.channel.send(f":trident: {username} has been whitelisted for the minecraft server.")
+            self.log.warn(f"{username} has been registered but I failed to reload the whitelist. Is the server running?")
+        await message.channel.send(f":trident: {username} has been whitelisted for the minecraft server. Have fun on your journey!")
         
 
     @commands.command(aliases=["unreg"])
@@ -114,14 +115,15 @@ class ServerManager(commands.Cog):
                 self.log.info(f"{message.author.name}#{message.author.discriminator} removed {username} from the minecraft server.")
 
                 if not os.path.exists(f"{settings.SM_MINECRAFT_URL}whitelistreload"):
+                    self.log.warn(f"{username} has been removed but the whitelist reload script is missing.")
                     return await message.channel.send(f"ミ:person_doing_cartwheel: {username} should be removed now but I could not refresh the whitelist.")
         
                 result = await self.client.loop.run_in_executor(
                     None, lambda: subprocess.run(settings.SM_MINECRAFT_WL_RELOAD, stdout=subprocess.PIPE).returncode
                 )
                 if result != 0:
-                    self.log.warn(f"{username} has been removed but I failed to reload the whitelist.")
-                await message.channel.send(f"ミ:person_doing_cartwheel: {username} has been removed from the whitelist.")
+                    self.log.warn(f"{username} has been removed but I failed to reload the whitelist. Is the server running?")
+                return await message.channel.send(f"ミ:person_doing_cartwheel: {username} has been removed from the whitelist.")
 
         return await message.channel.send(f"Could not find {username} in the whitelist.")
     
