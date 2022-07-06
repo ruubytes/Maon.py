@@ -1,3 +1,4 @@
+from asyncore import poll
 from json import loads
 from urllib import request
 from urllib.error import URLError, HTTPError
@@ -188,6 +189,79 @@ class Fun(commands.Cog):
 
         except (URLError, HTTPError):
             return await message.send("I could not fetch any information, maybe try again in a few seconds.")
+
+
+    @commands.command(aliases=["umfrage"])
+    async def poll(self, message, *args: str):
+        if len(args) <= 0:
+            await message.send(f"You can create a simple yes / no poll with  `{custom.PREFIX[0]}poll Do you like cats?`\n\nOr you can create a poll with multiple choices like this  `{custom.PREFIX[0]}poll Your favorite ice cream flavor is... -o banana -o strawberry -o chocolate`")
+            poll_message = await message.send(f"And it will look like this:\n:mega:  **Your favorite ice cream flavor is...**\n\n:one:  banana\n:two:  strawberry\n:three:  chocolate")
+            return await self.load_poll_choice_selectors(poll_message, 3)
+
+        poll_string = " ".join(args)
+        if len(poll_string) >= 500:
+            return await message.send("Try to keep the length of the poll reasonable.")
+
+        if poll_string.find("-o") < 0:
+            poll_selectors = [
+                "\N{WHITE HEAVY CHECK MARK}",
+                "\N{REGIONAL INDICATOR SYMBOL LETTER X}"
+            ]
+            poll_message = await message.send(f":mega:  **{poll_string}**")
+            for i in range(2):
+                await poll_message.add_reaction(poll_selectors[i])
+
+        else:
+            print(f"it's a choices poll with {poll_string.count('-o')} choices")
+
+            # trim the poll headline question
+            poll_headline = poll_string[:poll_string.find("-o")].rstrip()
+            poll_string = poll_string[poll_string.find("-o") + 2:].lstrip()
+            poll_options = []
+            i = 0
+            n = poll_string.count("-o")
+            while i <= n:
+                poll_choice = poll_string[:poll_string.find("-o") if poll_string.find("-o") + 1 else len(poll_string)]
+                if not (len(poll_choice.strip()) <= 0):
+                    poll_options.append(poll_choice)
+                if not poll_string.find("-o") < 0:
+                    poll_string = poll_string[poll_string.find("-o") + 2:].lstrip()
+                i += 1
+
+            if len(poll_options) > 10:
+                return await message.send("I can't display so many choices...")
+
+            poll_choice_emojis = [
+                ":one:", ":two:", ":three:", ":four:", ":five:", ":six:",
+                ":seven:", ":eight:", ":nine:", ":keycap_ten:" 
+            ]
+            i = 0
+            poll_message_content = ""
+            if poll_headline:
+                poll_message_content += f"**:mega:  {poll_headline}**\n\n"
+            for choice in poll_options:
+                poll_message_content += f"{poll_choice_emojis[i]}  {choice}\n"
+                i += 1
+            
+            poll_message = await message.send(poll_message_content)
+            return await self.load_poll_choice_selectors(poll_message, len(poll_options))
+
+
+    async def load_poll_choice_selectors(self, message, n: int):
+        poll_selectors = [
+            "\u0031\u20E3",
+            "\u0032\u20E3",
+            "\u0033\u20E3",
+            "\u0034\u20E3",
+            "\u0035\u20E3",
+            "\u0036\u20E3",
+            "\u0037\u20E3",
+            "\u0038\u20E3",
+            "\u0039\u20E3",
+            "\N{KEYCAP TEN}"
+        ]
+        for i in range(n):
+            await message.add_reaction(poll_selectors[i])
 
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════

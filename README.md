@@ -196,7 +196,7 @@ these are on their respective websites.
 
 To install the dependencies, open a new command prompt and enter:
 
-    python -m pip install -U discord.py youtube-dl pynacl tinytag psutil aioconsole
+    python -m pip install -U discord.py youtube-dl pynacl tinytag==1.7.0 simplejson psutil aioconsole
         
 # Running Maon:
 ## Ubuntu / Debian / Raspbian:
