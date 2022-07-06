@@ -188,7 +188,7 @@ we'll need `ffmpeg` and `opus-tools`:
 
 Next the dependencies:
 
-    python3 -m pip install -U discord.py youtube-dl pynacl tinytag psutil aioconsole
+    python3 -m pip install -U discord.py youtube-dl pynacl tinytag==1.7.0 simplejson psutil aioconsole
 
 ## Windows:
 Requires `Python 3.8+`, `pip`, and `ffmpeg` to be installed. Install instructions for
