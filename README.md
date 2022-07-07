@@ -93,6 +93,11 @@ Roll the dice multiple times for x`number` times. Example: `m roll 20 x5` or `m 
 Maon will reply to a closed question or the `eightball` command. For example: `Maon is pineapple pizza the best 
 in the world?` will have Maon reply with some form of yes, no, maybe... I don't knoooow, can you repeat the question~
 
+- `poll` (alias: `umfrage`)
+
+Generate a quick poll. Example command:
+`maon poll What's your favorite ice cream flavor? -o banana -o strawberry -o chocolate`
+
 - `mal <search term>` (alias: `anime`, `animu`, `manga`)
 
 Maon will look up the requested search term and return the closest anime title linking to MyAnimeList. 
@@ -188,7 +193,7 @@ we'll need `ffmpeg` and `opus-tools`:
 
 Next the dependencies:
 
-    python3 -m pip install -U discord.py youtube-dl pynacl tinytag==1.7.0 simplejson psutil aioconsole
+    python3 -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 youtube-dl
 
 ## Windows:
 Requires `Python 3.8+`, `pip`, and `ffmpeg` to be installed. Install instructions for
@@ -196,7 +201,7 @@ these are on their respective websites.
 
 To install the dependencies, open a new command prompt and enter:
 
-    python -m pip install -U discord.py youtube-dl pynacl tinytag==1.7.0 simplejson psutil aioconsole
+    python -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 youtube-dl
         
 # Running Maon:
 ## Ubuntu / Debian / Raspbian:

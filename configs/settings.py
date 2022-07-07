@@ -1,7 +1,7 @@
 # Audio Settings:
 SFX_VOLUME = 0.25            # Volume of special effects
 PLAYER_TIMEOUT = 5400       # Seconds until Maon disconnects from a voice channel without any interaction
-SONG_DURATION_MAX = 3600    # How long songs can be in seconds to be downloaded and stored locally, 0 to turn it off
+SONG_DURATION_MAX = 4000    # How long songs can be in seconds to be downloaded and stored locally, 0 to turn it off
 
 DOWNLOAD_RATE_LIMITER = "3M"    # Limit the bandwith for downloading songs (e.g. 3M for 3 MegaBytes / s)
 
@@ -83,7 +83,8 @@ EXTENSION_LIST = [
 ]
 
 # Logging Settings:
-LOGGING_DISCORD_PATH = "./src/logs/discord"
+LOGGING_DISCORD_PATH = "./src/logs/"
+LOGGING_DISCORD_PATH_FILE = "./src/logs/discord"
 
 # Help Command Embed:
 from configs.custom import PREFIX
@@ -105,6 +106,7 @@ COMMANDLIST_EMBED_BASIC_PREP = [
     f":white_small_square: {PREFIX[0]}<question> - Maon will reply to a closed (is, are, do, can...) question.\n",
     f":white_small_square: {PREFIX[0]}toss - Coin toss.\n",
     f":white_small_square: {PREFIX[0]}roll <number> - Roll a number from 1 to number.\n",
+    f":white_small_square: {PREFIX[0]}poll <question> -o <choice 1 text> -o <choice 2 text>... - Make a quick poll\n",
     f":white_small_square: {PREFIX[0]}anime <search term> - Posts an anime title link closest to the search term.\n",
     f":white_small_square: {PREFIX[0]}manga <search term> - Posts a manga title link closest to the search term.\n",
     "\n"
