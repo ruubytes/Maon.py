@@ -7,6 +7,8 @@ from async_timeout import timeout
 from discord import PCMVolumeTransformer
 from discord import FFmpegPCMAudio
 from discord.errors import ClientException
+#from yt_dlp import YoutubeDL
+#from yt_dlp.utils import DownloadError
 from youtube_dl import YoutubeDL
 from youtube_dl.utils import DownloadError
 from time import time

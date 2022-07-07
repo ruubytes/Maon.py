@@ -7,6 +7,8 @@ from configs import settings
 from discord import Embed
 from discord.ext import commands
 from src import audioplayer
+#from yt_dlp import YoutubeDL
+#from yt_dlp.utils import DownloadError
 from youtube_dl import YoutubeDL
 from youtube_dl.utils import DownloadError
 from tinytag import TinyTag, TinyTagException
@@ -363,7 +365,7 @@ class Audio(commands.Cog):
         if url is None:
             return await message.send(
                 "You can browse the music folder with `browse music`, if you're looking for something specific.")
-        elif url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/") or url.startswith("https://m.youtube.com/"):
+        elif url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/") or url.startswith("https://m.youtube.com/") or url.startswith("https://youtube.com/"):
             await self.prep_link_track(message, url)
         elif os.path.exists(settings.MUSIC_PATH + url + ".mp3"):
             await self.prep_local_track(message, url + ".mp3")
@@ -876,6 +878,8 @@ async def get_video_id(url: str):
         return url[url.find("&v=") + 3 : url.find("&v=") + 14]
     elif url.find(".be/") > 0:
         return url[url.find(".be/") + 4 : url.find(".be/") + 15]
+    elif url.find("/shorts/") > 0:
+        return url[url.find("/shorts/") + 8 : url.find("/shorts/") + 19]
     else:
         return None
 
