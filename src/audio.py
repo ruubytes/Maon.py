@@ -7,10 +7,10 @@ from configs import settings
 from discord import Embed
 from discord.ext import commands
 from src import audioplayer
-#from yt_dlp import YoutubeDL
-#from yt_dlp.utils import DownloadError
-from youtube_dl import YoutubeDL
-from youtube_dl.utils import DownloadError
+from yt_dlp import YoutubeDL
+from yt_dlp.utils import DownloadError
+#from youtube_dl import YoutubeDL
+#from youtube_dl.utils import DownloadError
 from tinytag import TinyTag, TinyTagException
 from time import sleep
 from time import time
@@ -184,7 +184,7 @@ class Audio(commands.Cog):
                     continue
 
                 # Check if a normal video has its duration stripped, sometimes this occurs, substitude it if yes
-                if (video_info.get("protocol") is None) and (video_info.get("duration") is None):
+                if (video_info.get("protocol") == "https+https") and (video_info.get("duration") is None):
                     video_info["duration"] = settings.SONG_DURATION_MAX
 
                 track = {
@@ -199,7 +199,7 @@ class Audio(commands.Cog):
                 }
 
                 # If its a live stream, use the first url, otherwise look for the best webm audio url
-                if video_info.get("protocol"):
+                if video_info.get("protocol") != "https+https":
                     track["url"] = video_info.get("url")
                     await self.queue_track(message, track)
                 

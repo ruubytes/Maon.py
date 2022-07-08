@@ -15,7 +15,7 @@ TEMP_FOLDER_MAX_SIZE_IN_MB = 51200
 
 # Audioplayer Settings:
 AUDIO_DOWNLOAD_CMD_DEFAULT = [
-    "youtube-dl", 
+    "yt-dlp", 
     "--extract-audio", 
     "--audio-format",
     "mp3", 

@@ -1,7 +1,7 @@
 import pkg_resources
 installed_packages = "\n".join(sorted(["%s==%s" % (i.key, i.version) for i in pkg_resources.working_set]))
 required_packages_list = [
-    "aioconsole", "discord.py", "psutil", "pynacl", "simplejson", "tinytag==1.7.0", "youtube-dl"
+    "aioconsole", "discord.py", "psutil", "pynacl", "simplejson", "tinytag==1.7.0", "yt-dlp"
 ]
 missing_packages_list = []
 for i in required_packages_list:

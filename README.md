@@ -193,7 +193,7 @@ we'll need `ffmpeg` and `opus-tools`:
 
 Next the dependencies:
 
-    python3 -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 youtube-dl
+    python3 -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 yt-dlp
 
 ## Windows:
 Requires `Python 3.8+`, `pip`, and `ffmpeg` to be installed. Install instructions for
@@ -201,7 +201,7 @@ these are on their respective websites.
 
 To install the dependencies, open a new command prompt and enter:
 
-    python -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 youtube-dl
+    python -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 yt-dlp
         
 # Running Maon:
 ## Ubuntu / Debian / Raspbian:
