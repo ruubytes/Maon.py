@@ -1,6 +1,23 @@
+import pkg_resources
+installed_packages = "\n".join(sorted(["%s==%s" % (i.key, i.version) for i in pkg_resources.working_set]))
+required_packages_list = [
+    "aioconsole", "discord.py", "psutil", "pynacl", "simplejson", "tinytag==1.7.0", "yt-dlp"
+]
+missing_packages_list = []
+for i in required_packages_list:
+    if installed_packages.find(i) < 0:
+        missing_packages_list.append(i)
+if len(missing_packages_list) > 0:
+    print(f"I am missing the following packages: {', '.join(missing_packages_list)}")
+    print(f"You can install them via the command:  python3 -m pip install -U {' '.join(missing_packages_list)}")
+    exit()
+
+
 import logging
 import discord
 import login
+from os import path
+from os import makedirs
 from src import version
 from src import minfo
 from configs import custom
@@ -66,8 +83,10 @@ class Maon:
 
 
 logging.basicConfig(level=logging.WARNING)
+if not path.exists(settings.LOGGING_DISCORD_PATH):
+    makedirs(settings.LOGGING_DISCORD_PATH)
 logging.getLogger().addHandler(TimedRotatingFileHandler(
-        filename=settings.LOGGING_DISCORD_PATH,
+        filename=settings.LOGGING_DISCORD_PATH_FILE,
         when='midnight',
         interval=1,
         backupCount=7

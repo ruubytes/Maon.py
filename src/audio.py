@@ -7,8 +7,10 @@ from configs import settings
 from discord import Embed
 from discord.ext import commands
 from src import audioplayer
-from youtube_dl import YoutubeDL
-from youtube_dl.utils import DownloadError
+from yt_dlp import YoutubeDL
+from yt_dlp.utils import DownloadError
+#from youtube_dl import YoutubeDL
+#from youtube_dl.utils import DownloadError
 from tinytag import TinyTag, TinyTagException
 from time import sleep
 from time import time
@@ -182,7 +184,7 @@ class Audio(commands.Cog):
                     continue
 
                 # Check if a normal video has its duration stripped, sometimes this occurs, substitude it if yes
-                if (video_info.get("protocol") is None) and (video_info.get("duration") is None):
+                if (video_info.get("protocol") == "https+https") and (video_info.get("duration") is None):
                     video_info["duration"] = settings.SONG_DURATION_MAX
 
                 track = {
@@ -197,7 +199,7 @@ class Audio(commands.Cog):
                 }
 
                 # If its a live stream, use the first url, otherwise look for the best webm audio url
-                if video_info.get("protocol"):
+                if video_info.get("protocol") != "https+https":
                     track["url"] = video_info.get("url")
                     await self.queue_track(message, track)
                 
@@ -363,7 +365,7 @@ class Audio(commands.Cog):
         if url is None:
             return await message.send(
                 "You can browse the music folder with `browse music`, if you're looking for something specific.")
-        elif url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/") or url.startswith("https://m.youtube.com/"):
+        elif url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/") or url.startswith("https://m.youtube.com/") or url.startswith("https://youtube.com/"):
             await self.prep_link_track(message, url)
         elif os.path.exists(settings.MUSIC_PATH + url + ".mp3"):
             await self.prep_local_track(message, url + ".mp3")
@@ -876,6 +878,8 @@ async def get_video_id(url: str):
         return url[url.find("&v=") + 3 : url.find("&v=") + 14]
     elif url.find(".be/") > 0:
         return url[url.find(".be/") + 4 : url.find(".be/") + 15]
+    elif url.find("/shorts/") > 0:
+        return url[url.find("/shorts/") + 8 : url.find("/shorts/") + 19]
     else:
         return None
 

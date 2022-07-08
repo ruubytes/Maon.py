@@ -194,7 +194,7 @@ class Fun(commands.Cog):
     @commands.command(aliases=["umfrage"])
     async def poll(self, message, *args: str):
         if len(args) <= 0:
-            await message.send(f"You can create a simple yes / no poll with  `{custom.PREFIX[0]}poll Do you like cats?`\n\nOr you can create a poll with multiple choices like this  `{custom.PREFIX[0]}poll Your favorite ice cream flavor is... -o banana -o strawberry -o chocolate`")
+            await message.send(f"You can create a simple yes / no poll with  `{custom.PREFIX[0]}poll Do you like cats?`\n\nOr you can create a poll with multiple choices like this\n`{custom.PREFIX[0]}poll Your favorite ice cream flavor is... -o banana -o strawberry -o chocolate`")
             poll_message = await message.send(f"And it will look like this:\n:mega:  **Your favorite ice cream flavor is...**\n\n:one:  banana\n:two:  strawberry\n:three:  chocolate")
             return await self.load_poll_choice_selectors(poll_message, 3)
 
@@ -212,8 +212,6 @@ class Fun(commands.Cog):
                 await poll_message.add_reaction(poll_selectors[i])
 
         else:
-            print(f"it's a choices poll with {poll_string.count('-o')} choices")
-
             # trim the poll headline question
             poll_headline = poll_string[:poll_string.find("-o")].rstrip()
             poll_string = poll_string[poll_string.find("-o") + 2:].lstrip()
