@@ -2,11 +2,14 @@
 [![Issues][issues-shield]][issues-url]
 [![Issues-Closed][issues-closed-shield]][issues-closed-url]
 
-Maon is a little hobby project, as well as a project to get to know the Git workflow.
-Maon is written in `Python3.8+` and tested on `Ubuntu 20.04+`, `Ubuntu Server 20.04`, `Windows 10`, 
-and `Raspbian Buster`. Maon should run on most UNIX platforms, if you can install the required libraries 
-below. The most notable functionality of Maon is its chat integrated media browser to browse media files
-and play them by navigating the browser with emojis that have been added to the media browser embed message. 
+Maon is a little hobby project, a highly personalized discord bot, as well as a project to get to know the Git workflow.
+Maon is written in `Python3.8+` and tested on `Ubuntu 22.04+ Server / WSL`, but should run on most UNIX platforms, 
+if you can install the required libraries below. 
+
+The most notable functionalities of Maon are:
+- The audio player for Youtube videos / shorts and local files as well as prefix-less sound effects and folder.
+- The chat integrated media browser to browse media files and play them by navigating the browser with emojis that 
+have been added to the media browser embed message.
 
 # Table of Contents:
 - [List of Commands](#list-of-commands)
@@ -113,6 +116,7 @@ Play a local sound file from the music folder or a Youtube link in a voice chann
 Play a local sound file from the sfx folder. Once Maon has joined a voice channel, the prefix and sfx 
 command can be removed and sound effects can be played by writing the sound effects title only into 
 the chat. Example: `m s oof` becomes `oof` for ease of- and speedy access to sound effects.
+Only accessible if the user is in the same voice channel as Maon.
 
 - `browse <music / sfx>` (alias: `b`, `browser`)
 
@@ -154,7 +158,8 @@ Stops Maon's audioplayer and makes Maon leave the voice channel.
 
 - `playlist` (alias: `q`, `queue`)
 
-Shows the current playlist and the entry numbers of the songs.
+Shows the current playlist and the entry numbers of the songs. Due to text message length, the command currently 
+only displays what is playing and the next ~20 entries.
 
 - `playlist <number, number, ...>` 
 
@@ -210,7 +215,7 @@ To run Maon you can use the following from Maon's directory:
     python3 Maon.py
     
 ## Windows:
-Use the following in a command prompt from Maon's main directory:
+Use the following in a command prompt from Maon's directory:
 
     python Maon.py
 	
