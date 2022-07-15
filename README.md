@@ -1,21 +1,25 @@
 # Maon Discord Bot
+
 [![Issues][issues-shield]][issues-url]
 [![Issues-Closed][issues-closed-shield]][issues-closed-url]
 
 Maon is a little hobby project, a highly personalized discord bot, as well as a project to get to know the Git workflow.
-Maon is written in `Python3.8+` and tested on `Ubuntu 22.04+ Server / WSL`, but should run on most UNIX platforms, 
+Maon is written in **Python3.8+** and tested on **Ubuntu 22.04 Server / WSL**, but should run on most UNIX platforms, 
 if you can install the required libraries below. 
 
 The most notable functionalities of Maon are:
 - The audio player for Youtube videos / shorts and local files as well as prefix-less sound effects and folder.
-- The chat integrated media browser to browse media files and play them by navigating the browser with emojis that 
-have been added to the media browser embed message.
+- The chat integrated media browser to browse media files and play them by navigating the browser with emojis,
+which have been added to the media browser embed message.
+- Minecraft server manager for whitelisting and removing users.
 
 # Table of Contents:
+
 - [List of Commands](#list-of-commands)
     - [Admin](#admin)
     - [Basic](#basic)
     - [Music](#music)
+    - [Servermanager](#servermanager)
 - [Installation](#installation)
     - [Discord Tokens & IDs](#discord-tokens-&-ids)
     - [Ubuntu / Debian / Raspbian](#ubuntu-/-debian-/-raspbian)
@@ -25,174 +29,167 @@ have been added to the media browser embed message.
     - [Windows](#windows)
 
 # List of Commands
+
 ## Admin
-- `shutdown` (alias: `kill`)
 
-Shuts down Maon gracefully.
+```
+disable <extension / all>
+        Disables an extension module like audio or all of them.
 
-- `restart`
-    
-Restarts Maon.
+emojiname <emoji>
+        Returns the ascii encoded name of an emoji.
 
-- `reload <extension name / all>` 
+enable <extension / all>
+        Enables an extension module like audio or all of them.
 
-Reloads an extension module like audio or filebrowser or all of them.
+reload <extension / all>
+        Reloads an extension module like audio or all of them.
 
-- `disable <extension name / all>`
+remove, clear, delete <number>
+        Remove <number> of messages in a chat.
 
-Disables an extension module or all of them.
+restart, reset
+        Restarts Maon.
 
-- `enable <extension name / all>`
+scrub
+        Deletes the music cache folder.
 
-Enables an extension module or all of them.
+shutdown, kill
+        Shuts down Maon gracefully.
 
-- `remove <number>` (alias: `clear`, `delete`)
+status <playing / watching / listening> <text>
+        Sets a status for Maon.
 
-Remove `number` of messages.
-
-- `status <playing / watching / listening> <text>`
-
-Sets a status for Maon.
-
-- `status cancel`
-
-Disables the hourly status text cycle.
-
-- `scrub`
-
-Deletes the music cache folder.
-
-- `emojiname <emoji>`
-
-Returns the ascii encoded name of an emoji.
+status cancel
+        Disables the hourly status text cycle.
+```
 
 ## Basic
-- `help` (alias: `info`, `infocard`)
 
-Lists all commands.
+```
+eightball
+am, is, are, can, do, does, will...
+        Maon will reply to a closed question or the eightball command.
+        Example: Maon is pineapple pizza the best in the world?
+        Maon will reply with some form of yes, no, maybe... I don't knoooow.
 
-- `version`
+flip, coin, toss
+        Flip a coin.
 
-Shows the current version of Maon.
+help, info, infocard
+        Lists all commands.
 
-- `ping`
+mal, anime, animu, manga <search term>
+        Maon will look up the requested search term and return the closest
+        anime title linking to MyAnimeList.
+        The alias manga will look for a manga title instead.
 
-Shows the websocket ping in milliseconds.
+ping
+        Shows the websocket ping in milliseconds.
 
-- `flip` (alias: `coin`, `toss`)
+poll, umfrage <poll question> -o <choice> -o <choice> ...
+        Generate a quick poll. If no choices are specified, 
+        it's going to be a poll with ✔️ and ❌ as choices.
+        Example: m poll Are we going to play a game this evening?
+        Example: m poll Fav ice cream? -o banana -o strawberry -o chocolate
 
-Flip a coin.
+rng, dice, roll <number> x <number>
+        Roll the dice for a random number from 1 to <number> or
+        roll the dice multiple times from 1 to <number> times <number>
+        Example: m roll 20 x5   to roll from 1 to 20 5 times.
 
-- `rng <number>` (alias: `dice`, `roll`)
-
-Roll the dice for a random number from 1 to `number`.
-
-- `rng <number> x<number>`
-
-Roll the dice multiple times for x`number` times. Example: `m roll 20 x5` or `m roll 20*5` to roll 20 times 5.
-
-- `eightball` (alias: `am`, `is`, `are`, `can`, `do`, `does`, `will`...)
-
-Maon will reply to a closed question or the `eightball` command. For example: `Maon is pineapple pizza the best 
-in the world?` will have Maon reply with some form of yes, no, maybe... I don't knoooow, can you repeat the question~
-
-- `poll` (alias: `umfrage`)
-
-Generate a quick poll. Example command:
-`maon poll What's your favorite ice cream flavor? -o banana -o strawberry -o chocolate`
-
-- `mal <search term>` (alias: `anime`, `animu`, `manga`)
-
-Maon will look up the requested search term and return the closest anime title linking to MyAnimeList. 
-The alias `manga` will look for a manga title instead.
+version
+        Shows the current version of Maon.
+```
 
 ## Music
-- `play <url / path / filename>` (alias: `p`, `stream`, `yt`)
 
-Play a local sound file from the music folder or a Youtube link in a voice channel.
+```
+browse, browser, b <music / sfx>
+        Opens the chat embedded file browser to browse through either the music
+        or sfx folder.
 
-- `sfx <path / filename>` (alias: `s`, `effects`, `effect`)
+join, j
+        Maon joins the voice channel and generates the audioplayer.
 
-Play a local sound file from the sfx folder. Once Maon has joined a voice channel, the prefix and sfx 
-command can be removed and sound effects can be played by writing the sound effects title only into 
-the chat. Example: `m s oof` becomes `oof` for ease of- and speedy access to sound effects.
-Only accessible if the user is in the same voice channel as Maon.
+loop <song / playlist / queue / q / off>
+        Loops the currently playing song, or the whole playlist or turns the
+        looping function off.
 
-- `browse <music / sfx>` (alias: `b`, `browser`)
+pause
+        Pauses the currently playing song or sound effect.
 
-Opens the chat embedded file browser to browse through either the music or sfx folder. The browser 
-can be navigated with emojis to change pages, enter a folder or go back, or to choose and play a song 
-or sound effect.
+play, p, stream, yt <url / path / filename>
+        Play a local file from the music folder or a Youtube link.
 
-- `volume <number between 0 and 100>` (alias: `v`, `vol`)
+playlist, queue, q
+        Shows the current playlist and the entry numbers of the songs.
+        Due to text message length, the command currently only displays what
+        is playing and the next ~20 entries.
 
-Changes the volume of Maon. Default volume is set in the configuration file.
+playlist <number, number, ...>
+        Pushes playlist entry <number> to the front of the playlist.
 
-- `join` (alias: `j`)
+playlist <clear / delete / remove / d / r> <number, number, ...>
+        Removes playlist entry <number> from the playlist.
 
-Maon joins the voice channel and generates the audioplayer.
+playlist copy <number, number, ...>
+        Copies playlist entry <number> to the front of the playlist.
 
-- `skip` (alias: `next`, `n`, `ne`, `nxt`, `sk`, `skp`)
+resume, res, re, continue, cont, co
+        Resumes the paused song or sound effect.
 
-Skips the currently playing song or sound effect.
+sfx, s, effects, effect <path / filename>
+        Play a local file from the sfx folder.
+        If Maon is already in the voice channel, the command can be omitted and
+        only the sound effect's filename can be used to invoke the effect.
 
-- `loop <song / playlist / queue / q / off>`
+shuffle <off>
+        Shuffles the current playlist after every song. The off keyword turns
+        the shuffling off again.
 
-Loops the currently playing song, or the whole playlist or turns the looping function off.
+skip, skp, sk, next, nxt, ne, n
+        Skips the currently playing song or sound effect.
 
-- `shuffle <off>`
+stop, leave, l
+        Stops Maon's audioplayer and makes Maon leave the voice channel.
 
-Shuffles the current playlist after every song.
+volume, vol, v <number between 0 and 100>
+        Changes the volume of Maon. Default volume is set in the config file.
+```
 
-- `pause`
+## Servermanager
 
-Pauses the currently playing song or sound effect.
+```
+register, reg, whitelist <username>
+        Registers a user for a minecraft server, if it's hosted alongside Maon.
 
-- `resume` (alias: `res`, `cont`, `continue`, `re`, `co`)
-
-Resumes the paused song or sound effect.
-
-- `stop` (alias: `leave`, `l`)
-
-Stops Maon's audioplayer and makes Maon leave the voice channel.
-
-- `playlist` (alias: `q`, `queue`)
-
-Shows the current playlist and the entry numbers of the songs. Due to text message length, the command currently 
-only displays what is playing and the next ~20 entries.
-
-- `playlist <number, number, ...>` 
-
-Puts songs in the playlist of entry number `number` to the front of the playlist.
-
-- `playlist clear <number, number, ...>`
-
-Removes songs from the playlist of entry number `number`. Aliases for `clear` include `delete`, `del`,
- `d`, `remove`, `rm`, `r`
-
-- `playlist copy <number, number, ...>`
-
-Copies songs from the playlist of entry number `number` to the front of the playlist.
+unregister, unreg <username>
+        Removes a user from the minecraft server whitelist. (Admin only)
+```
 
 # Installation:
+
 ## Discord Tokens & IDs:
-Maon needs a bot token, Maon's ID and the ID of the bot owner for a successful login. The first step 
-to get all of these is to create a new application on the discord developer page. 
-https://discord.com/developers/applications
 
-There select `New Application` and give Maon her name. Once created, head over to the `Bot` page and 
-click `Add Bot`. From there, click `copy` underneath the token to receive your bot token and put it 
-into the `login.py` file at `token = "token goes here"`.
+Maon needs a **bot token**, **Maon's ID** and the **ID** of the **bot owner** for a successful login.
+The first step to get all of these is to create a new application on the [discord developer page](https://discord.com/developers/applications).
 
-Once Maon has a token, go back to `General Information` and copy the `Client ID` to the `login.py` 
-file at `MAON_ID = id_goes_here`.
+There select **New Application** and give Maon her name. 
+Once created, head over to the **Bot** page and click **Add Bot**. 
+From there, click **copy** underneath the token to receive your bot token, 
+then put it into the **login.py** file at `token = "token goes here"`.
 
-Now all that's missing is the owner token. After activating developer mode in discord under settings, 
-rightclick yourself inside discord and copy the ID into the `login.py` file at `OWNER_ID = id_goes_here`.
+Once Maon has a token, go back to **General Information** and copy the **Client ID** to the **login.py** file at `MAON_ID = id_goes_here`.
+
+Now all that's missing is the owner token. 
+After activating **developer mode** in discord under **settings**, 
+rightclick yourself inside discord and copy the **ID** into the **login.py** file at `OWNER_ID = id_goes_here`.
 
 ## Ubuntu / Debian / Raspbian:
-Install `pip` if it is not already installed to fetch some needed dependencies, and for audio playback 
-we'll need `ffmpeg` and `opus-tools`:
+
+Install **pip** if it is not already installed to fetch some needed dependencies, 
+and for audio playback we'll need **ffmpeg** and **opus-tools**:
     
     sudo apt install python3-pip ffmpeg opus-tools
 
@@ -201,20 +198,24 @@ Next the dependencies:
     python3 -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 yt-dlp
 
 ## Windows:
-Requires `Python 3.8+`, `pip`, and `ffmpeg` to be installed. Install instructions for
-these are on their respective websites.
+
+Requires **Python 3.8+**, **pip**, and **ffmpeg** to be installed. 
+Install instructions for these are on their respective websites.
 
 To install the dependencies, open a new command prompt and enter:
 
     python -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 yt-dlp
         
 # Running Maon:
+
 ## Ubuntu / Debian / Raspbian:
+
 To run Maon you can use the following from Maon's directory:
 
     python3 Maon.py
     
 ## Windows:
+
 Use the following in a command prompt from Maon's directory:
 
     python Maon.py
