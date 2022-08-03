@@ -1,4 +1,3 @@
-import discord
 import asyncio
 from src import minfo
 from src import admin
@@ -15,6 +14,7 @@ class Console(commands.Cog):
         self.execute: dict = {
             "help": self.usage,
             "info": self.usage,
+            "usage": self.usage,
             "kill": self.shutdown,
             "quit": self.shutdown,
             "stop": self.shutdown,
@@ -29,11 +29,11 @@ class Console(commands.Cog):
             while True:
                 cmd_str: str = await ainput(loop = self.client.loop)
                 cmd = cmd_str.split(" ")
-
-                if len(cmd) > 1:
-                    await self.execute.get(cmd[0])(cmd[1:])
-                else:
+                self.log.raw(f"> {cmd_str}", term=False)
+                try:
                     await self.execute.get(cmd[0])()
+                except TypeError:
+                    await self.execute.get("usage")()
 
         except asyncio.CancelledError as e:
             pass

@@ -24,6 +24,7 @@ temp/
 src/data/
 
 ### Logs and notes
+.sandbox/
 errors/
 src/logs/
 *.txt

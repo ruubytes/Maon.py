@@ -24,34 +24,23 @@ class Minfo():
         self.file_dir: str = file_dir
         self.file_name: str = ""
         self.f: TextIOWrapper = None
-        self.e_file_ready: asyncio.Event = asyncio.Event()
-        self.set_file()
         self.dispatchers: list['Minstance'] = []
         self.log_q: asyncio.Queue = asyncio.Queue()
         self.logging_task: asyncio.Task = self.loop.create_task(self.logging_loop(), name="logging_task")
-        self.dawn_task: asyncio.Task = self.loop.create_task(self.dawn_loop(), name="dawn_task")
-        atexit.register(self.dawn_task.cancel)
-        atexit.register(self.logging_task.cancel)
         
-
-    def set_file(self):
-        self.e_file_ready.clear()
-
-        if self.f:
-            self.f.close()
-        self.file_name = f"minfo-{datetime.date.today().strftime('%y%m%d')}.log"
-        self.f = open(self.file_dir + self.file_name, 'a+')
-
-        self.e_file_ready.set()
-
 
     async def logging_loop(self):
         try:    
             while True:
                 message = await self.log_q.get()
-                await self.e_file_ready.wait()
+                if f"minfo-{datetime.date.today().strftime('%y%m%d')}.log" != self.file_name:
+                    if self.f:
+                        self.f.close()
+                    self.file_name = f"minfo-{datetime.date.today().strftime('%y%m%d')}.log"
+                    self.f = open(self.file_dir + self.file_name, 'a+')
 
-                print(message.get("term_text"))
+                if len(message.get("term_text")) > 0:
+                    print(message.get("term_text"))
                 try:
                     self.f.write(f"{message.get('file_text')}\n")
                     self.f.flush()
@@ -65,17 +54,6 @@ class Minfo():
             for disp in self.dispatchers:
                 del disp
 
-    
-    async def dawn_loop(self):
-        try:
-            while True:
-                await asyncio.sleep(1200)
-                if f"minfo-{datetime.date.today().strftime('%y%m%d')}.log" != self.file_name:
-                    self.set_file()
-
-        except asyncio.CancelledError:
-            pass
-
 
 class Minstance():
     def __init__(self, name: str, level: int = 1):
@@ -85,19 +63,16 @@ class Minstance():
         self._level: int = level
 
     
-    def raw(self, text: str = None):
-        message = {
-            "term_text": f'{text}',
-            "file_text": f'{text}'
-        }
+    def raw(self, text: str = None, term: bool = True):
+        message = {"term_text": f"{text}", "file_text": f"{text}"} if term else {"term_text": "", "file_text": f"{text}"}
         asyncio.ensure_future(self._master.log_q.put(message))
 
 
     def debug(self, text: str = None):
         if self._level <= 0:
             message = {
-                "term_text": f'{CColors.C_DEBUG}[DBUG|{self._name}]{CColors.END_COLOR} {text}',
-                "file_text": f'[DBUG|{self._name}] {text}'
+                "term_text": f'{CColors.C_DEBUG}D|{datetime.datetime.now().strftime("%X")}|{self._name}:{CColors.END_COLOR} {text}',
+                "file_text": f'D|{datetime.datetime.now().strftime("%X")}|{self._name}: {text}'
             }
             asyncio.ensure_future(self._master.log_q.put(message))
 
@@ -105,8 +80,8 @@ class Minstance():
     def info(self, text: str = None):
         if self._level <= 1:
             message = {
-                "term_text": f'{CColors.C_INFO}[INFO|{self._name}]{CColors.END_COLOR} {text}',
-                "file_text": f'[INFO|{self._name}] {text}'
+                "term_text": f'{CColors.C_INFO}I|{datetime.datetime.now().strftime("%X")}|{self._name}:{CColors.END_COLOR} {text}',
+                "file_text": f'I|{datetime.datetime.now().strftime("%X")}|{self._name}: {text}'
             }
             asyncio.ensure_future(self._master.log_q.put(message))
 
@@ -114,8 +89,8 @@ class Minstance():
     def warn(self, text: str = None):
         if self._level <= 2:
             message = {
-                "term_text": f'{CColors.C_WARN}[WARN|{self._name}]{CColors.END_COLOR} {text}',
-                "file_text": f'[WARN|{self._name}] {text}'
+                "term_text": f'{CColors.C_WARN}W|{datetime.datetime.now().strftime("%X")}|{self._name}:{CColors.END_COLOR} {text}',
+                "file_text": f'W|{datetime.datetime.now().strftime("%X")}|{self._name}: {text}'
             }
             asyncio.ensure_future(self._master.log_q.put(message))
 
@@ -123,8 +98,8 @@ class Minstance():
     def error(self, text: str = None):
         if self._level <= 3:
             message = {
-                "term_text": f'{CColors.C_ERROR}[ERR |{self._name}]{CColors.END_COLOR} {text}',
-                "file_text": f'[ERR |{self._name}] {text}'
+                "term_text": f'{CColors.C_ERROR}E|{datetime.datetime.now().strftime("%X")}|{self._name}:{CColors.END_COLOR} {text}',
+                "file_text": f'E|{datetime.datetime.now().strftime("%X")}|{self._name}: {text}'
             }
             asyncio.ensure_future(self._master.log_q.put(message))
 

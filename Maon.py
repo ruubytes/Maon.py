@@ -10,7 +10,7 @@ for i in required_packages_list:
 if len(missing_packages_list) > 0:
     print(f"I am missing the following packages: {', '.join(missing_packages_list)}")
     print(f"You can install them via the command:  python3 -m pip install -U {' '.join(missing_packages_list)}")
-    exit()
+    exit(1)
 
 
 import logging
@@ -75,16 +75,19 @@ class Maon:
         try:
             self.client.run(login.TOKEN)
         except TypeError:
-            self.log.raw("\nI need my discord API token to log in. Please add it to my login file!\n")
+            print("\nI need my discord API token to log in. Please add it to my login file!\n")
+            exit(1)
         except LoginFailure:
-            self.log.raw("\nIt looks like my API token is faulty, make sure you have entered it correctly!\n")
+            print("\nIt looks like my API token is faulty, make sure you have entered it correctly!\n")
+            exit(1)
         except ClientConnectorError:
-            self.log.raw("\nI can't connect right now, please try again later.\n")
+            print("\nI can't connect right now, please try again later.\n")
+            exit(1)
 
 
-logging.basicConfig(level=logging.WARNING)
 if not path.exists(settings.LOGGING_DISCORD_PATH):
     makedirs(settings.LOGGING_DISCORD_PATH)
+logging.basicConfig(level=logging.INFO)
 logging.getLogger().addHandler(TimedRotatingFileHandler(
         filename=settings.LOGGING_DISCORD_PATH_FILE,
         when='midnight',

@@ -13,7 +13,7 @@ The most notable functionalities of Maon are:
 which have been added to the media browser embed message.
 - Minecraft server manager for whitelisting and removing users.
 
-# Table of Contents:
+## Table of Contents:
 
 - [List of Commands](#list-of-commands)
     - [Admin](#admin)
@@ -21,16 +21,13 @@ which have been added to the media browser embed message.
     - [Music](#music)
     - [Servermanager](#servermanager)
 - [Installation](#installation)
-    - [Discord Tokens & IDs](#discord-tokens-&-ids)
-    - [Ubuntu / Debian / Raspbian](#ubuntu-/-debian-/-raspbian)
-    - [Windows](#windows)
-- [Running Maon](#running-maon)
-    - [Ubuntu / Debian / Raspbian](#ubuntu-/-debian-/-raspbian)
+    - [Discord Tokens & IDs](#discord-tokens--ids)
+    - [Ubuntu / Debian / Raspbian](#ubuntu--debian--raspbian)
     - [Windows](#windows)
 
-# List of Commands
+## List of Commands
 
-## Admin
+### Admin
 
 ```
 disable <extension / all>
@@ -64,7 +61,7 @@ status cancel
         Disables the hourly status text cycle.
 ```
 
-## Basic
+### Basic
 
 ```
 eightball
@@ -102,7 +99,7 @@ version
         Shows the current version of Maon.
 ```
 
-## Music
+### Music
 
 ```
 browse, browser, b <music / sfx>
@@ -158,7 +155,7 @@ volume, vol, v <number between 0 and 100>
         Changes the volume of Maon. Default volume is set in the config file.
 ```
 
-## Servermanager
+### Servermanager
 
 ```
 register, reg, whitelist <username>
@@ -168,12 +165,12 @@ unregister, unreg <username>
         Removes a user from the minecraft server whitelist. (Admin only)
 ```
 
-# Installation:
+## Installation:
 
-## Discord Tokens & IDs:
+### Discord Tokens & IDs:
 
 Maon needs a **bot token**, **Maon's ID** and the **ID** of the **bot owner** for a successful login.
-The first step to get all of these is to create a new application on the [discord developer page](https://discord.com/developers/applications).
+The first step to get all of these is to create a new application on the [discord developer page][discord-developer-url].
 
 There select **New Application** and give Maon her name. 
 Once created, head over to the **Bot** page and click **Add Bot**. 
@@ -186,7 +183,7 @@ Now all that's missing is the owner token.
 After activating **developer mode** in discord under **settings**, 
 rightclick yourself inside discord and copy the **ID** into the **login.py** file at `OWNER_ID = id_goes_here`.
 
-## Ubuntu / Debian / Raspbian:
+### Ubuntu / Debian / Raspbian:
 
 Install **pip** if it is not already installed to fetch some needed dependencies, 
 and for audio playback we'll need **ffmpeg** and **opus-tools**:
@@ -197,7 +194,11 @@ Next the dependencies:
 
     python3 -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 yt-dlp
 
-## Windows:
+To run Maon you can use the following from Maon's directory:
+
+    python3 Maon.py
+
+### Windows:
 
 Requires **Python 3.8+**, **pip**, and **ffmpeg** to be installed. 
 Install instructions for these are on their respective websites.
@@ -205,22 +206,14 @@ Install instructions for these are on their respective websites.
 To install the dependencies, open a new command prompt and enter:
 
     python -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 yt-dlp
-        
-# Running Maon:
-
-## Ubuntu / Debian / Raspbian:
-
-To run Maon you can use the following from Maon's directory:
-
-    python3 Maon.py
-    
-## Windows:
 
 Use the following in a command prompt from Maon's directory:
 
     python Maon.py
-	
+        
+
 [issues-shield]: https://img.shields.io/github/issues-raw/raesoft/Maon.py?color=F8D386&style=flat-square
 [issues-url]: https://github.com/raesoft/Maon.py/issues
 [issues-closed-shield]: https://img.shields.io/github/issues-closed-raw/raesoft/Maon.py?color=AAF786&style=flat-square
 [issues-closed-url]: https://github.com/raesoft/Maon.py/issues?q=is%3Aissue+is%3Aclosed
+[discord-developer-url]: https://discord.com/developers/applications

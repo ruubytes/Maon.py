@@ -35,7 +35,7 @@ class Admin(commands.Cog):
         await self.client.close()
 
         try:
-            raise SystemExit
+            raise SystemExit(0)
         except SystemExit:
             print("\nMaybe I'll take over the world some other time.\n")
             

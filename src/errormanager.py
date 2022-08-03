@@ -22,6 +22,7 @@ class ErrorManager(commands.Cog):
         elif isinstance(error, commands.MissingPermissions):
             return self.log.error("I lack permissions for this command.")
         else:
+            self.log.error(str(error))
             raise error
 
 
