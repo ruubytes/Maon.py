@@ -1,4 +1,6 @@
 import pkg_resources
+
+
 installed_packages = "\n".join(sorted(["%s==%s" % (i.key, i.version) for i in pkg_resources.working_set]))
 required_packages_list = [
     "aioconsole", "discord.py", "psutil", "pynacl", "simplejson", "tinytag==1.7.0", "yt-dlp"
@@ -10,19 +12,17 @@ for i in required_packages_list:
 if len(missing_packages_list) > 0:
     print(f"I am missing the following packages: {', '.join(missing_packages_list)}")
     print(f"You can install them via the command:  python3 -m pip install -U {' '.join(missing_packages_list)}")
-    exit()
+    exit(1)
 
 
-import logging
-import discord
 import login
+import discord
 from os import path
 from os import makedirs
 from src import version
-from src import minfo
+from src import logbook
 from configs import custom
 from configs import settings
-from logging.handlers import TimedRotatingFileHandler
 from discord.ext import commands
 from discord.errors import LoginFailure
 from aiohttp.client_exceptions import ClientConnectorError
@@ -32,9 +32,9 @@ class Maon:
     __slots__ = ["client", "log"]
 
     def __init__(self):
-        self.log = minfo.getLogger(self.__class__.__name__, 0, "./src/logs/")
+        self.log = logbook.getLogger(self.__class__.__name__)
         self.check_ids()
-        self.log.raw(version.SIGNATURE)
+        self.log.log(level=logbook.RAW, msg=version.SIGNATURE)
         self.log.info(f"Discord.py Version: {discord.__version__}")
         self.client = commands.Bot(
             command_prefix=custom.PREFIX, 
@@ -58,11 +58,11 @@ class Maon:
 
     def check_ids(self):
         if (len(login.TOKEN) < 55) or (not login.TOKEN) or (login.TOKEN == ""):
-            self.log.raw("\nPlease add my API token to the login file so I can log into discord!\n")
-            exit()
+            self.log.error("Please add my API token to the login file so I can log into discord!\n")
+            exit(1)
         elif login.MAON_ID < 1 or login.OWNER_ID < 1:
-            self.log.raw("\nPlease add my own ID and your ID to the login file so I can recognize us!\n")
-            exit()
+            self.log.error("Please add my own ID and your ID to the login file so I can recognize us!\n")
+            exit(1)
 
 
     def load_extensions(self):
@@ -75,23 +75,19 @@ class Maon:
         try:
             self.client.run(login.TOKEN)
         except TypeError:
-            self.log.raw("\nI need my discord API token to log in. Please add it to my login file!\n")
+            self.log.error("I need my discord API token to log in. Please add it to my login file!\n")
+            exit(1)
         except LoginFailure:
-            self.log.raw("\nIt looks like my API token is faulty, make sure you have entered it correctly!\n")
+            self.log.error("It looks like my API token is faulty, make sure you have entered it correctly!\n")
+            exit(1)
         except ClientConnectorError:
-            self.log.raw("\nI can't connect right now, please try again later.\n")
+            self.log.error("I can't connect right now, please try again later.\n")
+            exit(1)
 
 
-logging.basicConfig(level=logging.WARNING)
 if not path.exists(settings.LOGGING_DISCORD_PATH):
     makedirs(settings.LOGGING_DISCORD_PATH)
-logging.getLogger().addHandler(TimedRotatingFileHandler(
-        filename=settings.LOGGING_DISCORD_PATH_FILE,
-        when='midnight',
-        interval=1,
-        backupCount=7
-    )
-)
+logbook.getLogger("discord")    # Format discord lib logging through the custom logging formatter in logbook
 Maon = Maon()
 Maon.load_extensions()
 Maon.run()

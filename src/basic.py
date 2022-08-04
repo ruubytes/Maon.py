@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 from asyncio import sleep
 from src import version
-from src import minfo
+from src import logbook
 from configs import custom
 from configs import settings
 
@@ -12,7 +12,7 @@ class Basic(commands.Cog):
 
     def __init__(self, client):
         self.client = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
         self.corona_last_message = ""
         self.running = True
 

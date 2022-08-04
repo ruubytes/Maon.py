@@ -1,8 +1,8 @@
 import asyncio
 from discord import errors
 from discord.ext import commands
-from src import minfo
 from src import admin
+from src import logbook
 
 
 class ErrorManager(commands.Cog):
@@ -10,7 +10,7 @@ class ErrorManager(commands.Cog):
 
     def __init__(self, client):
         self.client: commands.Bot = client
-        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
         self.admin: admin.Admin = self.client.get_cog("Admin")
 
 
@@ -22,6 +22,7 @@ class ErrorManager(commands.Cog):
         elif isinstance(error, commands.MissingPermissions):
             return self.log.error("I lack permissions for this command.")
         else:
+            self.log.error(str(error))
             raise error
 
 

@@ -7,7 +7,7 @@ from random import choice
 from random import randint
 from configs import custom
 from configs import settings
-from src import minfo
+from src import logbook
 
 
 class Fun(commands.Cog):
@@ -15,7 +15,7 @@ class Fun(commands.Cog):
 
     def __init__(self, client):
         self.client = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
 
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════

@@ -7,7 +7,7 @@ from math import ceil
 from os import walk
 from configs import custom
 from configs import settings
-from src import minfo
+from src import logbook
 
 
 class GuildBrowser:
@@ -18,7 +18,7 @@ class GuildBrowser:
 
     def __init__(self, client, message, browser_type: int):
         self.client = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
         self.audio = self.client.get_cog("Audio")
         self.filebrowser = self.client.get_cog("FileBrowser")
         self.browser_type = browser_type

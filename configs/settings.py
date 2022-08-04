@@ -84,7 +84,7 @@ EXTENSION_LIST = [
 
 # Logging Settings:
 LOGGING_DISCORD_PATH = "./src/logs/"
-LOGGING_DISCORD_PATH_FILE = "./src/logs/discord"
+LOGGING_DISCORD_PATH_FILE = "./src/logs/maon"
 
 # Help Command Embed:
 from configs.custom import PREFIX

@@ -1,7 +1,6 @@
-import discord
 import asyncio
-from src import minfo
 from src import admin
+from src import logbook
 from aioconsole import ainput
 from discord.ext import commands
 
@@ -11,10 +10,11 @@ class Console(commands.Cog):
 
     def __init__(self, client):
         self.client: commands.Bot = client
-        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
         self.execute: dict = {
             "help": self.usage,
             "info": self.usage,
+            "usage": self.usage,
             "kill": self.shutdown,
             "quit": self.shutdown,
             "stop": self.shutdown,
@@ -29,20 +29,20 @@ class Console(commands.Cog):
             while True:
                 cmd_str: str = await ainput(loop = self.client.loop)
                 cmd = cmd_str.split(" ")
-
-                if len(cmd) > 1:
-                    await self.execute.get(cmd[0])(cmd[1:])
-                else:
+                self.log.info(f"> {cmd_str}")
+                try:
                     await self.execute.get(cmd[0])()
+                except TypeError:
+                    await self.execute.get("usage")()
 
         except asyncio.CancelledError as e:
             pass
 
     
     async def usage(self, argv: 'list[str]' = None):
-        self.log.raw("Available commands:")
+        self.log.info("Available commands:")
         for key in self.execute:
-            self.log.raw(f"\t{str(key)}")
+            self.log.info(f"\t{str(key)}")
 
 
     async def shutdown(self, argv: 'list[str]' = None):

@@ -1,6 +1,7 @@
 import asyncio
 import traceback
-from src import minfo
+from src import audio
+from src import logbook
 from configs import custom
 from configs import settings
 from async_timeout import timeout
@@ -9,15 +10,12 @@ from discord import FFmpegPCMAudio
 from discord.errors import ClientException
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
-#from youtube_dl import YoutubeDL
-#from youtube_dl.utils import DownloadError
 from time import time
 from random import shuffle
 
 from discord.voice_client import VoiceClient
 from discord.message import Message
 from discord.ext.commands import Bot
-from src import audio
 
 
 class AudioPlayer:
@@ -27,7 +25,7 @@ class AudioPlayer:
     def __init__(self, client, message):
         self.client: Bot = client
         self.audio: audio.Audio = self.client.get_cog("Audio")
-        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
         self.message: Message = message
         self.voice_client: VoiceClient = message.guild.voice_client
         self.volume: float = 0.1
@@ -40,7 +38,7 @@ class AudioPlayer:
         self.next: asyncio.Event = asyncio.Event()
         self.running: bool = True
         self.player_task: asyncio.Task = self.client.loop.create_task(self.player_loop())
-        self.log.info(f"{self.message.guild.name}: Audioplayer created.")
+        self.log.info(f"{self.message.guild.name} audioplayer created.")
 
 
     async def player_loop(self):
@@ -65,7 +63,7 @@ class AudioPlayer:
                         track["title"] = filename[:len(filename) - 16]
                         track["url"] = settings.TEMP_PATH + filename
                         track["track_type"] = "music"
-                        self.log.debug(f"{self.message.guild.name}: Changed stream to local file stream for {track.get('title')}")
+                        self.log.info(f"{self.message.guild.name}: Changed stream to local file stream for {track.get('title')}")
 
                 if track.get("track_type") == "stream":     # stream / music / sfx
                     # Refresh the streaming url if the track has been too long in the Q and is in danger of expiring
@@ -98,8 +96,8 @@ class AudioPlayer:
                 if track.get("track_type") != "sfx":
                     self.voice_client.source.volume = self.volume
                     if self.looping != "song":
-                        await self.message.send(":cd: Now playing: {}, at {}% volume.".format(
-                            track.get("title"), (int(self.volume * 100))))
+                        await self.message.send(f":cd: Now playing: {track.get('title')}, at {int(self.volume * 100)}% volume.")
+                        self.log.info(f"Now playing: {track.get('title')}, at {int(self.volume * 100)}% volume.")
                 else:
                     self.voice_client.source.volume = self.sfx_volume
                 self.now_playing = track.get("title")

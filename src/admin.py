@@ -9,7 +9,7 @@ from discord.ext import commands
 from random import choice
 from shutil import rmtree
 from os import path
-from src import minfo
+from src import logbook
 from configs import custom
 from configs import settings
 
@@ -19,7 +19,7 @@ class Admin(commands.Cog):
 
     def __init__(self, client):
         self.client: commands.Bot = client
-        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
         self.status_task: Task = None
         self.running: bool = True
 
@@ -35,9 +35,9 @@ class Admin(commands.Cog):
         await self.client.close()
 
         try:
-            raise SystemExit
+            raise SystemExit(0)
         except SystemExit:
-            print("\nMaybe I'll take over the world some other time.\n")
+            self.log.log(logbook.RAW, "\nMaybe I'll take over the world some other time.\n")
             
 
     @commands.command(aliases=["reset", "repair"])
@@ -280,7 +280,7 @@ class Admin(commands.Cog):
             self.log.info("Member of guilds: ")
             for g in self.client.guilds:
                 self.log.info(f"{g.id} | {g.name}")
-        self.log.raw("\tI'm ready!\n")
+        self.log.log(logbook.RAW, "\tI'm ready!\n")
         if not self.status_task:
             self.status_task = self.client.loop.create_task(self.status_loop())
 
