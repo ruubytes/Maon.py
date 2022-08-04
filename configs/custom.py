@@ -9,6 +9,8 @@ COLOR_HEX = 0xf8d386
 STATUS_TEXT_LISTENING_TO = [
     "Spotify",
     "SAMURAI",
+    "the drives clicking",
+    "notification jingles",
     "the toilet flush",
     "the cats outside",
     "botcasts",
@@ -20,19 +22,24 @@ STATUS_TEXT_WATCHING = [
     "the server",
     "boring late night shows",
     "Wudy's shenanigans",
-    "Americans fill bags with gas",
-    "cryptos bounce"
+    "cryptos bounce",
+    "the router LEDs",
+    "my console logs"
 ]
 
 STATUS_TEXT_PLAYING = [
     "with fire",
     "with the server settings",
     "with yarn",
-    "Valheim",
     "Minecraft",
+    "Terraria",
     "Counter-Strike: Global Offensive",
     "Cyberpunk 2077",
-    "Terraria",
+    "Valheim",
+    "METAL GEAR RISING: REVENGEANCE",
+    "Dragon's Dogma: Dark Arisen",
+    "Elden Ring",
+    "The Witcher 3: Wild Hunt",
     "with a doge coin",
     "with my tail"
 ]
