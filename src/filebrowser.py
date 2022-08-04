@@ -1,6 +1,6 @@
 import login as login
+from src import logbook
 from src import guildbrowser
-from src import minfo
 from discord.ext import commands
 from configs import custom
 from configs import settings
@@ -11,7 +11,7 @@ class FileBrowser(commands.Cog):
 
     def __init__(self, client):
         self.client = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
         self.call_music = ["music", "audio"]
         self.call_sfx = ["sfx", "effects", "sound effects"]
         self.call_close = ["exit", "quit", "close"]

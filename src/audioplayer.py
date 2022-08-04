@@ -1,7 +1,7 @@
 import asyncio
 import traceback
-from src import minfo
 from src import audio
+from src import logbook
 from configs import custom
 from configs import settings
 from async_timeout import timeout
@@ -25,7 +25,7 @@ class AudioPlayer:
     def __init__(self, client, message):
         self.client: Bot = client
         self.audio: audio.Audio = self.client.get_cog("Audio")
-        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
         self.message: Message = message
         self.voice_client: VoiceClient = message.guild.voice_client
         self.volume: float = 0.1
@@ -63,7 +63,7 @@ class AudioPlayer:
                         track["title"] = filename[:len(filename) - 16]
                         track["url"] = settings.TEMP_PATH + filename
                         track["track_type"] = "music"
-                        self.log.debug(f"{self.message.guild.name}: Changed stream to local file stream for {track.get('title')}")
+                        self.log.info(f"{self.message.guild.name}: Changed stream to local file stream for {track.get('title')}")
 
                 if track.get("track_type") == "stream":     # stream / music / sfx
                     # Refresh the streaming url if the track has been too long in the Q and is in danger of expiring

@@ -1,7 +1,7 @@
 import os.path
 import asyncio
 import subprocess
-from src import minfo
+from src import logbook
 from configs import custom
 from configs import settings
 from discord import Embed
@@ -9,8 +9,6 @@ from discord.ext import commands
 from src import audioplayer
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
-#from youtube_dl import YoutubeDL
-#from youtube_dl.utils import DownloadError
 from tinytag import TinyTag, TinyTagException
 from time import sleep
 from time import time
@@ -26,7 +24,7 @@ class Audio(commands.Cog):
 
     def __init__(self, client):
         self.client: commands.Bot = client
-        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
         self.players: dict[int, audioplayer.AudioPlayer] = {}
         self.cached_songs = {}
         self.running: bool = True
@@ -62,7 +60,7 @@ class Audio(commands.Cog):
 
         # Check if it is a directory and play the whole folder
         elif os.path.isdir(settings.MUSIC_PATH + url):
-            self.log.debug(f"{message.guild.name}: Playing a folder!")
+            self.log.info(f"{message.guild.name}: Playing a folder!")
             playlist = []
             for pack in os.walk(settings.MUSIC_PATH + url):
                 for f in pack[2]:
@@ -85,7 +83,7 @@ class Audio(commands.Cog):
 
         # Check if it is a command like "history" or "music" whereas everything is queued
         elif url == "music":
-            self.log.debug(f"{message.guild.name}: Playing everything!")
+            self.log.info(f"{message.guild.name}: Playing everything!")
             playlist = []
             for pack in os.walk(settings.MUSIC_PATH):
                 for f in pack[2]:
@@ -226,7 +224,7 @@ class Audio(commands.Cog):
                     
                     else:
                         # Stream and download at the same time
-                        self.log.debug(f"{message.guild.name}: Going to stream and download at the same time...")
+                        self.log.info(f"{message.guild.name}: Going to stream and download at the same time...")
                         self.still_preparing.append(req.get("video_id"))
                         await self.queue_track(message, track)
                         await self.download_queue.put(req)
@@ -296,7 +294,7 @@ class Audio(commands.Cog):
                     self.still_preparing.remove(video_id)
                     continue
 
-                self.log.debug(f"{message.guild.name}: Background download finished for {track_title}")
+                self.log.info(f"{message.guild.name}: Background download finished for {track_title}")
                 self.still_preparing.remove(video_id)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):

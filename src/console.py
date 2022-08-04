@@ -1,6 +1,6 @@
 import asyncio
-from src import minfo
 from src import admin
+from src import logbook
 from aioconsole import ainput
 from discord.ext import commands
 
@@ -10,7 +10,7 @@ class Console(commands.Cog):
 
     def __init__(self, client):
         self.client: commands.Bot = client
-        self.log: minfo.Minstance = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
         self.execute: dict = {
             "help": self.usage,
             "info": self.usage,
@@ -29,7 +29,7 @@ class Console(commands.Cog):
             while True:
                 cmd_str: str = await ainput(loop = self.client.loop)
                 cmd = cmd_str.split(" ")
-                self.log.raw(f"> {cmd_str}", term=False)
+                self.log.info(f"> {cmd_str}")
                 try:
                     await self.execute.get(cmd[0])()
                 except TypeError:
@@ -40,9 +40,9 @@ class Console(commands.Cog):
 
     
     async def usage(self, argv: 'list[str]' = None):
-        self.log.raw("Available commands:")
+        self.log.info("Available commands:")
         for key in self.execute:
-            self.log.raw(f"\t{str(key)}")
+            self.log.info(f"\t{str(key)}")
 
 
     async def shutdown(self, argv: 'list[str]' = None):

@@ -2,7 +2,7 @@ import os
 import json
 import subprocess
 import requests
-from src import minfo
+from src import logbook
 from configs import custom
 from configs import settings
 from discord.ext import commands
@@ -16,7 +16,7 @@ class ServerManager(commands.Cog):
 
     def __init__(self, client: 'commands.Bot'):
         self.client: commands.Bot = client
-        self.log = minfo.getLogger(self.__class__.__name__, 0)
+        self.log = logbook.getLogger(self.__class__.__name__)
     
 
     @commands.command(aliases=["reg", "whitelist"])
