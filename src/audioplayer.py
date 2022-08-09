@@ -121,20 +121,17 @@ class AudioPlayer:
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
             self.log.info(f"{self.message.guild.name}: Cancelling audioplayer...")
+        
+        except ClientException:
+            self.log.error(f"{self.message.guild.name}: ClientException - Cancelling audioplayer...\n{traceback.format_exc()}")
+            await self.message.channel.send("I ran into a big error, shutting down my audioplayer...")
+
+        finally:
             self.running = False
             self.active_task.cancel()
+            self.voice_client.stop()
             await self.voice_client.disconnect()
             return self.audio.destroy_player(self.message)
-        
-        except ClientException as e:
-            self.log.error(f"{self.message.guild.name}: ClientException - Cancelling audioplayer...\n{traceback.format_exc()}")
-            self.running = False
-            self.active_task.cancel()
-            try:
-                await self.message.channel.send("I ran into a big error, shutting down my audioplayer...")
-                await self.voice_client.disconnect()
-            finally:
-                return self.audio.destroy_player(self.message)
 
 
     async def active_loop(self):
