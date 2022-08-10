@@ -59,7 +59,3 @@ def getLogger(name: str = None):
     log.addHandler(streamhandler)
 
     return log
-
-
-def removeLogger(name: str = None):
-    return 

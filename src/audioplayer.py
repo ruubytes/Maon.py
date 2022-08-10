@@ -45,7 +45,7 @@ class AudioPlayer:
         await self.client.wait_until_ready()
         # To close the player if the channel is empty
         self.active_task = self.client.loop.create_task(self.active_loop())
-        track = None
+        track: dict = None
         try:
             while self.running:
                 self.next.clear()
@@ -129,7 +129,8 @@ class AudioPlayer:
         finally:
             self.running = False
             self.active_task.cancel()
-            self.voice_client.stop()
+            if self.voice_client.is_playing():
+                self.voice_client.stop()
             await self.voice_client.disconnect()
             return self.audio.destroy_player(self.message)
 

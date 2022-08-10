@@ -96,7 +96,7 @@ class Fun(commands.Cog):
 
         # Check for multiplicator
         multiplicator = 0
-        if (len(numbers_list) == 2) and (numbers_list[1].startswith("x") or numbers_list[1].startswith("*")):
+        if (len(numbers_list) == 2) and (numbers_list[1].startswith(("x", "*"))):
             try:
                 multiplicator = int(numbers_list[1][1:])
                 if multiplicator < 1:

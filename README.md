@@ -118,6 +118,8 @@ pause
 
 play, p, stream, yt <url / path / filename>
         Play a local file from the music folder or a Youtube link.
+        Once Maon has joined a voice channel, using the prefix + command is
+        no longer necessary for youtube links. <url> will suffice.
 
 playlist, queue, q
         Shows the current playlist and the entry numbers of the songs.

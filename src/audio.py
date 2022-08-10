@@ -14,7 +14,9 @@ from time import sleep
 from time import time
 from pathlib import Path
 from os import listdir
-from os import walk
+
+from discord.message import Message
+from discord.ext.commands.context import Context
 
 
 class Audio(commands.Cog):
@@ -158,7 +160,7 @@ class Audio(commands.Cog):
         await self.client.wait_until_ready()
         try:
             while self.running:
-                req = await self.info_queue.get()
+                req: dict = await self.info_queue.get()
                 message = req.get("message")
 
                 # Extract video info to get the length and if it's a livestream
@@ -181,8 +183,10 @@ class Audio(commands.Cog):
                     await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
                     continue
 
+                self.log.info(f"Track protocol: {video_info.get('protocol')}")
+
                 # Check if a normal video has its duration stripped, sometimes this occurs, substitude it if yes
-                if (video_info.get("protocol") == "https+https") and (video_info.get("duration") is None):
+                if ((video_info.get("protocol") == "https+https") or (video_info.get("protocol") == "http_dash_segments+https")) and (video_info.get("duration") is None):
                     video_info["duration"] = settings.SONG_DURATION_MAX
 
                 track = {
@@ -197,11 +201,12 @@ class Audio(commands.Cog):
                 }
 
                 # If its a live stream, use the first url, otherwise look for the best webm audio url
-                if video_info.get("protocol") != "https+https":
+                if (video_info.get("protocol") != "https+https") and (video_info.get("protocol") != "http_dash_segments+https"):
                     track["url"] = video_info.get("url")
                     await self.queue_track(message, track)
                 
                 # It's a normal video, fetch the best audio url, usually 251 webm. Fallback to 140 m4a otherwise
+                # Uses protocol https+https or http_dash_segments+https
                 else:
                     formats = video_info.get("formats", [video_info])
                     req["formats"] = formats
@@ -343,7 +348,7 @@ class Audio(commands.Cog):
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.command(aliases=["p", "stream", "yt"])
     @commands.guild_only()
-    async def play(self, message, *, url: str = None):
+    async def play(self, message: Context, *, url: str = None):
         """ Makes Maon play an url linking to a Youtube video or filepath to a local mp3 / wav file in the music folder
         specified in `url`. Maon joins the requestee's voice channel and parses the `url`. """ 
         if message.guild.voice_client is None:
@@ -363,7 +368,7 @@ class Audio(commands.Cog):
         if url is None:
             return await message.send(
                 "You can browse the music folder with `browse music`, if you're looking for something specific.")
-        elif url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/") or url.startswith("https://m.youtube.com/") or url.startswith("https://youtube.com/"):
+        elif url.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
             await self.prep_link_track(message, url)
         elif os.path.exists(settings.MUSIC_PATH + url + ".mp3"):
             await self.prep_local_track(message, url + ".mp3")
@@ -375,6 +380,14 @@ class Audio(commands.Cog):
             await self.prep_local_track(message, url)
         else:
             return await message.send("I need a Youtube link or file path to play.")
+
+    
+    async def nc_play(self, message: Message, url: str):
+        """ \"No Command Play\"\n
+        Used when the listener catches a valid link from a music / bot channel without the use of
+        an explicit prefix and command. I don't know how to convert a message into a functioning context object to invoke
+        the normal play command, so I'll use this instead. """
+        return await self.prep_link_track(message, url)
 
 
     async def fb_play(self, message, url):
@@ -771,14 +784,16 @@ class Audio(commands.Cog):
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: Message):
         """ Event listener for the prefix- and command-less sound effect functionality. """
         if message.author.id != self.client.user.id:
             if not message.guild:
                 return
             elif message.guild.id in self.players:
                 if message.channel == self.players[message.guild.id].message.channel:
-                    if os.path.exists(settings.SFX_PATH + message.content + ".mp3"):
+                    if message.content.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
+                        return await self.nc_play(message, message.content.split()[0])
+                    elif os.path.exists(settings.SFX_PATH + message.content + ".mp3"):
                         return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".mp3")
                     elif os.path.exists(settings.SFX_PATH + message.content + ".wav"):
                         return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".wav")
