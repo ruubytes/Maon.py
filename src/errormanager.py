@@ -1,6 +1,5 @@
-import asyncio
-from discord import errors
 from discord.ext import commands
+from discord.ext.commands import Context
 from src import admin
 from src import logbook
 
@@ -16,11 +15,14 @@ class ErrorManager(commands.Cog):
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
-    async def on_command_error(self, message, error):
-        if isinstance(error, commands.CommandNotFound) or isinstance(error, commands.NotOwner) or isinstance(error, commands.NoPrivateMessage):
+    async def on_command_error(self, message: Context, error):
+        """ Invoked through faulty use of commands """
+        if isinstance(error, commands.CommandNotFound) or isinstance(error, commands.NotOwner):
             return
+        elif isinstance(error, commands.NoPrivateMessage):
+            return self.log.error(f"{message.message.author} tried to invoke an invalid command in private: {message.message.content}")
         elif isinstance(error, commands.MissingPermissions):
-            return self.log.error("I lack permissions for this command.")
+            return self.log.error(f"{message.message.author} from {message.guild.name} tried to use \"{message.message.content}\" but I lack permissions to do that.")
         else:
             self.log.error(str(error))
             raise error

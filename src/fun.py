@@ -1,4 +1,3 @@
-from asyncore import poll
 from json import loads
 from urllib import request
 from urllib.error import URLError, HTTPError

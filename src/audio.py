@@ -13,7 +13,7 @@ from tinytag import TinyTag, TinyTagException
 from time import sleep
 from time import time
 from pathlib import Path
-from os import listdir
+from os import listdir, strerror
 
 from discord.message import Message
 from discord.ext.commands.context import Context
@@ -81,7 +81,8 @@ class Audio(commands.Cog):
                 }
                 await self.queue_track(message, playlist_track, True)
 
-            await message.channel.send(url + " has been added to the queue.")
+            self.log.info(f"{message.guild.name}: {url} has been added to the queue.")
+            await message.channel.send(f"{url} has been added to the queue.")
 
         # Check if it is a command like "history" or "music" whereas everything is queued
         elif url == "music":
@@ -116,7 +117,8 @@ class Audio(commands.Cog):
             self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
         await self.players[message.guild.id].queue.put(track)
         if (message.guild.voice_client.is_playing() or message.guild.voice_client.is_paused()) and not suppress:
-            await message.channel.send("{} has been added to the queue.".format(track.get("title")))
+            self.log.info(f"{message.guild.name}: {track.get('title')} has been added to the queue.")
+            await message.channel.send(f"{track.get('title')} has been added to the queue.")
 
 
     async def prep_link_track(self, message, url:str):
@@ -169,12 +171,15 @@ class Audio(commands.Cog):
                     video_info = await self.client.loop.run_in_executor(
                         None, lambda: YoutubeDL(settings.YTDL_INFO_OPTIONS).extract_info(req.get("url"), download=False))
                 except DownloadError as e:
+                    self.log.error(f"{message.guild.name}: {str(e)[28:]}")
                     if "looks truncated." in str(e):
                         await message.channel.send("Your link looks incomplete, paste the command again, please.")
                     elif "to confirm your age" in str(e):
                         await message.channel.send("The video is age gated and I couldn't proxy my way around it.")
                     elif "HTTP Error 403" in str(e):
                         await message.channel.send("I received a `forbidden` error, I was locked out from downloading meta data...\nYou could try again in a few seconds, though!")
+                    elif "Private video. Sign in" in str(e):
+                        await message.channel.send("The video has been privated and I can't view it.")
                     else:
                         await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
                     continue
@@ -183,7 +188,7 @@ class Audio(commands.Cog):
                     await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
                     continue
 
-                self.log.info(f"Track protocol: {video_info.get('protocol')}")
+                self.log.info(f"{message.guild.name}: Track protocol: {video_info.get('protocol')}")
 
                 # Check if a normal video has its duration stripped, sometimes this occurs, substitude it if yes
                 if ((video_info.get("protocol") == "https+https") or (video_info.get("protocol") == "http_dash_segments+https")) and (video_info.get("duration") is None):
@@ -668,6 +673,7 @@ class Audio(commands.Cog):
         elif message.author.voice.channel != message.guild.voice_client.channel:
             return await message.send("Come in here first.")
         else:
+            self.log.info(f"{message.guild.name}: Stop request received for the audioplayer.")
             if message.guild.id in self.players:
                 self.players[message.guild.id].player_task.cancel()
             else:

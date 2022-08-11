@@ -6,7 +6,6 @@ from src import logbook
 from configs import custom
 from configs import settings
 from discord.ext import commands
-from discord.ext.commands import CommandInvokeError
 from json import JSONDecodeError
 from simplejson import JSONDecodeError
 

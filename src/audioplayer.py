@@ -2,7 +2,6 @@ import asyncio
 import traceback
 from src import audio
 from src import logbook
-from configs import custom
 from configs import settings
 from async_timeout import timeout
 from discord import PCMVolumeTransformer
@@ -97,7 +96,7 @@ class AudioPlayer:
                     self.voice_client.source.volume = self.volume
                     if self.looping != "song":
                         await self.message.send(f":cd: Now playing: {track.get('title')}, at {int(self.volume * 100)}% volume.")
-                        self.log.info(f"Now playing: {track.get('title')}, at {int(self.volume * 100)}% volume.")
+                        self.log.info(f"{self.message.guild.name}: Now playing: {track.get('title')}, at {int(self.volume * 100)}% volume. ({track.get('track_type')})")
                 else:
                     self.voice_client.source.volume = self.sfx_volume
                 self.now_playing = track.get("title")
@@ -119,11 +118,14 @@ class AudioPlayer:
                 if self.looping == "playlist" and track["track_type"] != "sfx":
                     await self.queue.put(track)
 
-        except (asyncio.CancelledError, asyncio.TimeoutError):
+        except asyncio.CancelledError:
             self.log.info(f"{self.message.guild.name}: Cancelling audioplayer...")
+
+        except asyncio.TimeoutError:
+            self.log.info(f"{self.message.guild.name}: Audioplayer has been inactive for {settings.PLAYER_TIMEOUT} seconds, cancelling...")
         
         except ClientException:
-            self.log.error(f"{self.message.guild.name}: ClientException - Cancelling audioplayer...\n{traceback.format_exc()}")
+            self.log.error(f"{self.message.guild.name}: ClientException - cancelling audioplayer...\n{traceback.format_exc()}")
             await self.message.channel.send("I ran into a big error, shutting down my audioplayer...")
 
         finally:
@@ -155,10 +157,11 @@ class AudioPlayer:
         """ Refreshes the stream url of a track in case it is in danger of expiring. """
         message = track.get("message")
         try:
+            self.log.info(f"{self.message.guild.name}: Refreshing the url for {track.get('title')}")
             video_info = await self.client.loop.run_in_executor(
                 None, lambda: YoutubeDL(settings.YTDL_INFO_OPTIONS).extract_info(track.get("original_url"), download=False))
 
-            if video_info.get("protocol"):
+            if (video_info.get("protocol") != "https+https") and (video_info.get("protocol") != "http_dash_segments+https"):
                 track["url"] = video_info.get("url")
             else:
                 formats = video_info.get("formats", [video_info])
