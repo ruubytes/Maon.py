@@ -10,7 +10,6 @@ from discord.errors import ClientException
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 from time import time
-from random import shuffle
 
 from discord.voice_client import VoiceClient
 from discord.message import Message
@@ -19,7 +18,7 @@ from discord.ext.commands import Bot
 
 class AudioPlayer:
     __slots__ = ["client", "log", "audio", "message", "voice_client", "volume", "looping", "sfx_volume", "player_timeout",
-                 "now_playing", "queue", "next", "running", "player_task", "active_task", "shuffle"]
+                 "now_playing", "queue", "next", "running", "player_task", "active_task"]
 
     def __init__(self, client, message):
         self.client: Bot = client
@@ -29,7 +28,6 @@ class AudioPlayer:
         self.voice_client: VoiceClient = message.guild.voice_client
         self.volume: float = 0.1
         self.looping: str = "off"  # off / song / playlist
-        self.shuffle: bool = False
         self.sfx_volume: float = settings.SFX_VOLUME
         self.player_timeout: int = settings.PLAYER_TIMEOUT
         self.now_playing: str = ""
@@ -102,15 +100,6 @@ class AudioPlayer:
                 self.now_playing = track.get("title")
 
                 await self.next.wait()
-
-                # If shuffle play is on, scramble the queue.
-                #   Reminder to detect already played songs in the history when history is implented.
-                if self.shuffle:
-                    scrambled_q = self.queue._queue
-                    shuffle(scrambled_q)
-                    self.queue = asyncio.Queue()
-                    for item in scrambled_q:
-                        await self.queue.put(item)
 
                 self.now_playing = ""
 

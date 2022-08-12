@@ -10,13 +10,16 @@ from src import audioplayer
 from yt_dlp import YoutubeDL
 from yt_dlp.utils import DownloadError
 from tinytag import TinyTag, TinyTagException
+from random import shuffle
+from pathlib import Path
+from os import listdir
 from time import sleep
 from time import time
-from pathlib import Path
-from os import listdir, strerror
 
 from discord.message import Message
 from discord.ext.commands.context import Context
+
+from typing import Deque
 
 
 class Audio(commands.Cog):
@@ -81,8 +84,8 @@ class Audio(commands.Cog):
                 }
                 await self.queue_track(message, playlist_track, True)
 
-            self.log.info(f"{message.guild.name}: {url} has been added to the queue.")
-            await message.channel.send(f"{url} has been added to the queue.")
+            self.log.info(f"{message.guild.name}: {url} has been added to the playlist.")
+            await message.channel.send(f"{url} has been added to the playlist.")
 
         # Check if it is a command like "history" or "music" whereas everything is queued
         elif url == "music":
@@ -117,8 +120,8 @@ class Audio(commands.Cog):
             self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
         await self.players[message.guild.id].queue.put(track)
         if (message.guild.voice_client.is_playing() or message.guild.voice_client.is_paused()) and not suppress:
-            self.log.info(f"{message.guild.name}: {track.get('title')} has been added to the queue.")
-            await message.channel.send(f"{track.get('title')} has been added to the queue.")
+            self.log.info(f"{message.guild.name}: {track.get('title')} has been added to the playlist.")
+            await message.channel.send(f"{track.get('title')} has been added to the playlist.")
 
 
     async def prep_link_track(self, message, url:str):
@@ -598,30 +601,21 @@ class Audio(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def shuffle(self, message, *, option: str = None):
-        """ Shuffle play; prefix shuffle off to turn it off """
-        # Check if there even is an active audioplayer for this guild
-        if message.guild.id not in self.players:
+    async def shuffle(self, message: Context):
+        """ Shuffle an audioplayer's playlist """
+        player: audioplayer.AudioPlayer = self.players.get(message.guild.id)
+        if player is None:
             return await message.channel.send("I don't have an active audioplayer for this server.")
+        if player.queue.qsize() <= 1 :
+            return await message.channel.send("There's nothing for me to shuffle in the playlist.")
 
-        elif option is None or option == "on":
-            # Check if shuffle is already on
-            if not self.players[message.guild.id].shuffle:
-                self.players[message.guild.id].shuffle = True
-                return await message.channel.send(":twisted_rightwards_arrows: I've turned shuffle play on.")
-            else:
-                return await message.channel.send(":twisted_rightwards_arrows: Shuffle play is on. You can turn it off with `{}shuffle off`".format(custom.PREFIX[0]))
+        shuffled_queue: Deque = player.queue._queue
+        player.queue = asyncio.Queue()
+        shuffle(shuffled_queue)
+        for i in shuffled_queue:
+            await player.queue.put(i)
 
-        elif (option == "off") or (option == "stop") or (option == "quit"):
-            # Check if shuffle is on
-            if not self.players[message.guild.id].shuffle:
-                return await message.channel.send("Shuffle play is off.")
-            else:
-                self.players[message.guild.id].shuffle = False
-                return await message.channel.send("I've turned shuffle play off.")
-        
-        else:
-            return await message.channel.send("You can turn shuffle play on and off with `{}shuffle on / off`".format(custom.PREFIX[0]))
+        return await message.channel.send(":twisted_rightwards_arrows: Playlist has been shuffled.")
 
 
     @commands.command()
