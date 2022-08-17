@@ -1,30 +1,36 @@
 import asyncio
 import traceback
+from time import time
 from src import audio
 from src import logbook
 from configs import settings
-from async_timeout import timeout
-from discord import PCMVolumeTransformer
-from discord import FFmpegPCMAudio
-from discord.errors import ClientException
+from logging import Logger
 from yt_dlp import YoutubeDL
+from async_timeout import timeout
+from discord import FFmpegPCMAudio
+from discord import PCMVolumeTransformer
+
 from yt_dlp.utils import DownloadError
-from time import time
+from discord.errors import ClientException
+from discord.errors import ConnectionClosed
 
 from discord.voice_client import VoiceClient
 from discord.message import Message
 from discord.ext.commands import Bot
+from discord.ext.commands import Context
 
 
+# TODO: Implement live stream refresh after every 10 minutes if live stream is still playing
+# TODO: In audio, check if queue is empty before putting live_streams back in after interrupting them for a sfx
 class AudioPlayer:
-    __slots__ = ["client", "log", "audio", "message", "voice_client", "volume", "looping", "sfx_volume", "player_timeout",
-                 "now_playing", "queue", "next", "running", "player_task", "active_task"]
+    __slots__ = ["log", "client", "audio", "message", "voice_client", "volume", "looping", "sfx_volume", "player_timeout",
+                 "now_playing", "queue", "next", "track", "running", "player_task", "active_task"]
 
-    def __init__(self, client, message):
+    def __init__(self, client: Bot, message: Context | Message):
+        self.log: Logger = logbook.getLogger(self.__class__.__name__)
         self.client: Bot = client
         self.audio: audio.Audio = self.client.get_cog("Audio")
-        self.log = logbook.getLogger(self.__class__.__name__)
-        self.message: Message = message
+        self.message: Context | Message = message
         self.voice_client: VoiceClient = message.guild.voice_client
         self.volume: float = 0.1
         self.looping: str = "off"  # off / song / playlist
@@ -33,80 +39,117 @@ class AudioPlayer:
         self.now_playing: str = ""
         self.queue: asyncio.Queue = asyncio.Queue()
         self.next: asyncio.Event = asyncio.Event()
+        self.track: dict = {}
         self.running: bool = True
-        self.player_task: asyncio.Task = self.client.loop.create_task(self.player_loop())
+        self.player_task: asyncio.Task = self.client.loop.create_task(self._player_loop())
         self.log.info(f"{self.message.guild.name} audioplayer created.")
 
 
-    async def player_loop(self):
-        await self.client.wait_until_ready()
-        # To close the player if the channel is empty
-        self.active_task = self.client.loop.create_task(self.active_loop())
-        track: dict = None
+    async def _player_loop(self):
         try:
+            await self.client.wait_until_ready()
             while self.running:
                 self.next.clear()
-
-                if self.looping != "song":
-                    track = None
-                    async with timeout(self.player_timeout):
-                        track = await self.queue.get()
-
-                if track.get("track_type") == "stream":
-                    # In case of a repeating song or multiple requested songs, check if it is available in the cache
-                    #   now and overwrite if yes
-                    filename = self.audio.cached_songs.get(track.get("video_id"))
-                    if filename:
-                        track["title"] = filename[:len(filename) - 16]
-                        track["url"] = settings.TEMP_PATH + filename
-                        track["track_type"] = "music"
-                        self.log.info(f"{self.message.guild.name}: Changed stream to local file stream for {track.get('title')}")
-
-                if track.get("track_type") == "stream":     # stream / music / sfx
-                    # Refresh the streaming url if the track has been too long in the Q and is in danger of expiring
-                    if (time() - track.get("time_stamp")) >  600:
-                        track = await self.refresh_url(track)
-                        if track is None: continue
-
-                    self.voice_client.play(
-                        PCMVolumeTransformer(
-                            FFmpegPCMAudio(
-                                track.get("url"),
-                                before_options=settings.BEFORE_ARGS,
-                                options=settings.FFMPEG_OPTIONS
-                            )
-                        ),
-                        after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set)
-                    )
-                    
-                else:
-                    self.voice_client.play(
-                        PCMVolumeTransformer(
-                            FFmpegPCMAudio(
-                                track.get("url"), 
-                                options=settings.FFMPEG_OPTIONS
-                            )
-                        ),
-                        after=lambda _: self.client.loop.call_soon_threadsafe(self.next.set)
-                    )
-
-                if track.get("track_type") != "sfx":
-                    self.voice_client.source.volume = self.volume
-                    if self.looping != "song":
-                        await self.message.send(f":cd: Now playing: {track.get('title')}, at {int(self.volume * 100)}% volume.")
-                        self.log.info(f"{self.message.guild.name}: Now playing: {track.get('title')}, at {int(self.volume * 100)}% volume. ({track.get('track_type')})")
-                else:
-                    self.voice_client.source.volume = self.sfx_volume
-                self.now_playing = track.get("title")
-
+                await self._get_track()
+                await self._refresh_url()
+                await self._play(self._set_options())
                 await self.next.wait()
+                if self.looping == "playlist" and self.track.get("track_type") != "sfx":
+                    await self.queue.put(self.track)
 
-                self.now_playing = ""
+        except Exception as e:
+            self.log.error(f"{self.message.guild.name}: _player_loop exception: {type(e)}\n{traceback.format_exc()}")
 
-                # Playlist loop
-                if self.looping == "playlist" and track["track_type"] != "sfx":
-                    await self.queue.put(track)
+        finally:
+            self.running = False
+            if self.voice_client.is_playing():
+                self.voice_client.stop()
+            try:
+                await self.voice_client.disconnect(force=True)
+            except ConnectionResetError:
+                self.log.error(f"{self.message.guild.name}: Disconnecting the voice_client ran into a ConnectionResetError, because the connection is already closing.")
+            return self.audio.destroy_player(self.message)
 
+    
+    async def _get_track(self):
+        """ Get the next track or keep the current one if the player is set to loop the current song. """
+        if self.looping != "song":
+            async with timeout(self.player_timeout):
+                self.track = await self.queue.get()
+
+
+    async def _refresh_url(self):
+        """ Refresh the stream url to avoid its expiration """
+        if self.track.get("track_type") not in ["live_stream", "stream"] or (time() - self.track.get("time_stamp")) < 600:
+            return
+
+        self.log.info(f"{self.message.guild.name}: Refreshing the streaming url for {self.track.get('title')}.")
+
+        video_info = await self.client.loop.run_in_executor(
+            None, lambda: YoutubeDL(settings.YTDL_INFO_OPTIONS).extract_info(self.track.get("original_url"), download=False))
+
+        if self.track.get("track_type") == "live_stream":
+            self.track["url"] = video_info.get("url")
+        else:
+            format_urls = {}
+            for f in video_info.get("formats", [video_info]):
+                format_urls[f.get("format_id")] = f.get("url")
+
+            if   "251" in format_urls: self.track["url"] = format_urls.get("251")   # webm
+            elif "140" in format_urls: self.track["url"] = format_urls.get("140")   # m4a
+            elif "250" in format_urls: self.track["url"] = format_urls.get("250")   # webm
+            elif "249" in format_urls: self.track["url"] = format_urls.get("249")   # webm
+            elif "139" in format_urls: self.track["url"] = format_urls.get("139")   # m4a
+            else: self.log.error(f"{self.message.guild.name}: For some reason the track {self.track.get('title')} doesn't have any valid format IDs anymore.")
+
+        self.track["time_stamp"] = time()
+
+
+    def _set_options(self):
+        """ Set reconnect arguments for ffmpeg if it's a stream """
+        if self.track.get("track_type") in ["live_stream", "stream"]:
+            return settings.BEFORE_ARGS
+        return None
+
+
+    async def _play(self, before_options: str = None):
+        """ `before_options`: optional List[str] \n\n Extra command line arguments to pass to ffmpeg before the -i flag. """
+        try:
+            self.log.info(f"{self.message.guild.name}: Now playing {self.track.get('title')}.")
+            self.voice_client.play(
+                PCMVolumeTransformer(
+                    FFmpegPCMAudio(
+                        self.track.get("url"),
+                        before_options=before_options,
+                        options=settings.FFMPEG_OPTIONS
+                    )
+                ),
+                #after = self.client.loop.call_soon_threadsafe(self._play_after_call())
+                after=lambda e: self._play_after_call(e)
+            )
+
+            if self.track.get("track_type") == "sfx":
+                self.voice_client.source.volume = self.sfx_volume
+            else:
+                self.voice_client.source.volume = self.volume
+                if self.now_playing != self.track.get("title"):
+                    self.now_playing = self.track.get("title")
+                    await self.message.send(f":cd: Now playing: {self.track.get('title')}, at {int(self.volume * 100)}% volume.")
+
+        except Exception as e:
+            self.log.error(f"{self.message.guild.name}: Error outside of play function: {type(e)}\n{traceback.format_exc()}")
+
+
+    def _play_after_call(self, error: Exception = None):
+        if error:
+            self.log.error(f"{self.message.guild.name}: Error within play function: {type(error)}\n{traceback.format_exc()}")
+        self.next.set()
+
+
+
+
+
+    """
         except asyncio.CancelledError:
             self.log.info(f"{self.message.guild.name}: Cancelling audioplayer...")
 
@@ -114,6 +157,7 @@ class AudioPlayer:
             self.log.info(f"{self.message.guild.name}: Audioplayer has been inactive for {settings.PLAYER_TIMEOUT} seconds, cancelling...")
         
         except ClientException:
+            # This usually happens if the audioplayer runs but the voice_client is not connected to voice
             self.log.error(f"{self.message.guild.name}: ClientException - cancelling audioplayer...\n{traceback.format_exc()}")
             await self.message.channel.send("I ran into a big error, shutting down my audioplayer...")
 
@@ -122,44 +166,9 @@ class AudioPlayer:
             self.active_task.cancel()
             if self.voice_client.is_playing():
                 self.voice_client.stop()
-            await self.voice_client.disconnect()
+            try:
+                await self.voice_client.disconnect(force=True)
+            except ConnectionResetError:
+                self.log.error(f"{self.message.guild.name}: Disconnecting the voice_client ran into a ConnectionResetError, because the connection is already closing.")
             return self.audio.destroy_player(self.message)
-
-
-    async def active_loop(self):
-        """ Periodically checks if Maon is alone in a voice channel and disconnects if True """
-        try:
-            while self.running:
-                if len(self.message.guild.voice_client.channel.voice_states) < 2:
-                    self.log.info(f"{self.message.guild.name}: Users left the voice channel, destroying audioplayer.")
-                    self.running = False
-                    return self.player_task.cancel()
-                
-                else:
-                    await asyncio.sleep(10)
-
-        except asyncio.CancelledError:
-            pass
-
-
-    async def refresh_url(self, track):
-        """ Refreshes the stream url of a track in case it is in danger of expiring. """
-        message = track.get("message")
-        try:
-            self.log.info(f"{self.message.guild.name}: Refreshing the url for {track.get('title')}")
-            video_info = await self.client.loop.run_in_executor(
-                None, lambda: YoutubeDL(settings.YTDL_INFO_OPTIONS).extract_info(track.get("original_url"), download=False))
-
-            if (video_info.get("protocol") != "https+https") and (video_info.get("protocol") != "http_dash_segments+https"):
-                track["url"] = video_info.get("url")
-            else:
-                formats = video_info.get("formats", [video_info])
-                for f in formats:
-                    if f["format_id"] == "251":
-                        track["url"] = f.get("url")
-            track["time_stamp"] = time()
-
-            return track
-        except DownloadError:
-            await message.channel.send("{}'s streaming link probably expired and I ran into an error.".format(track.get("title")))
-            return None
+    """

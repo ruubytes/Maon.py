@@ -1,25 +1,29 @@
 import os.path
 import asyncio
 import subprocess
+from time import time
+from time import sleep
+from os import listdir
 from src import logbook
+from src import audioplayer
 from configs import custom
 from configs import settings
 from discord import Embed
 from discord.ext import commands
-from src import audioplayer
 from yt_dlp import YoutubeDL
-from yt_dlp.utils import DownloadError
-from tinytag import TinyTag, TinyTagException
+from tinytag import TinyTag
 from random import shuffle
 from pathlib import Path
-from os import listdir
-from time import sleep
-from time import time
 
-from discord.message import Message
-from discord.ext.commands.context import Context
+from tinytag import TinyTagException
+from yt_dlp.utils import DownloadError
 
 from typing import Deque
+from discord import Member
+from discord import VoiceState
+from discord import VoiceClient
+from discord.message import Message
+from discord.ext.commands.context import Context
 
 
 class Audio(commands.Cog):
@@ -31,7 +35,7 @@ class Audio(commands.Cog):
         self.client: commands.Bot = client
         self.log = logbook.getLogger(self.__class__.__name__)
         self.players: dict[int, audioplayer.AudioPlayer] = {}
-        self.cached_songs = {}
+        self.cached_songs: dict = {}
         self.running: bool = True
         self.still_preparing: list[str] = []
         self.info_queue: asyncio.Queue = asyncio.Queue()
@@ -44,7 +48,7 @@ class Audio(commands.Cog):
 
     async def prep_local_track(self, message, url:str):
         """ Builds local track information for the audioplayer and queues it. """
-
+        self.log.info(f"{message.guild.name}: Building a local track...")
         track = {
             "message": message,
             "title": "", 
@@ -201,9 +205,9 @@ class Audio(commands.Cog):
                     "message": message, 
                     "title": video_info.get("title"), 
                     "url": "", 
+                    "original_url": req.get("url"), 
                     "track_type": "stream", 
                     "video_id": req.get("video_id"),
-                    "original_url": req.get("url"), 
                     "video_info": video_info,
                     "time_stamp": time()
                 }
@@ -211,6 +215,7 @@ class Audio(commands.Cog):
                 # If its a live stream, use the first url, otherwise look for the best webm audio url
                 if (video_info.get("protocol") != "https+https") and (video_info.get("protocol") != "http_dash_segments+https"):
                     track["url"] = video_info.get("url")
+                    track["track_type"] = "live_stream"
                     await self.queue_track(message, track)
                 
                 # It's a normal video, fetch the best audio url, usually 251 webm. Fallback to 140 m4a otherwise
@@ -359,13 +364,22 @@ class Audio(commands.Cog):
     async def play(self, message: Context, *, url: str = None):
         """ Makes Maon play an url linking to a Youtube video or filepath to a local mp3 / wav file in the music folder
         specified in `url`. Maon joins the requestee's voice channel and parses the `url`. """ 
+        self.log.warn(f"{message.guild.voice_client} | {self.players.get(message.guild.id)}")
         if message.guild.voice_client is None:
             if message.author.voice:
                 if message.author.voice.channel.user_limit != 0 and message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
                     return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
+                
                 await message.author.voice.channel.connect()
-                if message.guild.id not in self.players:
+                self.log.info(f"{message.guild.name}: Voice connection established.")
+
+                if message.guild.id not in self.players or self.players.get(message.guild.id) is None:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+                
+                else:
+                    """ If the voice_client crashes, we have to overwrite the old one in the player. """
+                    self.log.warn(f"{message.guild.name}: Overwriting voice_client in player...")
+                    self.players[message.guild.id].voice_client = message.guild.voice_client
             else:
                 return await message.send("You're not in a voice channel, silly. :eyes:")
         elif message.author.voice is None:
@@ -472,6 +486,13 @@ class Audio(commands.Cog):
 
         if message.guild.id not in self.players:
             self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+
+        player = self.players.get(message.guild.id)
+        if player.track.get("track_type") == "live_stream":
+            await player.queue.put(track)
+            await player.queue.put(player.track)
+            return player.voice_client.stop()
+
         return await self.players[message.guild.id].queue.put(track)
 
 
@@ -501,7 +522,13 @@ class Audio(commands.Cog):
             tag.title = url[url.rfind("/") + 1:]
         track = {"title": tag.title, "url": url, "track_type": "sfx"}
 
-        await self.queue_track(message, track)
+        player = self.players.get(message.guild.id)
+        if player.track.get("track_type") == "live_stream":
+            await player.queue.put(track)
+            await player.queue.put(player.track)
+            return player.voice_client.stop()
+
+        return await self.queue_track(message, track)
 
 
     @commands.command(aliases=["v", "vol"])
@@ -674,6 +701,30 @@ class Audio(commands.Cog):
                 await message.guild.voice_client.disconnect()
 
 
+    @commands.command(aliases=["repair"])
+    @commands.guild_only()
+    async def reset(self, message: Context = None):
+        """ Closes the guild voice client and deletes the guild audio player if it exists, forcefully, then rejoins. """
+        if message.author.voice is None:
+            return await message.send("You need to be in a voice channel to do this.")
+        self.log.warn(f"{message.guild.name}: Resetting audioplayer and voice client...")
+        
+        player: audioplayer.AudioPlayer = self.players.get(message.guild.id)
+        if player is not None:
+            self.log.warn(f"{message.guild.name}: Audioplayer exists, trying to cancel...")
+            player.player_task.cancel()
+        
+        if message.guild.voice_client is not None:
+            self.log.warn(f"{message.guild.name}: Voice client is still connected, trying to force disconnect...")
+            voice_client: VoiceClient = message.guild.voice_client
+            await voice_client.disconnect(force=True)
+
+        await asyncio.sleep(1)
+        await message.author.voice.channel.connect()
+        self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+
+        return await message.channel.send("I've reset my audioplayer and voice client!")
+
     @commands.command(aliases=["queue", "q"])
     @commands.guild_only()
     async def playlist(self, message, *args):
@@ -800,15 +851,10 @@ class Audio(commands.Cog):
 
 
     @commands.Cog.listener()
-    async def on_voice_state_update(self, member, before, after):
-        if member.id == self.client.user.id:
-            pass
-        #    if after.channel is None:
-        #        try:
-        #            self.players[before.channel.guild.id].player_task.cancel()
-        #            self.log.info(f"{before.channel.guild.name}: I got kicked from a voice channel!")
-        #        except KeyError:
-        #            pass
+    async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
+        if (member.guild.id in self.players) and (len(self.players.get(member.guild.id).voice_client.channel.voice_states) < 2):
+            self.log.info(f"{member.guild.name}: Users left the voice channel, destroying audioplayer.")
+            self.players.get(member.guild.id).player_task.cancel()
 
 
     # ═══ Helper Methods ═══════════════════════════════════════════════════════════════════════════════════════════════

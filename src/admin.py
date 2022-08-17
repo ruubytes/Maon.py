@@ -1,17 +1,20 @@
 import os
-import psutil
 import sys
+import psutil
 import discord
-from asyncio import Task
-from asyncio import sleep
-from asyncio import CancelledError
-from discord.ext import commands
-from random import choice
-from shutil import rmtree
 from os import path
 from src import logbook
 from configs import custom
 from configs import settings
+from asyncio import sleep
+from shutil import rmtree
+from random import choice
+from discord.ext import commands
+
+from asyncio import CancelledError
+
+from asyncio import Task
+from discord.ext.commands import Context
 
 
 class Admin(commands.Cog):
@@ -27,7 +30,7 @@ class Admin(commands.Cog):
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.command(aliases=["kill"])
     @commands.is_owner()
-    async def shutdown(self, message = None):
+    async def shutdown(self, message: Context = None):
         """ Shuts down Maon gracefully by first logging out and closing all event loops. """
         vc: discord.VoiceClient
         for vc in self.client.voice_clients:
@@ -40,9 +43,9 @@ class Admin(commands.Cog):
             self.log.log(logbook.RAW, "\nMaybe I'll take over the world some other time.\n")
             
 
-    @commands.command(aliases=["reset", "repair"])
-    #@commands.is_owner()
-    async def restart(self, message = None):
+    @commands.command()
+    @commands.is_owner()
+    async def restart(self, message: Context = None):
         """ Restarts Maon by killing all connections and then restarts the process with the same 
         arguments. """
         vc: discord.VoiceClient
@@ -62,7 +65,7 @@ class Admin(commands.Cog):
 
     @commands.command()
     @commands.is_owner()
-    async def reload(self, message, *, extension: str = None):
+    async def reload(self, message: Context, *, extension: str = None):
         """ Reloads selected or all extension modules. """
         if extension is None:
             return await message.send("Do you want me to reload a specific extension or `all`?")

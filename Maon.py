@@ -47,7 +47,7 @@ class Maon:
 
 
     def set_intents(self):
-        # Set handled events by the API
+        """ Set handled events by the API """
         intents = discord.Intents.default()
         intents.typing = False
         intents.presences = False
