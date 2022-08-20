@@ -20,11 +20,9 @@ from discord.ext.commands import Bot
 from discord.ext.commands import Context
 
 
-# TODO: Implement live stream refresh after every 10 minutes if live stream is still playing
-# TODO: In audio, check if queue is empty before putting live_streams back in after interrupting them for a sfx
 class AudioPlayer:
     __slots__ = ["log", "client", "audio", "message", "voice_client", "volume", "looping", "sfx_volume", "player_timeout",
-                 "now_playing", "queue", "next", "track", "running", "player_task", "active_task"]
+                 "now_playing", "queue", "next", "track", "running", "player_task", "refresh_live_stream_task"]
 
     def __init__(self, client: Bot, message: Context | Message):
         self.log: Logger = logbook.getLogger(self.__class__.__name__)
@@ -42,6 +40,7 @@ class AudioPlayer:
         self.track: dict = {}
         self.running: bool = True
         self.player_task: asyncio.Task = self.client.loop.create_task(self._player_loop())
+        self.refresh_live_stream_task: asyncio.Task = None
         self.log.info(f"{self.message.guild.name} audioplayer created.")
 
 
@@ -50,12 +49,25 @@ class AudioPlayer:
             await self.client.wait_until_ready()
             while self.running:
                 self.next.clear()
+
                 await self._get_track()
                 await self._refresh_url()
                 await self._play(self._set_options())
+
                 await self.next.wait()
                 if self.looping == "playlist" and self.track.get("track_type") != "sfx":
                     await self.queue.put(self.track)
+
+        except asyncio.CancelledError:
+            self.log.info(f"{self.message.guild.name}: Cancelling audioplayer...")
+
+        except asyncio.TimeoutError:
+            self.log.info(f"{self.message.guild.name}: Audioplayer has been inactive for {settings.PLAYER_TIMEOUT} seconds, cancelling...")
+
+        except ClientException as e:
+            # This usually happens if the audioplayer runs but the voice_client is not connected to voice
+            self.log.error(f"{self.message.guild.name}: ClientException - cancelling audioplayer...\n{traceback.format_exc()}")
+            await self.message.channel.send("I ran into a big error, shutting down my audioplayer...")
 
         except Exception as e:
             self.log.error(f"{self.message.guild.name}: _player_loop exception: {type(e)}\n{traceback.format_exc()}")
@@ -80,11 +92,15 @@ class AudioPlayer:
 
     async def _refresh_url(self):
         """ Refresh the stream url to avoid its expiration """
+        if self.track.get("track_type") == "live_stream":
+            if self.refresh_live_stream_task is not None and not self.refresh_live_stream_task.done(): 
+                self.refresh_live_stream_task.cancel()
+            self.refresh_live_stream_task = self.client.loop.create_task(self._refresh_live_stream(self.track))
+        
         if self.track.get("track_type") not in ["live_stream", "stream"] or (time() - self.track.get("time_stamp")) < 600:
             return
 
         self.log.info(f"{self.message.guild.name}: Refreshing the streaming url for {self.track.get('title')}.")
-
         video_info = await self.client.loop.run_in_executor(
             None, lambda: YoutubeDL(settings.YTDL_INFO_OPTIONS).extract_info(self.track.get("original_url"), download=False))
 
@@ -103,6 +119,30 @@ class AudioPlayer:
             else: self.log.error(f"{self.message.guild.name}: For some reason the track {self.track.get('title')} doesn't have any valid format IDs anymore.")
 
         self.track["time_stamp"] = time()
+
+    
+    async def _refresh_live_stream(self, track: dict):
+        """ Refresh the live stream url every 10 minutes and restart the play process because live streams have been lagging and
+            doing weird things after ~15 minutes for a while now """
+        try:
+            await asyncio.sleep(600)
+            if self.now_playing != track.get("title"): return
+
+            self.log.info(f"{self.message.guild.name}: Refreshing the streaming url for {track.get('title')}.")
+            video_info = await self.client.loop.run_in_executor(
+                None, lambda: YoutubeDL(settings.YTDL_INFO_OPTIONS).extract_info(track.get("original_url"), download=False))
+            
+            track["url"] = video_info.get("url")
+            track["time_stamp"] = time()
+            track["live_refresh"] = True
+
+            await self.play_next(track)
+
+            if self.voice_client.is_playing():
+                self.voice_client.stop()
+
+        except asyncio.CancelledError:
+            self.log.info(f"{self.message.guild.name}: Live stream refresh task cancelled.")
 
 
     def _set_options(self):
@@ -124,7 +164,6 @@ class AudioPlayer:
                         options=settings.FFMPEG_OPTIONS
                     )
                 ),
-                #after = self.client.loop.call_soon_threadsafe(self._play_after_call())
                 after=lambda e: self._play_after_call(e)
             )
 
@@ -134,7 +173,8 @@ class AudioPlayer:
                 self.voice_client.source.volume = self.volume
                 if self.now_playing != self.track.get("title"):
                     self.now_playing = self.track.get("title")
-                    await self.message.send(f":cd: Now playing: {self.track.get('title')}, at {int(self.volume * 100)}% volume.")
+                    if self.track.get("live_refresh") is None:
+                        await self.message.send(f":cd: Now playing: {self.track.get('title')}, at {int(self.volume * 100)}% volume.")
 
         except Exception as e:
             self.log.error(f"{self.message.guild.name}: Error outside of play function: {type(e)}\n{traceback.format_exc()}")
@@ -144,31 +184,18 @@ class AudioPlayer:
         if error:
             self.log.error(f"{self.message.guild.name}: Error within play function: {type(error)}\n{traceback.format_exc()}")
         self.next.set()
+        self.now_playing = ""
 
 
-
-
-
-    """
-        except asyncio.CancelledError:
-            self.log.info(f"{self.message.guild.name}: Cancelling audioplayer...")
-
-        except asyncio.TimeoutError:
-            self.log.info(f"{self.message.guild.name}: Audioplayer has been inactive for {settings.PLAYER_TIMEOUT} seconds, cancelling...")
-        
-        except ClientException:
-            # This usually happens if the audioplayer runs but the voice_client is not connected to voice
-            self.log.error(f"{self.message.guild.name}: ClientException - cancelling audioplayer...\n{traceback.format_exc()}")
-            await self.message.channel.send("I ran into a big error, shutting down my audioplayer...")
-
-        finally:
-            self.running = False
-            self.active_task.cancel()
-            if self.voice_client.is_playing():
-                self.voice_client.stop()
-            try:
-                await self.voice_client.disconnect(force=True)
-            except ConnectionResetError:
-                self.log.error(f"{self.message.guild.name}: Disconnecting the voice_client ran into a ConnectionResetError, because the connection is already closing.")
-            return self.audio.destroy_player(self.message)
-    """
+    async def play_next(self, track: dict):
+        """ Prepend a track to the player's queue instead of appending it. """
+        if self.queue.qsize() > 0:
+            self.log.info(f"{self.message.guild.name}: Prepending {track.get('title')} and rebuilding the player's queue...")
+            new_queue = [track]
+            new_queue.append(list(self.queue._queue))
+            self.queue: asyncio.Queue = asyncio.Queue()
+            for t in new_queue:
+                await self.queue.put(t)
+        else:
+            await self.queue.put(track)
+            

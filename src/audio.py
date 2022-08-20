@@ -237,11 +237,11 @@ class Audio(commands.Cog):
                     track["url"] = format_ids.get(req.get("format_id"))
 
                     # Fallback to stream without download if download is not an option
-                    if (video_info.get("duration") >= settings.SONG_DURATION_MAX) or (req.get("video_id") in self.still_preparing) or (not await self.manage_temp_size(req)):
+                    if (req.get("video_id") in self.still_preparing) or (settings.SONG_DURATION_MAX <= 0):
                         await self.queue_track(message, track)
-                    
-                    else:
-                        # Stream and download at the same time
+                    elif (video_info.get("duration") >= settings.SONG_DURATION_MAX) or (not await self.manage_temp_size(req)):
+                        await self.queue_track(message, track)
+                    else:   # Stream and download at the same time
                         self.log.info(f"{message.guild.name}: Going to stream and download at the same time...")
                         self.still_preparing.append(req.get("video_id"))
                         await self.queue_track(message, track)
@@ -321,19 +321,20 @@ class Audio(commands.Cog):
 
     async def manage_temp_size(self, req):
         """ Removes items from the temp folder in FIFO order if a new addition would go over the 
-        max-size stated in the configuration file """
+        max-size stated in the configuration file \n\n
+        Returns True if there is enough space and False if the requested file is too large. """
         message = req.get("message")
         try:
             # Make this a member of audio instead of calculating it every time again from scratch
             size_in_mb = (sum(f.stat().st_size for f in Path(settings.TEMP_PATH).glob('**/*') if f.is_file())) / (1024 * 1024)
 
-            filesize_in_mb = 0
+            filesize_in_mb: float = 0.0
             for f in req.get("formats"):
                 if f["format_id"] == req.get("format_id"):
                     if f.get("filesize"):
                         filesize_in_mb = (f.get("filesize") / (1024 * 1024))
                         if filesize_in_mb > settings.TEMP_FOLDER_MAX_SIZE_IN_MB:
-                            raise OSError("[Audio Ext] Requested download is larger than the allowed size of the temp folder. ({} > {})".format(filesize_in_mb, settings.TEMP_FOLDER_MAX_SIZE_IN_MB))
+                            raise OSError(f"Requested download is larger than the allowed size of the temp folder. ({filesize_in_mb:.2f} MB > {settings.TEMP_FOLDER_MAX_SIZE_IN_MB} MB)")
                         break
                     else:
                         break
@@ -351,8 +352,7 @@ class Audio(commands.Cog):
             return True
 
         except OSError as e:
-            self.log.error(e.strerror)
-            await message.channel.send("The requested download is larger than what I'm allowed to have, defaulting to stream.")
+            self.log.warn(f"{message.guild.name}: {e}")
             return False
 
 
@@ -364,7 +364,6 @@ class Audio(commands.Cog):
     async def play(self, message: Context, *, url: str = None):
         """ Makes Maon play an url linking to a Youtube video or filepath to a local mp3 / wav file in the music folder
         specified in `url`. Maon joins the requestee's voice channel and parses the `url`. """ 
-        self.log.warn(f"{message.guild.voice_client} | {self.players.get(message.guild.id)}")
         if message.guild.voice_client is None:
             if message.author.voice:
                 if message.author.voice.channel.user_limit != 0 and message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
@@ -373,7 +372,7 @@ class Audio(commands.Cog):
                 await message.author.voice.channel.connect()
                 self.log.info(f"{message.guild.name}: Voice connection established.")
 
-                if message.guild.id not in self.players or self.players.get(message.guild.id) is None:
+                if self.players.get(message.guild.id) is None:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
                 
                 else:
@@ -489,8 +488,8 @@ class Audio(commands.Cog):
 
         player = self.players.get(message.guild.id)
         if player.track.get("track_type") == "live_stream":
-            await player.queue.put(track)
-            await player.queue.put(player.track)
+            await player.play_next(track)
+            await player.play_next(player.track)
             return player.voice_client.stop()
 
         return await self.players[message.guild.id].queue.put(track)
@@ -578,10 +577,12 @@ class Audio(commands.Cog):
 
     @commands.command(aliases=["next", "n", "ne", "nxt", "nx", "sk", "skp"])
     @commands.guild_only()
-    async def skip(self, message):
+    async def skip(self, message: Context):
         """ Skips a currently playing song. """ 
-        if not message.guild.voice_client or not message.guild.voice_client.is_connected():
-            return await message.send("I'm not playing anything. :eyes:")
+        if not message.guild.voice_client:
+            return await message.send("I'm not connected to a voice channel right now.")
+        elif not message.guild.voice_client.is_connected():
+            return await message.channel.send("I'm having connection issues right now, give me a moment, please.")
         elif message.author.voice is None:
             return await message.send("You're not in a voice channel~")
         elif message.author.voice.channel != message.guild.voice_client.channel:
@@ -689,8 +690,10 @@ class Audio(commands.Cog):
         """ Stops any currently playing song, cancels the audioplayer and makes Maon leave the voice channel. """ 
         if message.author.voice is None:
             return await message.send("Don't tell me what to do. :eyes:")
-        elif not message.guild.voice_client or not message.guild.voice_client.is_connected():
+        elif not message.guild.voice_client:
             return await message.send("I'm not even playing anything...")
+        elif not message.guild.voice_client.is_connected():
+            return await message.send(f"I'm having connection issues right now, give me a moment, please.")
         elif message.author.voice.channel != message.guild.voice_client.channel:
             return await message.send("Come in here first.")
         else:
