@@ -46,7 +46,7 @@ class GuildBrowser:
         self.emoji_list = settings.EMOJI_LIST
         self.running = True
 
-        self.filebrowser_task = self.client.loop.create_task(self.filebrowser_window(message))
+        self.filebrowser_task = asyncio.create_task(self.filebrowser_window(message))
         self.log.info(f"{self.message.guild.name}: File browser created.")
 
     async def filebrowser_window(self, message):
@@ -56,7 +56,7 @@ class GuildBrowser:
         await self.client.wait_until_ready()
         await self.set_content()
         self.window_message = await message.send("Generating browser...")
-        self.client.loop.create_task(self.load_navigation(message))
+        asyncio.create_task(self.load_navigation(message))
         await self.display_window()
 
         try:

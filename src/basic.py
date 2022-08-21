@@ -69,9 +69,9 @@ class Basic(commands.Cog):
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
-def setup(client):
-    client.add_cog(Basic(client))
+async def setup(maon: commands.Bot):
+    await maon.add_cog(Basic(maon))
 
 
-def teardown(client):
-    client.remove_cog(Basic)
+async def teardown(maon: commands.Bot):
+    await maon.remove_cog(Basic)

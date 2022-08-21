@@ -2,6 +2,7 @@ import os
 import sys
 import psutil
 import discord
+import asyncio
 from os import path
 from src import logbook
 from configs import custom
@@ -14,13 +15,14 @@ from discord.ext import commands
 from asyncio import CancelledError
 
 from asyncio import Task
+from src.audioplayer import AudioPlayer
 from discord.ext.commands import Context
 
 
 class Admin(commands.Cog):
     __slots__ = ["client", "log", "status_task", "running"]
 
-    def __init__(self, client):
+    def __init__(self, client: commands.Bot):
         self.client: commands.Bot = client
         self.log = logbook.getLogger(self.__class__.__name__)
         self.status_task: Task = None
@@ -32,33 +34,35 @@ class Admin(commands.Cog):
     @commands.is_owner()
     async def shutdown(self, message: Context = None):
         """ Shuts down Maon gracefully by first logging out and closing all event loops. """
+        self.log.warn("Shutting down Maon...")
+        player: AudioPlayer
+        for player in self.client.get_cog("Audio").players.values():
+            player.shutdown()
         vc: discord.VoiceClient
         for vc in self.client.voice_clients:
             await vc.disconnect()
+        self.log.log(logbook.RAW, "\nMaybe I'll take over the world some other time.\n")
         await self.client.close()
 
-        try:
-            raise SystemExit(0)
-        except SystemExit:
-            self.log.log(logbook.RAW, "\nMaybe I'll take over the world some other time.\n")
-            
 
     @commands.command()
     @commands.is_owner()
     async def restart(self, message: Context = None):
-        """ Restarts Maon by killing all connections and then restarts the process with the same 
-        arguments. """
+        """ Restarts Maon by killing all connections and then restarts the process with the same arguments. """
+        self.log.warn("Restarting Maon...")
+        player: AudioPlayer
+        for player in self.client.get_cog("Audio").players.values():
+            player.shutdown()
         vc: discord.VoiceClient
         for vc in self.client.voice_clients:
             await vc.disconnect()
-        await self.client.close()
-
+        
         p = psutil.Process(os.getpid())
         for handler in p.open_files() + p.connections():
             try:
                 os.close(handler.fd)
             except Exception as e:
-                self.log.error(e.__str__())
+                pass
 
         os.execl(sys.executable, sys.executable, *sys.argv)
 
@@ -69,23 +73,24 @@ class Admin(commands.Cog):
         """ Reloads selected or all extension modules. """
         if extension is None:
             return await message.send("Do you want me to reload a specific extension or `all`?")
-        elif extension.lower() in settings.EXTENSION_LIST:
+
+        if extension.lower() in settings.EXTENSION_LIST:
             try:
-                self.log.info("Reloading {} extension...".format(extension.lower()))
-                self.client.reload_extension(settings.EXTENSION_PATH + extension.lower())
-                return await message.send("{} extension reloaded!".format(extension.lower()))
+                self.log.info(f"Reloading {extension.lower()} extension...")
+                await self.client.reload_extension(f"{settings.EXTENSION_PATH}{extension.lower()}")
+                return await message.send(f"{extension.lower()} extension reloaded!")
             except discord.ext.commands.errors.ExtensionNotLoaded:
-                return await message.send("Cannot reload {} because it is disabled. Did you want to `enable` it?".format(extension.lower()))
+                return await message.send(f"Cannot reload {extension.lower()} because it is disabled. Did you want to `enable` it?")
         elif extension.lower() == "all":
             for ext in settings.EXTENSION_LIST:
                 try:
-                    self.log.info("Reloading {} extension...".format(ext))
-                    self.client.reload_extension(settings.EXTENSION_PATH + ext)
+                    self.log.info(f"Reloading {ext} extension...")
+                    await self.client.reload_extension(f"{settings.EXTENSION_PATH}{ext}")
                 except discord.ext.commands.errors.ExtensionNotLoaded:
                     pass
             return await message.send("All extensions reloaded!")
         else:
-            return await message.send("I don't think I have an extension called {}.".format(extension.lower()))
+            return await message.send(f"I don't think I have an extension called {extension.lower()}.")
 
 
     @commands.command()
@@ -181,7 +186,7 @@ class Admin(commands.Cog):
             elif activity.lower().startswith(("resume", "continue")):
                 if self.status_task is None:
                     self.log.info("[{}] Resuming status task.".format(message.guild.name))
-                    self.status_task = self.client.loop.create_task(self.status_loop())
+                    self.status_task = asyncio.create_task(self.status_loop(), name="activity_rotation_task")
                 return await message.send("Resuming my status update loop.")
 
             text = activity.split(" ", 1)[1]
@@ -283,15 +288,15 @@ class Admin(commands.Cog):
             self.log.info("Member of guilds: ")
             for g in self.client.guilds:
                 self.log.info(f"{g.id} | {g.name}")
-        self.log.log(logbook.RAW, "\tI'm ready!\n")
         if not self.status_task:
-            self.status_task = self.client.loop.create_task(self.status_loop())
-
+            self.status_task = asyncio.create_task(self.status_loop(), name="activity_rotation_task")
+        self.log.log(logbook.RAW, "\tI'm ready!\n")
+    
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
-def setup(client):
-    client.add_cog(Admin(client))
+async def setup(maon: commands.Bot):
+    await maon.add_cog(Admin(maon))
 
 
-def teardown(client):
-    client.remove_cog(Admin)
+async def teardown(maon: commands.Bot):
+    await maon.remove_cog(Admin)

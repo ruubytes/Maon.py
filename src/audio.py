@@ -15,7 +15,6 @@ from tinytag import TinyTag
 from random import shuffle
 from pathlib import Path
 
-from tinytag import TinyTagException
 from yt_dlp.utils import DownloadError
 
 from typing import Deque
@@ -41,9 +40,9 @@ class Audio(commands.Cog):
         self.info_queue: asyncio.Queue = asyncio.Queue()
         self.download_queue: asyncio.Queue = asyncio.Queue()
         self.cache_queue: asyncio.Queue = asyncio.Queue()
-        self.info_task: asyncio.Task = self.client.loop.create_task(self.info_loop())
-        self.download_task: asyncio.Task = self.client.loop.create_task(self.download_loop())
-        self.cache_task: asyncio.Task = self.client.loop.create_task(self.cache_loop())
+        self.info_task: asyncio.Task = asyncio.create_task(self.info_loop())
+        self.download_task: asyncio.Task = asyncio.create_task(self.download_loop())
+        self.cache_task: asyncio.Task = asyncio.create_task(self.cache_loop())
 
 
     async def prep_local_track(self, message, url:str):
@@ -400,7 +399,7 @@ class Audio(commands.Cog):
         elif url == "history" or url == "music":
             await self.prep_local_track(message, url)
         else:
-            return await message.send("I need a Youtube link or file path to play.")
+            return await message.send("I need a Youtube link to stream or file path to play from my music folder.")
 
     
     async def nc_play(self, message: Message, url: str):
@@ -421,14 +420,12 @@ class Audio(commands.Cog):
 
         else:
             # Try to extract meta data with tinytag, most normal mp3 files should have at least a title
-            try:
-                tag = TinyTag.get(url)
-                if tag.title is None:
-                    track_title = url[url.rfind("/") + 1 : len(url) - 4]
-                else:
-                    track_title = tag.title
-            except TinyTagException:
-                return
+            tag = TinyTag.get(url)
+            if tag.title is None:
+                track_title = url[url.rfind("/") + 1 : len(url) - 4]
+            else:
+                track_title = tag.title
+
         
         track = {"title": track_title, "url": url, "track_type": "music", "message": message}
         
@@ -488,8 +485,8 @@ class Audio(commands.Cog):
 
         player = self.players.get(message.guild.id)
         if player.track.get("track_type") == "live_stream":
-            await player.play_next(track)
             await player.play_next(player.track)
+            await player.play_next(track)
             return player.voice_client.stop()
 
         return await self.players[message.guild.id].queue.put(track)
@@ -497,10 +494,7 @@ class Audio(commands.Cog):
 
     async def fb_sfx(self, message, url):
         """ Sfx play command for the file browser to play a sound effect selected with a reaction. """ 
-        try:
-            tag = TinyTag.get(url)
-        except TinyTagException:
-            return
+        tag = TinyTag.get(url)
 
         # Connection check
         if message.guild.voice_client is None:
@@ -523,8 +517,8 @@ class Audio(commands.Cog):
 
         player = self.players.get(message.guild.id)
         if player.track.get("track_type") == "live_stream":
-            await player.queue.put(track)
-            await player.queue.put(player.track)
+            await player.play_next(player.track)
+            await player.play_next(track)
             return player.voice_client.stop()
 
         return await self.queue_track(message, track)
@@ -847,10 +841,10 @@ class Audio(commands.Cog):
                 if message.channel == self.players[message.guild.id].message.channel:
                     if message.content.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
                         return await self.nc_play(message, message.content.split()[0])
-                    elif os.path.exists(settings.SFX_PATH + message.content + ".mp3"):
-                        return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".mp3")
-                    elif os.path.exists(settings.SFX_PATH + message.content + ".wav"):
-                        return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".wav")
+                    elif os.path.exists(f"{settings.SFX_PATH}{message.content.lower()}.mp3"):
+                        return await self.fb_sfx(message, f"{settings.SFX_PATH}{message.content.lower()}.mp3")
+                    elif os.path.exists(f"{settings.SFX_PATH}{message.content.lower()}.wav"):
+                        return await self.fb_sfx(message, f"{settings.SFX_PATH}{message.content.lower()}.wav")
 
 
     @commands.Cog.listener()
@@ -954,9 +948,9 @@ async def get_playlist_id(url:str):
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
-def setup(client):
-    client.add_cog(Audio(client))
+async def setup(maon: commands.Bot):
+    await maon.add_cog(Audio(maon))
 
 
-def teardown(client):
-    client.remove_cog(Audio)
+async def teardown(maon: commands.Bot):
+    await maon.remove_cog(Audio)

@@ -271,9 +271,9 @@ class Fun(commands.Cog):
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
-def setup(client):
-    client.add_cog(Fun(client))
+async def setup(maon: commands.Bot):
+    await maon.add_cog(Fun(maon))
 
 
-def teardown(client):
-    client.remove_cog(Fun)
+async def teardown(maon: commands.Bot):
+    await maon.remove_cog(Fun)

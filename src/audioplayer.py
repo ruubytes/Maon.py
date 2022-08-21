@@ -10,9 +10,9 @@ from async_timeout import timeout
 from discord import FFmpegPCMAudio
 from discord import PCMVolumeTransformer
 
-from yt_dlp.utils import DownloadError
+from asyncio import TimeoutError
+from asyncio import CancelledError
 from discord.errors import ClientException
-from discord.errors import ConnectionClosed
 
 from discord.voice_client import VoiceClient
 from discord.message import Message
@@ -39,7 +39,7 @@ class AudioPlayer:
         self.next: asyncio.Event = asyncio.Event()
         self.track: dict = {}
         self.running: bool = True
-        self.player_task: asyncio.Task = self.client.loop.create_task(self._player_loop())
+        self.player_task: asyncio.Task = asyncio.create_task(self._player_loop())
         self.refresh_live_stream_task: asyncio.Task = None
         self.log.info(f"{self.message.guild.name} audioplayer created.")
 
@@ -58,10 +58,10 @@ class AudioPlayer:
                 if self.looping == "playlist" and self.track.get("track_type") != "sfx":
                     await self.queue.put(self.track)
 
-        except asyncio.CancelledError:
+        except CancelledError:
             self.log.info(f"{self.message.guild.name}: Cancelling audioplayer...")
 
-        except asyncio.TimeoutError:
+        except TimeoutError:
             self.log.info(f"{self.message.guild.name}: Audioplayer has been inactive for {settings.PLAYER_TIMEOUT} seconds, cancelling...")
 
         except ClientException as e:
@@ -74,6 +74,8 @@ class AudioPlayer:
 
         finally:
             self.running = False
+            if self.refresh_live_stream_task is not None:
+                self.refresh_live_stream_task.cancel()
             if self.voice_client.is_playing():
                 self.voice_client.stop()
             try:
@@ -93,9 +95,9 @@ class AudioPlayer:
     async def _refresh_url(self):
         """ Refresh the stream url to avoid its expiration """
         if self.track.get("track_type") == "live_stream":
-            if self.refresh_live_stream_task is not None and not self.refresh_live_stream_task.done(): 
+            if self.refresh_live_stream_task is not None: 
                 self.refresh_live_stream_task.cancel()
-            self.refresh_live_stream_task = self.client.loop.create_task(self._refresh_live_stream(self.track))
+            self.refresh_live_stream_task = asyncio.create_task(self._refresh_live_stream(self.track))
         
         if self.track.get("track_type") not in ["live_stream", "stream"] or (time() - self.track.get("time_stamp")) < 600:
             return
@@ -141,7 +143,7 @@ class AudioPlayer:
             if self.voice_client.is_playing():
                 self.voice_client.stop()
 
-        except asyncio.CancelledError:
+        except CancelledError:
             self.log.info(f"{self.message.guild.name}: Live stream refresh task cancelled.")
 
 
@@ -191,11 +193,14 @@ class AudioPlayer:
         """ Prepend a track to the player's queue instead of appending it. """
         if self.queue.qsize() > 0:
             self.log.info(f"{self.message.guild.name}: Prepending {track.get('title')} and rebuilding the player's queue...")
-            new_queue = [track]
-            new_queue.append(list(self.queue._queue))
+            new_queue = [track] + list(self.queue._queue)
             self.queue: asyncio.Queue = asyncio.Queue()
             for t in new_queue:
                 await self.queue.put(t)
         else:
             await self.queue.put(track)
             
+
+    def shutdown(self):
+        """ Shut the audioplayer down """
+        self.player_task.cancel()

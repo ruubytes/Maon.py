@@ -92,9 +92,9 @@ class FileBrowser(commands.Cog):
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
-def setup(client):
-    client.add_cog(FileBrowser(client))
+async def setup(maon: commands.Bot):
+    await maon.add_cog(FileBrowser(maon))
 
 
-def teardown(client):
-    client.remove_cog(FileBrowser)
+async def teardown(maon: commands.Bot):
+    await maon.remove_cog(FileBrowser)

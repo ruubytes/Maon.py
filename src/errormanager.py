@@ -29,9 +29,9 @@ class ErrorManager(commands.Cog):
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
-def setup(client):
-    client.add_cog(ErrorManager(client))
+async def setup(maon: commands.Bot):
+    await maon.add_cog(ErrorManager(maon))
 
 
-def teardown(client):
-    client.remove_cog(ErrorManager)
+async def teardown(maon: commands.Bot):
+    await maon.remove_cog(ErrorManager)
