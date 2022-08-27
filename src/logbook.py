@@ -35,8 +35,11 @@ def getLogger(name: str = None):
     log = logging.getLogger(name)
     log.setLevel(logging.DEBUG)
 
+    if len(log.handlers) > 1:   # ignore if the NullHandler is in the list
+        return log
+
     filehandler = TimedRotatingFileHandler(
-        filename=settings.LOGGING_DISCORD_PATH_FILE,
+        filename=f"{settings.LOGGING_DISCORD_PATH_FILE}",
         when="midnight",
         interval=1,
         backupCount=30,
@@ -56,4 +59,3 @@ def getLogger(name: str = None):
     log.addHandler(streamhandler)
 
     return log
-

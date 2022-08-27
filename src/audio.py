@@ -1,20 +1,28 @@
 import os.path
 import asyncio
 import subprocess
+from time import time
+from time import sleep
+from os import listdir
 from src import logbook
+from src import audioplayer
 from configs import custom
 from configs import settings
 from discord import Embed
 from discord.ext import commands
-from src import audioplayer
 from yt_dlp import YoutubeDL
-from yt_dlp.utils import DownloadError
-from tinytag import TinyTag, TinyTagException
-from time import sleep
-from time import time
+from tinytag import TinyTag
+from random import shuffle
 from pathlib import Path
-from os import listdir
-from os import walk
+
+from yt_dlp.utils import DownloadError
+
+from typing import Deque
+from discord import Member
+from discord import VoiceState
+from discord import VoiceClient
+from discord.message import Message
+from discord.ext.commands.context import Context
 
 
 class Audio(commands.Cog):
@@ -26,20 +34,20 @@ class Audio(commands.Cog):
         self.client: commands.Bot = client
         self.log = logbook.getLogger(self.__class__.__name__)
         self.players: dict[int, audioplayer.AudioPlayer] = {}
-        self.cached_songs = {}
+        self.cached_songs: dict = {}
         self.running: bool = True
         self.still_preparing: list[str] = []
         self.info_queue: asyncio.Queue = asyncio.Queue()
         self.download_queue: asyncio.Queue = asyncio.Queue()
         self.cache_queue: asyncio.Queue = asyncio.Queue()
-        self.info_task: asyncio.Task = self.client.loop.create_task(self.info_loop())
-        self.download_task: asyncio.Task = self.client.loop.create_task(self.download_loop())
-        self.cache_task: asyncio.Task = self.client.loop.create_task(self.cache_loop())
+        self.info_task: asyncio.Task = asyncio.create_task(self.info_loop())
+        self.download_task: asyncio.Task = asyncio.create_task(self.download_loop())
+        self.cache_task: asyncio.Task = asyncio.create_task(self.cache_loop())
 
 
     async def prep_local_track(self, message, url:str):
         """ Builds local track information for the audioplayer and queues it. """
-
+        self.log.info(f"{message.guild.name}: Building a local track...")
         track = {
             "message": message,
             "title": "", 
@@ -79,7 +87,8 @@ class Audio(commands.Cog):
                 }
                 await self.queue_track(message, playlist_track, True)
 
-            await message.channel.send(url + " has been added to the queue.")
+            self.log.info(f"{message.guild.name}: {url} has been added to the playlist.")
+            await message.channel.send(f"{url} has been added to the playlist.")
 
         # Check if it is a command like "history" or "music" whereas everything is queued
         elif url == "music":
@@ -114,7 +123,8 @@ class Audio(commands.Cog):
             self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
         await self.players[message.guild.id].queue.put(track)
         if (message.guild.voice_client.is_playing() or message.guild.voice_client.is_paused()) and not suppress:
-            await message.channel.send("{} has been added to the queue.".format(track.get("title")))
+            self.log.info(f"{message.guild.name}: {track.get('title')} has been added to the playlist.")
+            await message.channel.send(f"{track.get('title')} has been added to the playlist.")
 
 
     async def prep_link_track(self, message, url:str):
@@ -158,7 +168,7 @@ class Audio(commands.Cog):
         await self.client.wait_until_ready()
         try:
             while self.running:
-                req = await self.info_queue.get()
+                req: dict = await self.info_queue.get()
                 message = req.get("message")
 
                 # Extract video info to get the length and if it's a livestream
@@ -167,12 +177,15 @@ class Audio(commands.Cog):
                     video_info = await self.client.loop.run_in_executor(
                         None, lambda: YoutubeDL(settings.YTDL_INFO_OPTIONS).extract_info(req.get("url"), download=False))
                 except DownloadError as e:
+                    self.log.error(f"{message.guild.name}: {str(e)[28:]}")
                     if "looks truncated." in str(e):
                         await message.channel.send("Your link looks incomplete, paste the command again, please.")
                     elif "to confirm your age" in str(e):
                         await message.channel.send("The video is age gated and I couldn't proxy my way around it.")
                     elif "HTTP Error 403" in str(e):
                         await message.channel.send("I received a `forbidden` error, I was locked out from downloading meta data...\nYou could try again in a few seconds, though!")
+                    elif "Private video. Sign in" in str(e):
+                        await message.channel.send("The video has been privated and I can't view it.")
                     else:
                         await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
                     continue
@@ -181,27 +194,31 @@ class Audio(commands.Cog):
                     await message.channel.send("I could not download the video's meta data... maybe try again in a few seconds.")
                     continue
 
+                self.log.info(f"{message.guild.name}: Track protocol: {video_info.get('protocol')}")
+
                 # Check if a normal video has its duration stripped, sometimes this occurs, substitude it if yes
-                if (video_info.get("protocol") == "https+https") and (video_info.get("duration") is None):
+                if ((video_info.get("protocol") == "https+https") or (video_info.get("protocol") == "http_dash_segments+https")) and (video_info.get("duration") is None):
                     video_info["duration"] = settings.SONG_DURATION_MAX
 
                 track = {
                     "message": message, 
                     "title": video_info.get("title"), 
                     "url": "", 
+                    "original_url": req.get("url"), 
                     "track_type": "stream", 
                     "video_id": req.get("video_id"),
-                    "original_url": req.get("url"), 
                     "video_info": video_info,
                     "time_stamp": time()
                 }
 
                 # If its a live stream, use the first url, otherwise look for the best webm audio url
-                if video_info.get("protocol") != "https+https":
+                if (video_info.get("protocol") != "https+https") and (video_info.get("protocol") != "http_dash_segments+https"):
                     track["url"] = video_info.get("url")
+                    track["track_type"] = "live_stream"
                     await self.queue_track(message, track)
                 
                 # It's a normal video, fetch the best audio url, usually 251 webm. Fallback to 140 m4a otherwise
+                # Uses protocol https+https or http_dash_segments+https
                 else:
                     formats = video_info.get("formats", [video_info])
                     req["formats"] = formats
@@ -219,11 +236,11 @@ class Audio(commands.Cog):
                     track["url"] = format_ids.get(req.get("format_id"))
 
                     # Fallback to stream without download if download is not an option
-                    if (video_info.get("duration") >= settings.SONG_DURATION_MAX) or (req.get("video_id") in self.still_preparing) or (not await self.manage_temp_size(req)):
+                    if (req.get("video_id") in self.still_preparing) or (settings.SONG_DURATION_MAX <= 0):
                         await self.queue_track(message, track)
-                    
-                    else:
-                        # Stream and download at the same time
+                    elif (video_info.get("duration") >= settings.SONG_DURATION_MAX) or (not await self.manage_temp_size(req)):
+                        await self.queue_track(message, track)
+                    else:   # Stream and download at the same time
                         self.log.info(f"{message.guild.name}: Going to stream and download at the same time...")
                         self.still_preparing.append(req.get("video_id"))
                         await self.queue_track(message, track)
@@ -303,19 +320,20 @@ class Audio(commands.Cog):
 
     async def manage_temp_size(self, req):
         """ Removes items from the temp folder in FIFO order if a new addition would go over the 
-        max-size stated in the configuration file """
+        max-size stated in the configuration file \n\n
+        Returns True if there is enough space and False if the requested file is too large. """
         message = req.get("message")
         try:
             # Make this a member of audio instead of calculating it every time again from scratch
             size_in_mb = (sum(f.stat().st_size for f in Path(settings.TEMP_PATH).glob('**/*') if f.is_file())) / (1024 * 1024)
 
-            filesize_in_mb = 0
+            filesize_in_mb: float = 0.0
             for f in req.get("formats"):
                 if f["format_id"] == req.get("format_id"):
                     if f.get("filesize"):
                         filesize_in_mb = (f.get("filesize") / (1024 * 1024))
                         if filesize_in_mb > settings.TEMP_FOLDER_MAX_SIZE_IN_MB:
-                            raise OSError("[Audio Ext] Requested download is larger than the allowed size of the temp folder. ({} > {})".format(filesize_in_mb, settings.TEMP_FOLDER_MAX_SIZE_IN_MB))
+                            raise OSError(f"Requested download is larger than the allowed size of the temp folder. ({filesize_in_mb:.2f} MB > {settings.TEMP_FOLDER_MAX_SIZE_IN_MB} MB)")
                         break
                     else:
                         break
@@ -333,8 +351,7 @@ class Audio(commands.Cog):
             return True
 
         except OSError as e:
-            self.log.error(e.strerror)
-            await message.channel.send("The requested download is larger than what I'm allowed to have, defaulting to stream.")
+            self.log.warn(f"{message.guild.name}: {e}")
             return False
 
 
@@ -343,16 +360,24 @@ class Audio(commands.Cog):
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.command(aliases=["p", "stream", "yt"])
     @commands.guild_only()
-    async def play(self, message, *, url: str = None):
+    async def play(self, message: Context, *, url: str = None):
         """ Makes Maon play an url linking to a Youtube video or filepath to a local mp3 / wav file in the music folder
         specified in `url`. Maon joins the requestee's voice channel and parses the `url`. """ 
         if message.guild.voice_client is None:
             if message.author.voice:
                 if message.author.voice.channel.user_limit != 0 and message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
                     return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
+                
                 await message.author.voice.channel.connect()
-                if message.guild.id not in self.players:
+                self.log.info(f"{message.guild.name}: Voice connection established.")
+
+                if self.players.get(message.guild.id) is None:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+                
+                else:
+                    """ If the voice_client crashes, we have to overwrite the old one in the player. """
+                    self.log.warn(f"{message.guild.name}: Overwriting voice_client in player...")
+                    self.players[message.guild.id].voice_client = message.guild.voice_client
             else:
                 return await message.send("You're not in a voice channel, silly. :eyes:")
         elif message.author.voice is None:
@@ -363,7 +388,7 @@ class Audio(commands.Cog):
         if url is None:
             return await message.send(
                 "You can browse the music folder with `browse music`, if you're looking for something specific.")
-        elif url.startswith("https://www.youtube.com/") or url.startswith("https://youtu.be/") or url.startswith("https://m.youtube.com/") or url.startswith("https://youtube.com/"):
+        elif url.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
             await self.prep_link_track(message, url)
         elif os.path.exists(settings.MUSIC_PATH + url + ".mp3"):
             await self.prep_local_track(message, url + ".mp3")
@@ -374,7 +399,15 @@ class Audio(commands.Cog):
         elif url == "history" or url == "music":
             await self.prep_local_track(message, url)
         else:
-            return await message.send("I need a Youtube link or file path to play.")
+            return await message.send("I need a Youtube link to stream or file path to play from my music folder.")
+
+    
+    async def nc_play(self, message: Message, url: str):
+        """ \"No Command Play\"\n
+        Used when the listener catches a valid link from a music / bot channel without the use of
+        an explicit prefix and command. I don't know how to convert a message into a functioning context object to invoke
+        the normal play command, so I'll use this instead. """
+        return await self.prep_link_track(message, url)
 
 
     async def fb_play(self, message, url):
@@ -387,14 +420,12 @@ class Audio(commands.Cog):
 
         else:
             # Try to extract meta data with tinytag, most normal mp3 files should have at least a title
-            try:
-                tag = TinyTag.get(url)
-                if tag.title is None:
-                    track_title = url[url.rfind("/") + 1 : len(url) - 4]
-                else:
-                    track_title = tag.title
-            except TinyTagException:
-                return
+            tag = TinyTag.get(url)
+            if tag.title is None:
+                track_title = url[url.rfind("/") + 1 : len(url) - 4]
+            else:
+                track_title = tag.title
+
         
         track = {"title": track_title, "url": url, "track_type": "music", "message": message}
         
@@ -451,15 +482,19 @@ class Audio(commands.Cog):
 
         if message.guild.id not in self.players:
             self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+
+        player = self.players.get(message.guild.id)
+        if player.track.get("track_type") == "live_stream":
+            await player.play_next(player.track)
+            await player.play_next(track)
+            return player.voice_client.stop()
+
         return await self.players[message.guild.id].queue.put(track)
 
 
     async def fb_sfx(self, message, url):
         """ Sfx play command for the file browser to play a sound effect selected with a reaction. """ 
-        try:
-            tag = TinyTag.get(url)
-        except TinyTagException:
-            return
+        tag = TinyTag.get(url)
 
         # Connection check
         if message.guild.voice_client is None:
@@ -480,7 +515,13 @@ class Audio(commands.Cog):
             tag.title = url[url.rfind("/") + 1:]
         track = {"title": tag.title, "url": url, "track_type": "sfx"}
 
-        await self.queue_track(message, track)
+        player = self.players.get(message.guild.id)
+        if player.track.get("track_type") == "live_stream":
+            await player.play_next(player.track)
+            await player.play_next(track)
+            return player.voice_client.stop()
+
+        return await self.queue_track(message, track)
 
 
     @commands.command(aliases=["v", "vol"])
@@ -530,10 +571,12 @@ class Audio(commands.Cog):
 
     @commands.command(aliases=["next", "n", "ne", "nxt", "nx", "sk", "skp"])
     @commands.guild_only()
-    async def skip(self, message):
+    async def skip(self, message: Context):
         """ Skips a currently playing song. """ 
-        if not message.guild.voice_client or not message.guild.voice_client.is_connected():
-            return await message.send("I'm not playing anything. :eyes:")
+        if not message.guild.voice_client:
+            return await message.send("I'm not connected to a voice channel right now.")
+        elif not message.guild.voice_client.is_connected():
+            return await message.channel.send("I'm having connection issues right now, give me a moment, please.")
         elif message.author.voice is None:
             return await message.send("You're not in a voice channel~")
         elif message.author.voice.channel != message.guild.voice_client.channel:
@@ -580,30 +623,21 @@ class Audio(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
-    async def shuffle(self, message, *, option: str = None):
-        """ Shuffle play; prefix shuffle off to turn it off """
-        # Check if there even is an active audioplayer for this guild
-        if message.guild.id not in self.players:
+    async def shuffle(self, message: Context):
+        """ Shuffle an audioplayer's playlist """
+        player: audioplayer.AudioPlayer = self.players.get(message.guild.id)
+        if player is None:
             return await message.channel.send("I don't have an active audioplayer for this server.")
+        if player.queue.qsize() <= 1 :
+            return await message.channel.send("There's nothing for me to shuffle in the playlist.")
 
-        elif option is None or option == "on":
-            # Check if shuffle is already on
-            if not self.players[message.guild.id].shuffle:
-                self.players[message.guild.id].shuffle = True
-                return await message.channel.send(":twisted_rightwards_arrows: I've turned shuffle play on.")
-            else:
-                return await message.channel.send(":twisted_rightwards_arrows: Shuffle play is on. You can turn it off with `{}shuffle off`".format(custom.PREFIX[0]))
+        shuffled_queue: Deque = player.queue._queue
+        player.queue = asyncio.Queue()
+        shuffle(shuffled_queue)
+        for i in shuffled_queue:
+            await player.queue.put(i)
 
-        elif (option == "off") or (option == "stop") or (option == "quit"):
-            # Check if shuffle is on
-            if not self.players[message.guild.id].shuffle:
-                return await message.channel.send("Shuffle play is off.")
-            else:
-                self.players[message.guild.id].shuffle = False
-                return await message.channel.send("I've turned shuffle play off.")
-        
-        else:
-            return await message.channel.send("You can turn shuffle play on and off with `{}shuffle on / off`".format(custom.PREFIX[0]))
+        return await message.channel.send(":twisted_rightwards_arrows: Playlist has been shuffled.")
 
 
     @commands.command()
@@ -650,16 +684,43 @@ class Audio(commands.Cog):
         """ Stops any currently playing song, cancels the audioplayer and makes Maon leave the voice channel. """ 
         if message.author.voice is None:
             return await message.send("Don't tell me what to do. :eyes:")
-        elif not message.guild.voice_client or not message.guild.voice_client.is_connected():
+        elif not message.guild.voice_client:
             return await message.send("I'm not even playing anything...")
+        elif not message.guild.voice_client.is_connected():
+            return await message.send(f"I'm having connection issues right now, give me a moment, please.")
         elif message.author.voice.channel != message.guild.voice_client.channel:
             return await message.send("Come in here first.")
         else:
+            self.log.info(f"{message.guild.name}: Stop request received for the audioplayer.")
             if message.guild.id in self.players:
                 self.players[message.guild.id].player_task.cancel()
             else:
                 await message.guild.voice_client.disconnect()
 
+
+    @commands.command(aliases=["repair"])
+    @commands.guild_only()
+    async def reset(self, message: Context = None):
+        """ Closes the guild voice client and deletes the guild audio player if it exists, forcefully, then rejoins. """
+        if message.author.voice is None:
+            return await message.send("You need to be in a voice channel to do this.")
+        self.log.warn(f"{message.guild.name}: Resetting audioplayer and voice client...")
+        
+        player: audioplayer.AudioPlayer = self.players.get(message.guild.id)
+        if player is not None:
+            self.log.warn(f"{message.guild.name}: Audioplayer exists, trying to cancel...")
+            player.player_task.cancel()
+        
+        if message.guild.voice_client is not None:
+            self.log.warn(f"{message.guild.name}: Voice client is still connected, trying to force disconnect...")
+            voice_client: VoiceClient = message.guild.voice_client
+            await voice_client.disconnect(force=True)
+
+        await asyncio.sleep(1)
+        await message.author.voice.channel.connect()
+        self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
+
+        return await message.channel.send("I've reset my audioplayer and voice client!")
 
     @commands.command(aliases=["queue", "q"])
     @commands.guild_only()
@@ -771,29 +832,26 @@ class Audio(commands.Cog):
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
-    async def on_message(self, message):
+    async def on_message(self, message: Message):
         """ Event listener for the prefix- and command-less sound effect functionality. """
         if message.author.id != self.client.user.id:
             if not message.guild:
                 return
             elif message.guild.id in self.players:
                 if message.channel == self.players[message.guild.id].message.channel:
-                    if os.path.exists(settings.SFX_PATH + message.content + ".mp3"):
-                        return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".mp3")
-                    elif os.path.exists(settings.SFX_PATH + message.content + ".wav"):
-                        return await self.fb_sfx(message, settings.SFX_PATH + message.content + ".wav")
+                    if message.content.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
+                        return await self.nc_play(message, message.content.split()[0])
+                    elif os.path.exists(f"{settings.SFX_PATH}{message.content.lower()}.mp3"):
+                        return await self.fb_sfx(message, f"{settings.SFX_PATH}{message.content.lower()}.mp3")
+                    elif os.path.exists(f"{settings.SFX_PATH}{message.content.lower()}.wav"):
+                        return await self.fb_sfx(message, f"{settings.SFX_PATH}{message.content.lower()}.wav")
 
 
     @commands.Cog.listener()
-    async def on_voice_state_update(self, member, before, after):
-        if member.id == self.client.user.id:
-            pass
-        #    if after.channel is None:
-        #        try:
-        #            self.players[before.channel.guild.id].player_task.cancel()
-        #            self.log.info(f"{before.channel.guild.name}: I got kicked from a voice channel!")
-        #        except KeyError:
-        #            pass
+    async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
+        if (member.guild.id in self.players) and (len(self.players.get(member.guild.id).voice_client.channel.voice_states) < 2):
+            self.log.info(f"{member.guild.name}: Users left the voice channel, destroying audioplayer.")
+            self.players.get(member.guild.id).player_task.cancel()
 
 
     # ═══ Helper Methods ═══════════════════════════════════════════════════════════════════════════════════════════════
@@ -890,9 +948,9 @@ async def get_playlist_id(url:str):
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
-def setup(client):
-    client.add_cog(Audio(client))
+async def setup(maon: commands.Bot):
+    await maon.add_cog(Audio(maon))
 
 
-def teardown(client):
-    client.remove_cog(Audio)
+async def teardown(maon: commands.Bot):
+    await maon.remove_cog(Audio)

@@ -6,7 +6,6 @@ from src import logbook
 from configs import custom
 from configs import settings
 from discord.ext import commands
-from discord.ext.commands import CommandInvokeError
 from json import JSONDecodeError
 from simplejson import JSONDecodeError
 
@@ -129,9 +128,9 @@ class ServerManager(commands.Cog):
     
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
-def setup(client: 'commands.Bot'):
-    client.add_cog(ServerManager(client))
+async def setup(maon: commands.Bot):
+    await maon.add_cog(ServerManager(maon))
 
 
-def teardown(client: 'commands.Bot'):
-    client.remove_cog(ServerManager)
+async def teardown(maon: commands.Bot):
+    await maon.remove_cog(ServerManager)

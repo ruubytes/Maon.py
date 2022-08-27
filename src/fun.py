@@ -1,4 +1,3 @@
-from asyncore import poll
 from json import loads
 from urllib import request
 from urllib.error import URLError, HTTPError
@@ -96,7 +95,7 @@ class Fun(commands.Cog):
 
         # Check for multiplicator
         multiplicator = 0
-        if (len(numbers_list) == 2) and (numbers_list[1].startswith("x") or numbers_list[1].startswith("*")):
+        if (len(numbers_list) == 2) and (numbers_list[1].startswith(("x", "*"))):
             try:
                 multiplicator = int(numbers_list[1][1:])
                 if multiplicator < 1:
@@ -272,9 +271,9 @@ class Fun(commands.Cog):
 
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
-def setup(client):
-    client.add_cog(Fun(client))
+async def setup(maon: commands.Bot):
+    await maon.add_cog(Fun(maon))
 
 
-def teardown(client):
-    client.remove_cog(Fun)
+async def teardown(maon: commands.Bot):
+    await maon.remove_cog(Fun)

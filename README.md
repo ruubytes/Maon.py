@@ -118,6 +118,8 @@ pause
 
 play, p, stream, yt <url / path / filename>
         Play a local file from the music folder or a Youtube link.
+        Once Maon has joined a voice channel, using the prefix + command is
+        no longer necessary for youtube links. <url> will suffice.
 
 playlist, queue, q
         Shows the current playlist and the entry numbers of the songs.
@@ -192,7 +194,7 @@ and for audio playback we'll need **ffmpeg** and **opus-tools**:
 
 Next the dependencies:
 
-    python3 -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 yt-dlp
+    python3 -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag yt-dlp
 
 To run Maon you can use the following from Maon's directory:
 
@@ -205,7 +207,7 @@ Install instructions for these are on their respective websites.
 
 To install the dependencies, open a new command prompt and enter:
 
-    python -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag==1.7.0 yt-dlp
+    python -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag yt-dlp
 
 Use the following in a command prompt from Maon's directory:
 

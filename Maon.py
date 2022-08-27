@@ -3,7 +3,7 @@ import pkg_resources
 
 installed_packages = "\n".join(sorted(["%s==%s" % (i.key, i.version) for i in pkg_resources.working_set]))
 required_packages_list = [
-    "aioconsole", "discord.py", "psutil", "pynacl", "simplejson", "tinytag==1.7.0", "yt-dlp"
+    "aioconsole", "discord.py", "psutil", "pynacl", "simplejson", "tinytag", "yt-dlp"
 ]
 missing_packages_list = []
 for i in required_packages_list:
@@ -17,6 +17,7 @@ if len(missing_packages_list) > 0:
 
 import login
 import discord
+import asyncio
 from os import path
 from os import makedirs
 from src import version
@@ -28,52 +29,47 @@ from discord.errors import LoginFailure
 from aiohttp.client_exceptions import ClientConnectorError
 
 
-class Maon:
-    __slots__ = ["client", "log"]
-
-    def __init__(self):
+class Maon(commands.Bot):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, command_prefix=custom.PREFIX, help_command=None, intents=self.set_intents(), **kwargs)
         self.log = logbook.getLogger(self.__class__.__name__)
-        self.check_ids()
         self.log.log(level=logbook.RAW, msg=version.SIGNATURE)
         self.log.info(f"Discord.py Version: {discord.__version__}")
-        self.client = commands.Bot(
-            command_prefix=custom.PREFIX, 
-            case_insensitive=True, 
-            owner_id=login.OWNER_ID,
-            intents=self.set_intents()
-        )
-        self.client.id = login.MAON_ID
-        self.client.remove_command("help")
+        self.set_ids()
+        self.case_insensitive = True
 
 
-    def set_intents(self):
-        # Set handled events by the API
-        intents = discord.Intents.default()
-        intents.typing = False
-        intents.presences = False
-        intents.members = True
-        intents.voice_states = True
-        return intents
+    async def setup_hook(self) -> None:
+        for ext in settings.EXTENSION_LIST:
+            self.log.info(f"Loading {ext} extension...")
+            await self.load_extension(f"{settings.EXTENSION_PATH}{ext}")
 
 
-    def check_ids(self):
+    def set_ids(self):
         if (len(login.TOKEN) < 55) or (not login.TOKEN) or (login.TOKEN == ""):
             self.log.error("Please add my API token to the login file so I can log into discord!\n")
             exit(1)
-        elif login.MAON_ID < 1 or login.OWNER_ID < 1:
+        if login.MAON_ID <= 0 or login.OWNER_ID <= 0:
             self.log.error("Please add my own ID and your ID to the login file so I can recognize us!\n")
             exit(1)
+        self.owner_id = login.OWNER_ID
+        self.id = login.MAON_ID
+        
+
+    def set_intents(self):
+        """ Set events handled by the API """
+        intents = discord.Intents.default()
+        intents.typing = False
+        intents.voice_states = True
+        intents.presences = False
+        intents.members = True
+        intents.message_content = True
+        return intents
 
 
-    def load_extensions(self):
-        for ext in settings.EXTENSION_LIST:
-            self.log.info("Loading {} extension...".format(ext))
-            self.client.load_extension(settings.EXTENSION_PATH + ext)
-
-
-    def run(self):
+    async def run(self):
         try:
-            self.client.run(login.TOKEN)
+            await self.start(login.TOKEN)
         except TypeError:
             self.log.error("I need my discord API token to log in. Please add it to my login file!\n")
             exit(1)
@@ -83,11 +79,18 @@ class Maon:
         except ClientConnectorError:
             self.log.error("I can't connect right now, please try again later.\n")
             exit(1)
+        
 
+async def main():
+    if not path.exists(settings.LOGGING_DISCORD_PATH):
+        makedirs(settings.LOGGING_DISCORD_PATH)
+    logbook.getLogger("discord")    # Format discord lib logging through the custom logging formatter in logbook
+    
+    maon = Maon()
+    await maon.run()
+    
 
-if not path.exists(settings.LOGGING_DISCORD_PATH):
-    makedirs(settings.LOGGING_DISCORD_PATH)
-logbook.getLogger("discord")    # Format discord lib logging through the custom logging formatter in logbook
-Maon = Maon()
-Maon.load_extensions()
-Maon.run()
+try:
+    asyncio.run(main())
+except KeyboardInterrupt:
+    print("\nShutting down...\n")
