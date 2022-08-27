@@ -90,6 +90,13 @@ class AudioPlayer:
         if self.looping != "song":
             async with timeout(self.player_timeout):
                 self.track = await self.queue.get()
+        if self.track.get("track_type") == "stream":
+            filename = self.audio.cached_songs.get(self.track.get("video_id"))
+            if filename:
+                self.track["title"] = filename[:len(filename) - 16]
+                self.track["url"] = settings.TEMP_PATH + filename
+                self.track["track_type"] = "music"
+                self.log.info(f"{self.message.guild.name}: Changed stream to local file stream for {self.track.get('title')}.")
 
 
     async def _refresh_url(self):
