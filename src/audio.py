@@ -838,7 +838,7 @@ class Audio(commands.Cog):
             if not message.guild:
                 return
             elif message.guild.id in self.players:
-                if message.channel == self.players[message.guild.id].message.channel:
+                if (message.channel == self.players[message.guild.id].message.channel) and (message.author.voice.channel == message.guild.voice_client.channel):
                     if message.content.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
                         return await self.nc_play(message, message.content.split()[0])
                     elif os.path.exists(f"{settings.SFX_PATH}{message.content.lower()}.mp3"):

@@ -134,7 +134,7 @@ class AudioPlayer:
         """ Refresh the live stream url every 10 minutes and restart the play process because live streams have been lagging and
             doing weird things after ~15 minutes for a while now """
         try:
-            await asyncio.sleep(600)
+            await asyncio.sleep(1200)
             if self.now_playing != track.get("title"): return
 
             self.log.info(f"{self.message.guild.name}: Refreshing the streaming url for {track.get('title')}.")
