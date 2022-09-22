@@ -53,7 +53,7 @@ class Basic(commands.Cog):
                 title=version.VERSION,
                 description=commands_print_bot,
                 color=custom.COLOR_HEX)
-        help_embed_bot.set_thumbnail(url=self.client.user.avatar_url)
+        help_embed_bot.set_thumbnail(url=self.client.user.display_avatar.url)
 
         commands_print_basic = "".join(settings.COMMANDLIST_EMBED_BASIC_PREP)
         help_embed_basic = discord.Embed(description=commands_print_basic, color=custom.COLOR_HEX)
