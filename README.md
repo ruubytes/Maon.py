@@ -207,7 +207,7 @@ Install instructions for these are on their respective websites.
 
 To install the dependencies, open a new command prompt and enter:
 
-    python -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag yt-dlp
+    python -m pip install -U aioconsole discord.py psutil pynacl requests simplejson tinytag yt-dlp
 
 Use the following in a command prompt from Maon's directory:
 

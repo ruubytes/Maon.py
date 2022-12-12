@@ -3,7 +3,7 @@ import pkg_resources
 
 installed_packages = "\n".join(sorted(["%s==%s" % (i.key, i.version) for i in pkg_resources.working_set]))
 required_packages_list = [
-    "aioconsole", "discord.py", "psutil", "pynacl", "simplejson", "tinytag", "yt-dlp"
+    "aioconsole", "discord.py", "psutil", "pynacl", "requests", "simplejson", "tinytag", "yt-dlp"
 ]
 missing_packages_list = []
 for i in required_packages_list:
@@ -59,11 +59,12 @@ class Maon(commands.Bot):
     def set_intents(self):
         """ Set events handled by the API """
         intents = discord.Intents.default()
-        intents.typing = False
-        intents.voice_states = True
-        intents.presences = False
         intents.members = True
         intents.message_content = True
+        intents.presences = False
+        intents.reactions = True
+        intents.typing = False
+        intents.voice_states = True
         return intents
 
 
