@@ -45,8 +45,9 @@ PLAYLIST_MSG_MAX_LEN = 20
 
 # Web Settings:
 RFC_3986_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%"
-MAL_API_ANIME_SEARCH_URL = "https://api.jikan.moe/v3/search/anime?q="
-MAL_API_MANGA_SEARCH_URL = "https://api.jikan.moe/v3/search/manga?q="
+MAL_API_ANIME_SEARCH_URL = "https://api.jikan.moe/v4/anime?q="
+MAL_API_MANGA_SEARCH_URL = "https://api.jikan.moe/v4/manga?q="
+MAL_API_ANIME_SEARCH_URL_OLD = "https://api.jikan.moe/v3/search/anime?q="
 
 # Server Manager Settings:
 SM_ENABLED = False

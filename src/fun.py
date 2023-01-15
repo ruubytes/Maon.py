@@ -178,15 +178,18 @@ class Fun(commands.Cog):
             query = query[:150]
         
         try:
+            self.log.info(f"Looking up {query} on myanimelist...")
             if "manga" in message.invoked_with:
                 resp = request.urlopen(request.Request(settings.MAL_API_MANGA_SEARCH_URL + query))
             else:
                 resp = request.urlopen(request.Request(settings.MAL_API_ANIME_SEARCH_URL + query))
             data = loads(resp.read().decode("utf-8"))
-            first_entry = data.get("results")[0]
+            self.log.debug(f"Received from myanimelist:\n{data}")
+            first_entry = data.get("data")[0]
             return await message.send(first_entry.get("url"))
 
-        except (URLError, HTTPError):
+        except (URLError, HTTPError) as e:
+            self.log.error(f"Look up failed. \n{e}")
             return await message.send("I could not fetch any information, maybe try again in a few seconds.")
 
 
