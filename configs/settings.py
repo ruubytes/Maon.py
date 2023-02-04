@@ -1,5 +1,5 @@
 # Audio Settings:
-SFX_VOLUME = 0.25            # Volume of special effects
+SFX_VOLUME = 0.25           # Volume of special effects
 PLAYER_TIMEOUT = 5400       # Seconds until Maon disconnects from a voice channel without any interaction
 SONG_DURATION_MAX = 4000    # How long songs can be in seconds to be downloaded and stored locally, 0 to turn it off
 
@@ -89,47 +89,48 @@ LOGGING_DISCORD_PATH_FILE = "./src/logs/maon"
 
 # Help Command Embed:
 from configs.custom import PREFIX
-COMMANDLIST_EMBED_PREP_START = f"Prefix: {PREFIX[0]} (case insensitive)\n\n"
+COMMANDLIST_EMBED_PREP_START = f"Prefix: {PREFIX[1]} (case insensitive)\n\n"
 
 COMMANDLIST_EMBED_ADMIN_PREP = [
     ":flag_kp: ***Admin Commands:***\n",
-    f":white_small_square: {PREFIX[0]}kill - Shuts Maon down.\n",
-    f":white_small_square: {PREFIX[0]}reload <extension / all> - Unloads and loads extensions.\n",
-    f":white_small_square: {PREFIX[0]}remove <number> - Removes messages in the channel.\n",
-    f":white_small_square: {PREFIX[0]}status <listening/playing/watching> <status> - Sets Maon's status.\n",
-    f":white_small_square: {PREFIX[0]}status cancel - Cancels Maon's looping status updates.\n",
+    f":white_small_square: {PREFIX[1]}kill - Shuts Maon down.\n",
+    f":white_small_square: {PREFIX[1]}reload <extension / all> - Unloads and loads extensions.\n",
+    f":white_small_square: {PREFIX[1]}remove <number> - Removes messages in the channel.\n",
+    f":white_small_square: {PREFIX[1]}status <listening/playing/watching> <status> - Sets Maon's status.\n",
+    f":white_small_square: {PREFIX[1]}status cancel - Cancels Maon's looping status updates.\n",
     "\n"
 ]
 
 COMMANDLIST_EMBED_BASIC_PREP = [
     ":beginner: ***Basic Commands:***\n",
-    f":white_small_square: {PREFIX[0]}ping - Maon's latency.\n",
-    f":white_small_square: {PREFIX[0]}<question> - Maon will reply to a closed (is, are, do, can...) question.\n",
-    f":white_small_square: {PREFIX[0]}toss - Coin toss.\n",
-    f":white_small_square: {PREFIX[0]}roll <number> - Roll a number from 1 to number.\n",
-    f":white_small_square: {PREFIX[0]}poll <question> -o <choice 1 text> -o <choice 2 text>... - Make a quick poll\n",
-    f":white_small_square: {PREFIX[0]}anime <search term> - Posts an anime title link closest to the search term.\n",
-    f":white_small_square: {PREFIX[0]}manga <search term> - Posts a manga title link closest to the search term.\n",
+    f":white_small_square: {PREFIX[1]}ping - Maon's latency.\n",
+    f":white_small_square: {PREFIX[1]}<question> - Maon will reply to a closed (is, are, do, can...) question.\n",
+    f":white_small_square: {PREFIX[1]}toss - Coin toss.\n",
+    f":white_small_square: {PREFIX[1]}roll <number> - Roll a number from 1 to number.\n",
+    f":white_small_square: {PREFIX[1]}poll <question> -o <choice 1 text> -o <choice 2 text>... - Make a quick poll\n",
+    f":white_small_square: {PREFIX[1]}anime <search term> - Posts an anime title link closest to the search term.\n",
+    f":white_small_square: {PREFIX[1]}manga <search term> - Posts a manga title link closest to the search term.\n",
     "\n"
 ]
 
 COMMANDLIST_EMBED_MUSIC_PREP = [
     ":notes: ***Music Commands:***\n",
-    f":white_small_square: {PREFIX[0]}reset - In case the audio module gets stuck\n",
-    f":white_small_square: {PREFIX[0]}browse <music / sfx> - Opens the file browser.\n",
-    f":white_small_square: {PREFIX[0]}play <link / filepath / filename> - Plays a Youtube video or local file.\n",
-    f":white_small_square: {PREFIX[0]}sfx <filepath / filename> - Plays a local sound effect.\n",
-    f":white_small_square: {PREFIX[0]}playlist - Displays the current playlist.\n",
-    f":white_small_square: {PREFIX[0]}playlist <1 - 20> - Puts an entry to the front.\n",
-    f":white_small_square: {PREFIX[0]}playlist remove - Clears the playlist.\n",
-    f":white_small_square: {PREFIX[0]}playlist remove <1 - 20> - Removes a song from the playlist.\n",
-    f":white_small_square: {PREFIX[0]}playlist copy <1 - 20> - Copies a track and inserts it at the beginning.\n",
-    f":white_small_square: {PREFIX[0]}stop - Turns off the music player and makes Maon leave.\n",
-    f":white_small_square: {PREFIX[0]}skip - Skips the current song.\n",
-    f":white_small_square: {PREFIX[0]}loop <song / playlist / off> - Loops the current song or playlist.\n",
-    f":white_small_square: {PREFIX[0]}shuffle <off> - Shuffles the current playlist after every song.\n",
-    f":white_small_square: {PREFIX[0]}volume <0 - 100> - Changes the music player volume.\n",
-    f":white_small_square: {PREFIX[0]}pause - Pauses the music player.\n",
-    f":white_small_square: {PREFIX[0]}resume - Resumes the music player.\n",
+    f":white_small_square: {PREFIX[1]}reset - In case the audio module gets stuck\n",
+    f":white_small_square: {PREFIX[1]}browse <music / sfx> - Opens the file browser.\n",
+    f":white_small_square: {PREFIX[1]}play <link / filepath / filename> - Plays a Youtube video or local music file.\n",
+    f":white_small_square: {PREFIX[1]}sfx <filepath / filename> - Plays a local sound effect.\n",
+    f":white_small_square: {PREFIX[1]}stop - Turns off the music player and makes Maon leave.\n",
+    f":white_small_square: {PREFIX[1]}skip - Skips the current song.\n",
+    f":white_small_square: {PREFIX[1]}volume <0 - 100> - Changes the music player volume.\n",
+    "\n:notes: ***Advanced Music Commands:***\n",
+    f":white_small_square: {PREFIX[1]}pause - Pauses the music player.\n",
+    f":white_small_square: {PREFIX[1]}resume - Resumes the music player.\n",
+    f":white_small_square: {PREFIX[1]}loop <song / playlist / off> - Loops the current song or playlist.\n",
+    f":white_small_square: {PREFIX[1]}shuffle <off> - Shuffles the current playlist after every song.\n",
+    f":white_small_square: {PREFIX[1]}playlist - Displays the current playlist.\n",
+    f":white_small_square: {PREFIX[1]}playlist <1 - 20> - Puts an entry to the front.\n",
+    f":white_small_square: {PREFIX[1]}playlist remove - Clears the playlist.\n",
+    f":white_small_square: {PREFIX[1]}playlist remove <1 - 20> - Removes a song from the playlist.\n",
+    f":white_small_square: {PREFIX[1]}playlist copy <1 - 20> - Copies a track and inserts it at the beginning.\n",
     "\n"
 ]

@@ -370,6 +370,7 @@ class Audio(commands.Cog):
                 
                 await message.author.voice.channel.connect()
                 self.log.info(f"{message.guild.name}: Voice connection established.")
+                await message.channel.send(embed=self.get_music_cmds_embed())
 
                 if self.players.get(message.guild.id) is None:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
@@ -471,6 +472,7 @@ class Audio(commands.Cog):
                 if message.author.voice.channel.user_limit != 0 and message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
                     return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
                 await message.author.voice.channel.connect()
+                await message.channel.send(embed=self.get_music_cmds_embed())
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
             else:
@@ -559,6 +561,7 @@ class Audio(commands.Cog):
                 if message.author.voice.channel.user_limit != 0 and message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
                     return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
                 await message.author.voice.channel.connect()
+                await message.channel.send(embed=self.get_music_cmds_embed())
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
             else:
@@ -567,6 +570,11 @@ class Audio(commands.Cog):
             return
         elif message.author.voice.channel != message.guild.voice_client.channel:
             return await message.guild.voice_client.move_to(message.author.voice.channel)
+
+
+    def get_music_cmds_embed(self):
+        music_embed_description = "".join(settings.COMMANDLIST_EMBED_MUSIC_PREP)
+        return Embed(description=music_embed_description, color=custom.COLOR_HEX)
 
 
     @commands.command(aliases=["next", "n", "ne", "nxt", "nx", "sk", "skp"])

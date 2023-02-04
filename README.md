@@ -8,7 +8,7 @@ Maon is written in **Python3.8+** and tested on **Ubuntu 22.04 Server / WSL**, b
 if you can install the required libraries below. 
 
 The most notable functionalities of Maon are:
-- The audio player for Youtube videos / shorts and local files as well as prefix-less sound effects and folder.
+- The audio player for Youtube videos / shorts and local files as well as prefix-less sound effects.
 - The chat integrated media browser to browse media files and play them by navigating the browser with emojis,
 which have been added to the media browser embed message.
 - Minecraft server manager for whitelisting and removing users.
@@ -162,9 +162,13 @@ volume, vol, v <number between 0 and 100>
 ```
 register, reg, whitelist <username>
         Registers a user for a minecraft server, if it's hosted alongside Maon.
+        This needs a path to the whitelist and a tmux session called
+        "minecraft" from which the server console is accessible.
 
 unregister, unreg <username>
         Removes a user from the minecraft server whitelist. (Admin only)
+        This needs a path to the whitelist and a tmux session called
+        "minecraft" from which the server console is accessible.
 ```
 
 ## Installation:
@@ -194,7 +198,7 @@ and for audio playback we'll need **ffmpeg** and **opus-tools**:
 
 Next the dependencies:
 
-    python3 -m pip install -U aioconsole discord.py psutil pynacl simplejson tinytag yt-dlp
+    python3 -m pip install -U aioconsole discord.py psutil pynacl requests simplejson tinytag yt-dlp
 
 To run Maon you can use the following from Maon's directory:
 

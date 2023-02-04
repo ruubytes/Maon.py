@@ -247,15 +247,15 @@ class Admin(commands.Cog):
 
     async def status_loop(self):
         """ Updates the status message of Maon hourly. """
-        server_count_flag:int = 0
+        presence_counter:int = 0
         while self.running:
             activity = choice(["listening", "watching", "playing"])
             
-            if server_count_flag >= 5:
+            if presence_counter >= 6:
                 text = "on " + str(len(self.client.guilds)) + " servers!"
                 await self.client.change_presence(activity=discord.Activity(
                     type=discord.ActivityType.playing, name=text))
-                server_count_flag = 0
+                presence_counter = 0
 
             elif activity == "listening":
                 text = choice(custom.STATUS_TEXT_LISTENING_TO)
@@ -273,7 +273,7 @@ class Admin(commands.Cog):
                     type=discord.ActivityType.playing, name=text))
 
             try:
-                server_count_flag += 1
+                presence_counter += 1
                 await sleep(3600)
 
             except CancelledError:

@@ -13,7 +13,6 @@ class Basic(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.log = logbook.getLogger(self.__class__.__name__)
-        self.corona_last_message = ""
         self.running = True
 
     # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
@@ -29,23 +28,6 @@ class Basic(commands.Cog):
             return await message.send("`{}`".format(version.VERSION))
 
         commands_print_bot = settings.COMMANDLIST_EMBED_PREP_START
-
-        # In case of footer with owner ID
-        """
-        icon_url, user_name, user_discriminator = "", "", ""
-        try:
-            user_name = self.client.get_user(self.client.owner_id).name
-            user_discriminator = self.client.get_user(self.client.owner_id).discriminator
-            icon_url = self.client.get_user(self.client.owner_id).avatar_url
-        except AttributeError:
-            user_name = ""
-
-        if (user_name != ""):
-            help_embed.set_footer(text="Owner: " + 
-                    user_name + "#" +
-                    user_discriminator, 
-                icon_url=icon_url)
-        """
 
         if message.author.id == self.client.owner_id:
             commands_print_bot += "".join(settings.COMMANDLIST_EMBED_ADMIN_PREP)
