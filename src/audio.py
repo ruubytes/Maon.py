@@ -387,8 +387,11 @@ class Audio(commands.Cog):
             return await message.send("Come in here if you want me to play something. :eyes:")
     
         if url is None:
+            if message.guild.voice_client.is_paused():
+                message.guild.voice_client.resume()
+                return await message.send(":arrow_forward: Continuing...")
             return await message.send(
-                "You can browse the music folder with `browse music`, if you're looking for something specific.")
+                f"You can browse the music folder with `{custom.PREFIX[1]}browse music` to have a look at some of my local files.")
         elif url.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
             await self.prep_link_track(message, url)
         elif os.path.exists(settings.MUSIC_PATH + url + ".mp3"):
@@ -596,7 +599,7 @@ class Audio(commands.Cog):
             return await message.send(":track_next: Skipping...")
 
 
-    @commands.command()
+    @commands.command(aliases=["l"])
     @commands.guild_only()
     async def loop(self, message, *, option: str = None):
         """ Loops a song or the whole playlist. `off` as `option` turns off the loop. """ 
@@ -686,7 +689,7 @@ class Audio(commands.Cog):
             return await message.send("I'm not playing anything right now.")
 
 
-    @commands.command(aliases=["leave", "l"])
+    @commands.command(aliases=["leave"])
     @commands.guild_only()
     async def stop(self, message):
         """ Stops any currently playing song, cancels the audioplayer and makes Maon leave the voice channel. """ 
@@ -857,8 +860,15 @@ class Audio(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState):
-        if (member.guild.id in self.players) and (len(self.players.get(member.guild.id).voice_client.channel.voice_states) < 2):
-            self.log.info(f"{member.guild.name}: Users left the voice channel, destroying audioplayer.")
+        try:
+            if (member.guild.id in self.players) and (len(self.players.get(member.guild.id).voice_client.channel.voice_states) < 2):
+                self.log.info(f"{member.guild.name}: It looks like all the users left the voice channel...")
+                sleep(3)
+                if (member.guild.id in self.players) and (len(self.players.get(member.guild.id).voice_client.channel.voice_states) < 2):
+                    self.log.info(f"{member.guild.name}: Users left the voice channel, destroying audioplayer.")
+                    self.players.get(member.guild.id).player_task.cancel()
+        except AttributeError as e:
+            self.log.error(f"{member.guild.name}: Check on voice_states failed, voice_client is gone.")
             self.players.get(member.guild.id).player_task.cancel()
 
 
