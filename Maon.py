@@ -85,6 +85,8 @@ class Maon(commands.Bot):
 async def main():
     if not path.exists(settings.LOGGING_DISCORD_PATH):
         makedirs(settings.LOGGING_DISCORD_PATH)
+    if not path.exists("./src/data/"):
+        makedirs("./src/data/")
     logbook.getLogger("discord")    # Format discord lib logging through the custom logging formatter in logbook
     
     maon = Maon()

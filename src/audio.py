@@ -4,12 +4,14 @@ import subprocess
 from time import time
 from time import sleep
 from os import listdir
+from os import makedirs
 from src import logbook
 from src import audioplayer
 from configs import custom
 from configs import settings
 from discord import Embed
 from discord.ext import commands
+from src.guilddata import GuildData
 from yt_dlp import YoutubeDL
 from tinytag import TinyTag
 from random import shuffle
@@ -27,8 +29,8 @@ from discord.ext.commands.context import Context
 
 class Audio(commands.Cog):
     __slots__ = ["client", "log", "players", "cached_songs", "running", "still_preparing",
-                "info_queue", "info_task", "download_queue", "download_task", "cache_queue",
-                "cache_task"]
+                "guild_data_dict", "info_queue", "info_task", "download_queue", "download_task", 
+                "cache_queue", "cache_task"]
 
     def __init__(self, client):
         self.client: commands.Bot = client
@@ -37,12 +39,22 @@ class Audio(commands.Cog):
         self.cached_songs: dict = {}
         self.running: bool = True
         self.still_preparing: list[str] = []
+        self.guild_data_dict = {}
         self.info_queue: asyncio.Queue = asyncio.Queue()
         self.download_queue: asyncio.Queue = asyncio.Queue()
         self.cache_queue: asyncio.Queue = asyncio.Queue()
         self.info_task: asyncio.Task = asyncio.create_task(self.info_loop())
         self.download_task: asyncio.Task = asyncio.create_task(self.download_loop())
         self.cache_task: asyncio.Task = asyncio.create_task(self.cache_loop())
+
+
+    # TODO - Needs to be called when joining a new guild as well, only runs on restarts and reconnects right now.
+    async def setup_guild_data(self):
+        if not os.path.exists(f"./src/data/"):
+            makedirs("./src/data/")
+        for g in self.client.guilds:
+            self.log.info(f"Fetching data for {g.name}...")
+            self.guild_data_dict[g.id] = GuildData.get_guild_data(g.id)
 
 
     async def prep_local_track(self, message, url:str):
@@ -370,6 +382,7 @@ class Audio(commands.Cog):
                 
                 await message.author.voice.channel.connect()
                 self.log.info(f"{message.guild.name}: Voice connection established.")
+                self.guild_data_dict.get(message.guild.id).inc_summoned_from(message.channel.id)
                 await message.channel.send(embed=self.get_music_cmds_embed())
 
                 if self.players.get(message.guild.id) is None:
@@ -439,6 +452,7 @@ class Audio(commands.Cog):
                 if message.author.voice.channel.user_limit != 0 and message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
                     return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
                 await message.author.voice.channel.connect()
+                self.guild_data_dict.get(message.guild.id).inc_summoned_from(message.channel.id)
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
             else:
@@ -507,6 +521,7 @@ class Audio(commands.Cog):
                 if message.author.voice.channel.user_limit != 0 and message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
                     return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
                 await message.author.voice.channel.connect()
+                self.guild_data_dict.get(message.guild.id).inc_summoned_from(message.channel.id)
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
             else:
@@ -564,6 +579,7 @@ class Audio(commands.Cog):
                 if message.author.voice.channel.user_limit != 0 and message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
                     return await message.channel.send("The voice channel is full, someone has to scoot over. :flushed:")
                 await message.author.voice.channel.connect()
+                self.guild_data_dict.get(message.guild.id).inc_summoned_from(message.channel.id)
                 await message.channel.send(embed=self.get_music_cmds_embed())
                 if message.guild.id not in self.players:
                     self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
@@ -843,19 +859,54 @@ class Audio(commands.Cog):
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
+    async def on_ready(self):
+        await self.setup_guild_data()
+        # TODO - This still breaks when reloading the audio extension
+
+    
+    @commands.Cog.listener()
     async def on_message(self, message: Message):
         """ Event listener for the prefix- and command-less sound effect functionality. """
-        if message.author.id != self.client.user.id:
-            if not message.guild:
-                return
-            elif message.guild.id in self.players:
-                if (message.channel == self.players[message.guild.id].message.channel) and (message.author.voice.channel == message.guild.voice_client.channel):
-                    if message.content.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
-                        return await self.nc_play(message, message.content.split()[0])
-                    elif os.path.exists(f"{settings.SFX_PATH}{message.content.lower()}.mp3"):
-                        return await self.fb_sfx(message, f"{settings.SFX_PATH}{message.content.lower()}.mp3")
-                    elif os.path.exists(f"{settings.SFX_PATH}{message.content.lower()}.wav"):
-                        return await self.fb_sfx(message, f"{settings.SFX_PATH}{message.content.lower()}.wav")
+        # Check that the message is not from Maon, not a DM, and the user who sent the message is in a voice channel
+        if (message.author.id == self.client.user.id) or (not message.guild) or (message.author.voice is None): 
+            return
+        self.log.debug(f"{message.guild.name}: A user in a voice channel posted a message.")
+
+        # Is the message in the bot channel?
+        gd: GuildData = self.guild_data_dict.get(message.guild.id)
+        self.log.debug(f"{message.guild.name}: Comparing {message.channel.id} of type {type(message.channel.id)} to {gd.get_music_channel_id()} of type {type(gd.get_music_channel_id())}.")
+        if (message.channel.id != gd.get_music_channel_id()):
+            return
+        self.log.debug(f"{message.guild.name}: It's a message in my bot channel!")
+
+        # Is the message a valid YT link?
+        if message.content.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
+            self.log.debug(f"{message.guild.name}: It's a YT link!")
+            await self.connect_to_voice(message)
+            return await self.nc_play(message, message.content.split()[0])
+        
+        # Is the message a valid mp3 sound effect?
+        elif os.path.exists(f"{settings.SFX_PATH}{message.content.lower()}.mp3"):
+            await self.connect_to_voice(message)
+            return await self.fb_sfx(message, f"{settings.SFX_PATH}{message.content.lower()}.mp3")
+
+        # Is the message a valid wav sound effect?
+        elif os.path.exists(f"{settings.SFX_PATH}{message.content.lower()}.wav"):
+            await self.connect_to_voice(message)
+            return await self.fb_sfx(message, f"{settings.SFX_PATH}{message.content.lower()}.wav")
+        
+
+    async def connect_to_voice(self, message: Message):
+        if message.guild.voice_client is not None:
+            return
+        if message.author.voice.channel.user_limit != 0 and message.author.voice.channel.user_limit - len(message.author.voice.channel.members) <= 0:
+            return
+        await message.author.voice.channel.connect()
+        self.guild_data_dict.get(message.guild.id).inc_summoned_from(message.channel.id)
+        self.log.info(f"{message.guild.name}: Voice connection established.")
+        await message.channel.send(embed=self.get_music_cmds_embed())
+        if self.players.get(message.guild.id) is None:
+            self.players[message.guild.id] = audioplayer.AudioPlayer(self.client, message)
 
 
     @commands.Cog.listener()

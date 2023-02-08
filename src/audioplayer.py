@@ -183,7 +183,7 @@ class AudioPlayer:
                 if self.now_playing != self.track.get("title"):
                     self.now_playing = self.track.get("title")
                     if self.track.get("live_refresh") is None:
-                        await self.message.send(f":cd: Now playing: {self.track.get('title')}, at {int(self.volume * 100)}% volume.")
+                        await self.message.channel.send(f":cd: Now playing: {self.track.get('title')}, at {int(self.volume * 100)}% volume.")
 
         except Exception as e:
             self.log.error(f"{self.message.guild.name}: Error outside of play function: {type(e)}\n{traceback.format_exc()}")
