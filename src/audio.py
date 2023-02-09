@@ -417,6 +417,10 @@ class Audio(commands.Cog):
             await self.prep_local_track(message, url)
         elif url == "history" or url == "music":
             await self.prep_local_track(message, url)
+        elif os.path.exists(f"{settings.SFX_PATH}{url}.mp3"):
+            await self.fb_sfx(message, f"{settings.SFX_PATH}{url}.mp3")
+        elif os.path.exists(f"{settings.SFX_PATH}{url}.wav"):
+            await self.fb_sfx(message, f"{settings.SFX_PATH}{url}.wav")
         else:
             return await message.send("I need a Youtube link to stream or file path to play from my music folder.")
 
