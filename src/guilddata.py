@@ -10,7 +10,6 @@ class GuildData():
             music_channel_id: int = 0):
         self.guild_id = guild_id
         self.summoned_from_channels: dict = summoned_from_channels
-        self.music_channel_id: int = music_channel_id
         self.music_cached_total_mb: int = music_cached_total_mb
 
 
@@ -28,12 +27,12 @@ class GuildData():
                 return GuildData(**json.load(gdjson))
 
 
-    # Keep in mind, keys are str in json, always needs converting if it's an id.
-    # TODO - Maybe check if the channel has been used more than once?
+    # Keep in mind, keys are str in json, always needs converting if it's an id that's used as int.
     def get_music_channel_id(self) -> int | None:
         if len(self.summoned_from_channels) < 1:    # Hasn't been summoned to a voice channel before
             return None
-        return int(max(self.summoned_from_channels, key=self.summoned_from_channels.get))
+        mc_id_str = max(self.summoned_from_channels, key=self.summoned_from_channels.get)
+        return int(mc_id_str) if self.summoned_from_channels.get(mc_id_str) > 2 else None
 
 
     def inc_summoned_from(self, channel_id: int):

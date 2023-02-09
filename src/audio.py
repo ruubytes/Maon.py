@@ -21,6 +21,7 @@ from yt_dlp.utils import DownloadError
 
 from typing import Deque
 from discord import Member
+from discord import Guild
 from discord import VoiceState
 from discord import VoiceClient
 from discord.message import Message
@@ -40,6 +41,7 @@ class Audio(commands.Cog):
         self.running: bool = True
         self.still_preparing: list[str] = []
         self.guild_data_dict = {}
+        asyncio.create_task(self.setup_guild_data())
         self.info_queue: asyncio.Queue = asyncio.Queue()
         self.download_queue: asyncio.Queue = asyncio.Queue()
         self.cache_queue: asyncio.Queue = asyncio.Queue()
@@ -48,10 +50,10 @@ class Audio(commands.Cog):
         self.cache_task: asyncio.Task = asyncio.create_task(self.cache_loop())
 
 
-    # TODO - Needs to be called when joining a new guild as well, only runs on restarts and reconnects right now.
     async def setup_guild_data(self):
         if not os.path.exists(f"./src/data/"):
             makedirs("./src/data/")
+        await self.client.wait_until_ready()
         for g in self.client.guilds:
             self.log.info(f"Fetching data for {g.name}...")
             self.guild_data_dict[g.id] = GuildData.get_guild_data(g.id)
@@ -859,12 +861,6 @@ class Audio(commands.Cog):
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
     @commands.Cog.listener()
-    async def on_ready(self):
-        await self.setup_guild_data()
-        # TODO - This still breaks when reloading the audio extension
-
-    
-    @commands.Cog.listener()
     async def on_message(self, message: Message):
         """ Event listener for the prefix- and command-less sound effect functionality. """
         # Check that the message is not from Maon, not a DM, and the user who sent the message is in a voice channel
@@ -921,6 +917,13 @@ class Audio(commands.Cog):
         except AttributeError as e:
             self.log.error(f"{member.guild.name}: Check on voice_states failed, voice_client is gone.")
             self.players.get(member.guild.id).player_task.cancel()
+
+    
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild: Guild):
+        self.log.info(f"Creating guild data for {guild.name}...")
+        self.guild_data_dict[guild.id] = GuildData.get_guild_data(guild.id)
+        self.log.info(f"{guild.name}: Guild data created:\n{self.guild_data_dict.get(guild.id)}")
 
 
     # ═══ Helper Methods ═══════════════════════════════════════════════════════════════════════════════════════════════
