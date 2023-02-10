@@ -6,11 +6,11 @@ class GuildData():
     def __init__(
             self, guild_id: int, 
             summoned_from_channels: dict = {}, 
-            music_cached_total_mb: int = 0, 
+            music_cached_total_mb: float = 0, 
             music_channel_id: int = 0):
         self.guild_id = guild_id
         self.summoned_from_channels: dict = summoned_from_channels
-        self.music_cached_total_mb: int = music_cached_total_mb
+        self.music_cached_total_mb: float = music_cached_total_mb
 
 
     def __repr__(self):
@@ -50,7 +50,7 @@ class GuildData():
         return self.music_cached_total_mb
 
 
-    def inc_music_cached_size(self, megabytes: int):
+    def inc_music_cached_size(self, megabytes: float):
         self.music_cached_total_mb += megabytes
         self.save_guild_data()
         return self.music_cached_total_mb

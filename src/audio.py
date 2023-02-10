@@ -5,6 +5,7 @@ from time import time
 from time import sleep
 from os import listdir
 from os import makedirs
+from os.path import getsize
 from src import logbook
 from src import audioplayer
 from configs import custom
@@ -292,7 +293,7 @@ class Audio(commands.Cog):
     async def cache_loop(self):
         """ Keeps track of files in the temp folder and queues newly added songs. """
         # Load the cache first
-        temp_list = {}
+        temp_list = []
         try:
             temp_list = listdir(settings.TEMP_PATH)
             for filename in temp_list:
@@ -312,12 +313,14 @@ class Audio(commands.Cog):
                 # Find file by video_id because the ytdl library filters chars out, title != filename
                 track_title = ""
                 track_url = ""
+                track_size = 0
                 temp_list = listdir(settings.TEMP_PATH)
                 for filename in temp_list:
-                    if filename.endswith(video_id + ".mp3"):
+                    if filename.endswith(f"{video_id}.mp3"):
                         self.cached_songs[video_id] = filename
                         track_title = filename[:len(filename) - 16]
-                        track_url = settings.TEMP_PATH + filename
+                        track_url = f"{settings.TEMP_PATH}{filename}"
+                        track_size = round(getsize(f"{settings.TEMP_PATH}{filename}") / (1024**2), 2)
 
                 if (track_title == "") or (track_url == ""):
                     await message.channel.send("I managed to lose the downloaded song within my cache... sorry!")
@@ -325,7 +328,8 @@ class Audio(commands.Cog):
                     self.still_preparing.remove(video_id)
                     continue
 
-                self.log.info(f"{message.guild.name}: Background download finished for {track_title}")
+                self.guild_data_dict.get(message.guild.id).inc_music_cached_size(track_size)
+                self.log.info(f"{message.guild.name}: Background download finished for {track_title} | {track_size} MB")
                 self.still_preparing.remove(video_id)
 
         except (asyncio.CancelledError, asyncio.TimeoutError):
@@ -339,13 +343,13 @@ class Audio(commands.Cog):
         message = req.get("message")
         try:
             # Make this a member of audio instead of calculating it every time again from scratch
-            size_in_mb = (sum(f.stat().st_size for f in Path(settings.TEMP_PATH).glob('**/*') if f.is_file())) / (1024 * 1024)
+            size_in_mb = (sum(f.stat().st_size for f in Path(settings.TEMP_PATH).glob('**/*') if f.is_file())) / (1024**2)
 
             filesize_in_mb: float = 0.0
             for f in req.get("formats"):
                 if f["format_id"] == req.get("format_id"):
                     if f.get("filesize"):
-                        filesize_in_mb = (f.get("filesize") / (1024 * 1024))
+                        filesize_in_mb = (f.get("filesize") / (1024**2))
                         if filesize_in_mb > settings.TEMP_FOLDER_MAX_SIZE_IN_MB:
                             raise OSError(f"Requested download is larger than the allowed size of the temp folder. ({filesize_in_mb:.2f} MB > {settings.TEMP_FOLDER_MAX_SIZE_IN_MB} MB)")
                         break
