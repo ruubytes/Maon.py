@@ -11,6 +11,7 @@ from src import audioplayer
 from configs import custom
 from configs import settings
 from discord import Embed
+from discord import utils
 from discord.ext import commands
 from src.guilddata import GuildData
 from yt_dlp import YoutubeDL
@@ -57,7 +58,14 @@ class Audio(commands.Cog):
         await self.client.wait_until_ready()
         for g in self.client.guilds:
             self.log.info(f"Fetching data for {g.name}...")
-            self.guild_data_dict[g.id] = GuildData.get_guild_data(g.id)
+            gd: GuildData = GuildData.get_guild_data(g.id)
+            popme = []
+            for cid, count in gd.summoned_from_channels.items():
+                if utils.get(g.channels, id=int(cid)) is None:
+                    popme.append(cid)
+            for cid in popme:
+                gd.summoned_from_channels.pop(cid)  # Pop channel from dict if it got deleted
+            self.guild_data_dict[g.id] = gd
 
 
     async def prep_local_track(self, message, url:str):
@@ -872,7 +880,7 @@ class Audio(commands.Cog):
     async def on_message(self, message: Message):
         """ Event listener for the prefix- and command-less sound effect functionality. """
         # Check that the message is not from Maon, not a DM, and the user who sent the message is in a voice channel
-        if (message.author.id == self.client.user.id) or (not message.guild) or (message.author.voice is None): 
+        if (message.author.id == self.client.user.id) or not message.guild or not message.author.voice: 
             return
         self.log.debug(f"{message.guild.name}: A user in a voice channel posted a message.")
 
@@ -887,16 +895,22 @@ class Audio(commands.Cog):
         if message.content.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
             self.log.debug(f"{message.guild.name}: It's a YT link!")
             await self.connect_to_voice(message)
+            if message.author.voice.channel != message.guild.voice_client.channel:
+                return
             return await self.nc_play(message, message.content.split()[0])
         
         # Is the message a valid mp3 sound effect?
         elif os.path.exists(f"{settings.SFX_PATH}{message.content.lower()}.mp3"):
             await self.connect_to_voice(message)
+            if message.author.voice.channel != message.guild.voice_client.channel:
+                return
             return await self.fb_sfx(message, f"{settings.SFX_PATH}{message.content.lower()}.mp3")
 
         # Is the message a valid wav sound effect?
         elif os.path.exists(f"{settings.SFX_PATH}{message.content.lower()}.wav"):
             await self.connect_to_voice(message)
+            if message.author.voice.channel != message.guild.voice_client.channel:
+                return
             return await self.fb_sfx(message, f"{settings.SFX_PATH}{message.content.lower()}.wav")
         
 
