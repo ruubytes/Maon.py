@@ -1,4 +1,4 @@
-VERSION = "Maon  v23.02.04"
+VERSION = "Maon  v23.02.14"
 SIGNATURE = f'''
                    _           _            
   _ __ _   _ _   _| |__  _   _| |_ ___  ___ 

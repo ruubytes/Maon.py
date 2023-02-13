@@ -4,7 +4,7 @@
 [![Issues-Closed][issues-closed-shield]][issues-closed-url]
 
 Maon is a little hobby project, a highly personalized discord bot, as well as a project to get to know the Git workflow.
-Maon is written in **Python3.8+** and tested on **Ubuntu 22.04 Server / WSL**, but should run on most UNIX platforms, 
+Maon is written in **Python3.9+** and tested on **Ubuntu 22.04 Server / WSL**, but should run on most UNIX platforms, 
 if you can install the required libraries below. 
 
 The most notable functionalities of Maon are:
@@ -206,7 +206,7 @@ To run Maon you can use the following from Maon's directory:
 
 ### Windows:
 
-Requires **Python 3.8+**, **pip**, and **ffmpeg** to be installed. 
+Requires **Python 3.9+**, **pip**, and **ffmpeg** to be installed. 
 Install instructions for these are on their respective websites.
 
 To install the dependencies, open a new command prompt and enter:

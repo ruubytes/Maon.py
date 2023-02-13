@@ -336,7 +336,8 @@ class Audio(commands.Cog):
                     self.still_preparing.remove(video_id)
                     continue
 
-                self.guild_data_dict.get(message.guild.id).inc_music_cached_size(track_size)
+                await self.guild_data_dict.get(message.guild.id).inc_cached_music_size(track_size)
+                await self.guild_data_dict.get(message.guild.id).check_cached_music_achievements(message)
                 self.log.info(f"{message.guild.name}: Background download finished for {track_title} | {track_size} MB")
                 self.still_preparing.remove(video_id)
 
