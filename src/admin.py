@@ -15,6 +15,7 @@ from discord.ext import commands
 from asyncio import CancelledError
 
 from asyncio import Task
+from discord import Message
 from src.audioplayer import AudioPlayer
 from discord.ext.commands import Context
 
@@ -291,6 +292,13 @@ class Admin(commands.Cog):
         if not self.status_task:
             self.status_task = asyncio.create_task(self.status_loop(), name="activity_rotation_task")
         self.log.log(logbook.RAW, "\tI'm ready!\n")
+
+
+    @commands.Cog.listener()
+    async def on_message(self, message: Message):
+        if message.guild:
+            return
+        self.log.warn(f"DM received by {message.author.name}#{message.author.discriminator}: {message.content}")
     
 
 # ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════

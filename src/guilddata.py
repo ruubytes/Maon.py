@@ -57,10 +57,8 @@ class GuildData():
     def inc_summoned_from(self, channel_id: int):
         id_str = str(channel_id)
         if self.summoned_from_channels.get(id_str) != None:
-            print("Incrementing")
             self.summoned_from_channels[id_str] += 1
         else:
-            print("Creating")
             self.summoned_from_channels[id_str] = 1
         self.save_guild_data()
 

@@ -881,7 +881,11 @@ class Audio(commands.Cog):
     async def on_message(self, message: Message):
         """ Event listener for the prefix- and command-less sound effect functionality. """
         # Check that the message is not from Maon, not a DM, and the user who sent the message is in a voice channel
-        if (message.author.id == self.client.user.id) or not message.guild or not message.author.voice: 
+        try:
+            if (message.author.id == self.client.user.id) or not message.guild or not message.author.voice: 
+                return
+        except AttributeError as e:
+            self.log.debug(f"{message.guild.name}: Attribute error caught for author lacking the voice attribute.")
             return
         self.log.debug(f"{message.guild.name}: A user in a voice channel posted a message.")
 
