@@ -13,6 +13,7 @@ __init__.py
 ### Login and Configuration ###
 login.py
 configs/
+.env
 
 ### Media Folder Contents ###
 downloads/
@@ -29,3 +30,4 @@ src/data/
 errors/
 src/logs/
 *.txt
+old/

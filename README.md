@@ -23,7 +23,6 @@ which have been added to the media browser embed message.
 - [Installation](#installation)
     - [Discord Tokens & IDs](#discord-tokens--ids)
     - [Ubuntu / Debian / Raspbian](#ubuntu--debian--raspbian)
-    - [Windows](#windows)
 
 ## List of Commands
 
@@ -204,19 +203,6 @@ To run Maon you can use the following from Maon's directory:
 
     python3 Maon.py
 
-### Windows:
-
-Requires **Python 3.9+**, **pip**, and **ffmpeg** to be installed. 
-Install instructions for these are on their respective websites.
-
-To install the dependencies, open a new command prompt and enter:
-
-    python -m pip install -U aioconsole discord.py psutil pynacl requests simplejson tinytag yt-dlp
-
-Use the following in a command prompt from Maon's directory:
-
-    python Maon.py
-        
 
 [issues-shield]: https://img.shields.io/github/issues-raw/raesoft/Maon.py?color=F8D386&style=flat-square
 [issues-url]: https://github.com/raesoft/Maon.py/issues
