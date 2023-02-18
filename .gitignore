@@ -22,12 +22,10 @@ music/
 sfx/
 temp/
 
-### Playback histories and other stuff
+### Logs, data and notes
+src/logs/
 src/data/
-
-### Logs and notes
 .sandbox/
 errors/
-src/logs/
 *.txt
 old/

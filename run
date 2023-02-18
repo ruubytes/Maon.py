@@ -1,0 +1,129 @@
+#!/bin/bash
+
+echo '''
+                     __          __           
+   _______  ____  __/ /_  __  __/ /____  _____
+  / ___/ / / / / / / __ \/ / / / __/ _ \/ ___/
+ / /  / /_/ / /_/ / /_/ / /_/ / /_/  __(__  ) 
+/_/   \__,_/\__,_/_.___/\__, /\__/\___/____/  
+                       /____/                 
+'''
+# Hop into Maon's directory to keep things simple
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+if ! [[ ./ -ef $SCRIPT_DIR ]]; then
+  cd "$SCRIPT_DIR"
+fi
+
+# Check commandline arguments
+args=("$@")
+noupdate_arg="noupdate"
+noupdate=false
+newsetup_arg="setup"
+newsetup=false
+if [[ "${args[*]}" =~ "${noupdate_arg}" ]]; then
+  noupdate=true
+fi
+if [[ "${args[*]}" =~ "${newsetup_arg}" ]]; then
+  newsetup=true
+fi
+
+# Check if python3-pip, ffmpeg, opus-tools are installed
+installMe=""
+for package in "python3-pip" "ffmpeg" "opus-tools" "tmux"; do
+  if ! [[ $(dpkg -s "$package" 2> /dev/null | grep "install ok installed") ]]; then
+    installMe+=" $package"
+  fi
+done
+
+if ! [ -z "$installMe" ]; then
+  echo "Missing$installMe dependencies."
+  echo -e "You can install the dependencies with: \n\n    sudo apt-get install$installMe -y \n"
+  exit 0
+fi
+
+# Install python dependencies that are not installed
+installed=$(pip list)
+installMePip=""
+for package in "pip" "aioconsole" "discord.py" "psutil" "PyNaCl" "requests" "simplejson" "tinytag" "yt-dlp"; do
+  if ! [[ $(echo "$installed" | grep "$package") ]]; then
+    installMePip+=" $package"
+  fi
+done
+if ! [ -z "$installMePip" ]; then
+  read -p "Install required python dependencies? [Y/N]: " YN
+  if [[ $YN == "Y" || $YN == "y" || $YN == "Yes" || $YN == "yes" ]]; then
+    python3 -m pip install "$installMePip"
+  else
+    exit 0
+  fi
+fi
+
+# Update python dependencies
+if [ "$noupdate" = false ]; then
+  echo "Looking for updates..."
+  outdated=$(pip list --outdated)
+  updateMePip=""
+  for package in "pip" "aioconsole" "discord.py" "psutil" "PyNaCl" "requests" "simplejson" "tinytag" "yt-dlp"; do
+    if [[ $(echo "$outdated" | grep "$package") ]]; then
+      updateMePip+=" $package"
+    fi
+  done
+  if ! [ -z "$updateMePip" ]; then
+    python3 -m pip install -U "$updateMePip"
+  fi
+
+  # Update maon
+  #git pull origin develop
+  echo -e "Everything up-to-date.\n"
+fi
+
+# Check if .env exists
+# if yes, check if the token and id variables exist
+  # if yes, load environment variables from .env
+# else, prompt for token and owner id, create .env and export variables
+if [ -f ".env" ] && grep -Fq "MAON_TOKEN=" .env && grep -Fq "MAON_OWNER_ID=" .env && [ "$newsetup" = false ]; then
+  LN=$(sed -n '/MAON_TOKEN=/=' .env) 
+  export $(sed "$LN q;d" .env)
+  LN=$(sed -n '/MAON_OWNER_ID=/=' .env) 
+  export $(sed "$LN q;d" .env)
+else
+  # The file, the token entry or owner_id is missing or needs overwriting.
+  # Get the token, write to file and export it.
+  echo "To log into discord, Maon needs a discord bot token."
+  read -p "Paste Maon's discord bot token here: " TOKEN
+  if [ -z $TOKEN ]; then
+    exit 1
+  fi
+  if ! [ -f ".env" ] || ! grep -Fq "MAON_TOKEN=" .env; then
+    echo "MAON_TOKEN=$TOKEN" >> .env
+  elif grep -Fq "MAON_TOKEN=" .env; then
+    LN=$(sed -n '/MAON_TOKEN=/=' .env) 
+    sed "$LN c \\MAON_TOKEN=$TOKEN" -i ".env"
+  fi
+  export "MAON_TOKEN=$TOKEN"
+
+  # Get the owner_id, write to file and export it.
+  echo -e "\nFor Maon to recognize her owner, your own discord ID is needed."
+  read -p "Rightclick on yourself in discord and paste your own discord ID here: " OWNER_ID
+  if [ -z $OWNER_ID ]; then
+    exit 1
+  fi
+  if ! grep -Fq "MAON_OWNER_ID=" .env; then
+    echo "MAON_OWNER_ID=$OWNER_ID" >> .env
+  elif grep -Fq "MAON_OWNER_ID=" .env; then
+    LN=$(sed -n '/MAON_OWNER_ID=/=' .env) 
+    sed "$LN c \\MAON_OWNER_ID=$OWNER_ID" -i ".env"
+  fi
+  export "MAON_OWNER_ID=$OWNER_ID"
+fi
+
+# Run Maon
+echo "Starting Maon..."
+python3 ./src/Maon.py
+
+exit 0
+
+# In case of tmux: 
+# tmux needs to create a new session and detach and the session needs to run this script.
+# Can't call tmux and just keep going within this script. Example:
+#   tmux new -d -s "maon" /home/user/Maon.py/run
