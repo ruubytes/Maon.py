@@ -10,10 +10,6 @@ __pycache__
 *.pyc
 __init__.py
 
-### Login and Configuration ###
-login.py
-configs/
-.env
 
 ### Media Folder Contents ###
 downloads/
@@ -25,7 +21,9 @@ temp/
 ### Logs, data and notes
 src/logs/
 src/data/
+configs/
 .sandbox/
 errors/
 *.txt
 old/
+.env

@@ -29,7 +29,7 @@ fi
 
 # Check if python3-pip, ffmpeg, opus-tools are installed
 installMe=""
-for package in "python3-pip" "ffmpeg" "opus-tools" "tmux"; do
+for package in "python3-pip" "ffmpeg" "opus-tools"; do
   if ! [[ $(dpkg -s "$package" 2> /dev/null | grep "install ok installed") ]]; then
     installMe+=" $package"
   fi
@@ -77,11 +77,8 @@ if [ "$noupdate" = false ]; then
   echo -e "Everything up-to-date.\n"
 fi
 
-# Check if .env exists
-# if yes, check if the token and id variables exist
-  # if yes, load environment variables from .env
-# else, prompt for token and owner id, create .env and export variables
-if [ -f ".env" ] && grep -Fq "MAON_TOKEN=" .env && grep -Fq "MAON_OWNER_ID=" .env && [ "$newsetup" = false ]; then
+# Check if .env exists else, prompt for token and owner id, create .env and export variables
+if [ "$newsetup" = false ] && [ -f ".env" ] && grep -Fq "MAON_TOKEN=" .env && grep -Fq "MAON_OWNER_ID=" .env; then
   LN=$(sed -n '/MAON_TOKEN=/=' .env) 
   export $(sed "$LN q;d" .env)
   LN=$(sed -n '/MAON_OWNER_ID=/=' .env) 
@@ -118,12 +115,10 @@ else
 fi
 
 # Run Maon
-echo "Starting Maon..."
 python3 ./src/Maon.py
-
-exit 0
+exit $?
 
 # In case of tmux: 
 # tmux needs to create a new session and detach and the session needs to run this script.
-# Can't call tmux and just keep going within this script. Example:
+# Can't call tmux within this script and keep going, instead needs to do something like this:
 #   tmux new -d -s "maon" /home/user/Maon.py/run

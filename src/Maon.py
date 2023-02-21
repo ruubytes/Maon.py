@@ -1,3 +1,189 @@
-import os
+import asyncio
+import json
+import logbook
+from defaults import DEFAULT_CUSTOMIZATION
+from defaults import DEFAULT_SETTINGS
+from discord import __version__
+from discord import Intents
+from discord.ext.commands import Bot
+from logging import Logger
+from os import environ
+from os import mkdir
+from os.path import exists
+from typing import Iterable
 
-print(os.getcwd())
+from aiohttp.client_exceptions import ClientConnectorError
+from discord import ConnectionClosed
+from discord import LoginFailure
+from discord import HTTPException
+
+logbook.getLogger("discord")
+log: Logger = logbook.getLogger("maon")
+__maon_version__ = "23.2.21"
+
+
+class Maon(Bot):
+    def __init__(self) -> None:
+        log.info(f"Maon v{__maon_version__}")
+        log.info(f"Discord.py v{__version__}")
+        self.custom: dict[str, str | Iterable[str]] = self._load_customization()
+        self.settings: dict[str, str | int | float] = self._load_settings()
+        super().__init__(
+            command_prefix=self.custom.get("prefix"),  # type: ignore
+            help_command=None, 
+            intents=self._set_intents(), 
+            options=self._set_options()
+        )
+
+    
+    async def setup_hook(self) -> None:
+        for ext in ["admin", "console"]:
+            log.info(f"Loading {ext} extension...")
+            await self.load_extension(f"{ext}")
+
+
+    def _load_customization(self) -> dict[str, str | Iterable[str]]:
+        log.info("Loading customizations...")
+        # Check if custom file exists
+        custom: dict[str, str | Iterable[str]] = {}
+        if exists(f"./configs/custom.json"):
+            # Check if custom file is actually valid json
+            try:
+                with open("./configs/custom.json", "r") as cjson:
+                    # If yes, load from file 
+                    custom = json.load(cjson)
+                
+                # Add new defaults if missing
+                changed: bool = False
+                for k, v in DEFAULT_CUSTOMIZATION.items():
+                    if k not in custom:
+                        custom[k] = v
+                        changed = True
+                if changed:
+                    with open("./configs/custom.json", "w") as cjson:
+                        json.dump(custom, cjson, sort_keys=True, indent=4)
+                return custom
+            except json.JSONDecodeError:    
+                pass    # File is corrupted, overwrite it with the defaults
+
+        # If no or corrupted, create a new one with the default settings and save it
+        with open("./configs/custom.json", "w") as cjson:
+            json.dump(DEFAULT_CUSTOMIZATION, cjson, sort_keys=True, indent=4)
+            return DEFAULT_CUSTOMIZATION
+
+
+    async def reload_customization(self):
+        return
+
+
+    async def save_customization(self) -> None:
+        with open("./configs/custom.json", "w") as cjson:
+            json.dump(self.custom, cjson, sort_keys=True, indent=4)
+
+
+    def _load_settings(self) -> dict[str, str | int | float]:
+        log.info("Loading settings...")
+        # Check if settings file exists
+        settings: dict[str, str | int | float] = {}
+        if exists(f"./configs/settings.json"):
+            # Check if settings file is actually valid json
+            try:
+                with open("./configs/settings.json", "r") as cjson:
+                    # If yes, load from file 
+                    settings = json.load(cjson)
+                
+                # Add new defaults if missing
+                changed: bool = False
+                for k, v in DEFAULT_SETTINGS.items():
+                    if k not in settings:
+                        settings[k] = v
+                        changed = True
+                if changed:
+                    with open("./configs/settings.json", "w") as cjson:
+                        json.dump(settings, cjson, sort_keys=True, ident=4)
+                return settings
+            except json.JSONDecodeError:    
+                pass    # File is corrupted, overwrite it with the defaults
+
+        # If no or corrupted, create a new one with the default settings and save it
+        with open("./configs/settings.json", "w") as cjson:
+            json.dump(DEFAULT_SETTINGS, cjson, sort_keys=True, indent=4)
+            return DEFAULT_SETTINGS
+
+
+    async def reload_settings(self) -> None:
+        return
+
+
+    async def save_settings(self) -> None:
+        with open(f"./configs/settings.json", "w") as cjson:
+            json.dump(self.settings, cjson, sort_keys=True, indent=4)
+
+
+    def _set_intents(self) -> Intents:
+        log.info("Setting intents...")
+        intents = Intents.none()
+        intents.dm_messages = True
+        intents.guilds = True
+        intents.guild_messages = True
+        intents.guild_reactions = True
+        intents.members = True
+        intents.message_content = True
+        intents.voice_states = True
+        return intents
+
+    
+    def _set_options(self) -> dict[str, int | bool]:
+        options: dict[str, int | bool] = {}
+        try:
+            options["owner_id"] = self._env_get_owner_id()
+        except (TypeError, ValueError):
+            log.error(f"Your owner_id looks to be faulty. You can set it again with: \n\n    ./run setup\n")
+            exit(1)
+        options["case_insensitive"] = True
+        return options
+
+
+    def _env_get_owner_id(self) -> int:
+        oid: str | None = environ.get("MAON_OWNER_ID")
+        if oid is None:
+            raise TypeError
+        try:
+            return int(oid)
+        except ValueError:
+            raise
+
+    
+    def _env_get_token(self) -> str:
+        token: str | None = environ.get("MAON_TOKEN")
+        if token is None:
+            raise TypeError
+        return token
+
+
+    async def run(self) -> None:
+        log.info("Starting Maon...")
+        try:
+            await self.start(self._env_get_token())
+        except TypeError:
+            log.error("I need a discord API token to log in. You can change it by starting me with\n\n   ./run setup\n")
+            exit(1)
+        except LoginFailure:
+            log.error("It looks like my API token is faulty, make sure you have entered it correctly or re-paste it with:\n\n   ./run setup\n")
+            exit(1)
+        except (ClientConnectorError, HTTPException, ConnectionClosed):
+            log.error("It looks like my connection to Discord has issues.")
+            exit(1)
+
+
+async def main():
+    if not exists(f"./configs/"):
+        mkdir("./configs/")
+    maon = Maon()
+    await maon.run()
+
+
+try:
+    asyncio.run(main())
+except KeyboardInterrupt:
+    log.info("Shutting down...\n")
