@@ -10,7 +10,6 @@ from logging import Logger
 from os import environ
 from os import mkdir
 from os.path import exists
-from typing import Iterable
 
 from aiohttp.client_exceptions import ClientConnectorError
 from discord import ConnectionClosed
@@ -26,10 +25,10 @@ class Maon(Bot):
     def __init__(self) -> None:
         log.info(f"Maon v{__maon_version__}")
         log.info(f"Discord.py v{__version__}")
-        self.custom: dict[str, str | Iterable[str]] = self._load_customization()
+        self.custom: dict[str, str | list[str]] = self._load_customization()
         self.settings: dict[str, str | int | float] = self._load_settings()
         super().__init__(
-            command_prefix=self.custom.get("prefix"),  # type: ignore
+            command_prefix=self._set_prefix(),
             help_command=None, 
             intents=self._set_intents(), 
             options=self._set_options()
@@ -42,10 +41,12 @@ class Maon(Bot):
             await self.load_extension(f"{ext}")
 
 
-    def _load_customization(self) -> dict[str, str | Iterable[str]]:
+    def _load_customization(self) -> dict[str, str | list[str]]:
         log.info("Loading customizations...")
+        if not exists(f"./configs/"):
+            mkdir("./configs/")
         # Check if custom file exists
-        custom: dict[str, str | Iterable[str]] = {}
+        custom: dict[str, str | list[str]] = {}
         if exists(f"./configs/custom.json"):
             # Check if custom file is actually valid json
             try:
@@ -83,6 +84,8 @@ class Maon(Bot):
 
     def _load_settings(self) -> dict[str, str | int | float]:
         log.info("Loading settings...")
+        if not exists(f"./configs/"):
+            mkdir("./configs/")
         # Check if settings file exists
         settings: dict[str, str | int | float] = {}
         if exists(f"./configs/settings.json"):
@@ -120,6 +123,18 @@ class Maon(Bot):
             json.dump(self.settings, cjson, sort_keys=True, indent=4)
 
 
+    def _set_prefix(self) -> str | list[str]:
+        log.info("Setting prefix...")
+        prefix: str | list[str] | None = self.custom.get("prefix")
+        if isinstance(prefix, str) and prefix:
+            return prefix
+        elif isinstance(prefix, list) and prefix and not (len(prefix) == 1 and prefix[0]):
+            return prefix
+        else:
+            log.warning("My command prefixes are missing, please set them in the custom.json file. Using 'm ' as prefix in the meantime.")
+            return "m "
+
+
     def _set_intents(self) -> Intents:
         log.info("Setting intents...")
         intents = Intents.none()
@@ -134,6 +149,7 @@ class Maon(Bot):
 
     
     def _set_options(self) -> dict[str, int | bool]:
+        log.info("Setting options...")
         options: dict[str, int | bool] = {}
         try:
             options["owner_id"] = self._env_get_owner_id()
@@ -161,7 +177,7 @@ class Maon(Bot):
         return token
 
 
-    async def run(self) -> None:
+    async def go(self) -> None:
         log.info("Starting Maon...")
         try:
             await self.start(self._env_get_token())
@@ -176,14 +192,9 @@ class Maon(Bot):
             exit(1)
 
 
-async def main():
-    if not exists(f"./configs/"):
-        mkdir("./configs/")
-    maon = Maon()
-    await maon.run()
-
-
-try:
-    asyncio.run(main())
-except KeyboardInterrupt:
-    log.info("Shutting down...\n")
+if __name__ == "__main__":
+    try:
+        maon = Maon()
+        asyncio.run(maon.go())
+    except KeyboardInterrupt:
+        log.info("Shutting down...\n")

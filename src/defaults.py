@@ -1,6 +1,3 @@
-from typing import Iterable
-
-
 DEFAULT_SETTINGS: dict[str, str | int | float] = {
     "audio_cache_max_size_mb": 51200,
     "audio_download_rate_bandwidth_limit": "3M",
@@ -11,7 +8,7 @@ DEFAULT_SETTINGS: dict[str, str | int | float] = {
     "audio_track_caching_duration_max": 4000
 }
 
-DEFAULT_CUSTOMIZATION: dict[str, str | Iterable[str]] = {
+DEFAULT_CUSTOMIZATION: dict[str, str | list[str]] = {
     "prefix": [ 
         "m ", "M ", "Maon ", "maon ", "mAon ", "maOn ", "maoN ", "MAon ", "mAOn ", "maON ", "MAOn ", "mAON ", "MAON "
     ],
@@ -47,5 +44,8 @@ DEFAULT_CUSTOMIZATION: dict[str, str | Iterable[str]] = {
     "status_playing": [
         "with fire",
         "with my tail"
+    ],
+    "status_custom": [
+        "enter maon help for more information"
     ]
 }

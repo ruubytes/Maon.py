@@ -3,9 +3,9 @@ import sys
 from aioconsole import ainput
 from asyncio import create_task
 from asyncio import Task
-from discord.ext.commands import Bot
 from discord.ext.commands import Cog
 from logging import Logger
+from maon import Maon
 from os import close
 from os import execl
 from os import getpid
@@ -18,8 +18,8 @@ log: Logger = logbook.getLogger("console")
 
 
 class Console(Cog):
-    def __init__(self, maon: Bot) -> None:
-        self.maon: Bot = maon
+    def __init__(self, maon: Maon) -> None:
+        self.maon: Maon = maon
         self.commands: dict[str, Callable] = {
             "help": self.usage,
             "usage": self.usage,
@@ -55,25 +55,26 @@ class Console(Cog):
 
 
     async def shutdown(self) -> None:
-        log.warn("Shutting down...")
+        log.warning("Shutting down...")
+        log.log(logbook.RAW, "\nMaybe I'll take over the world some other time.\n")
         await self.maon.close()
 
 
     async def restart(self) -> None:
-        log.warn("Restarting...")
+        log.warning("Restarting...\n\n---\n")
         p: Process = Process(getpid())
         for handler in p.open_files() + p.connections():
             try:
                 close(handler.fd)
             except Exception as e:
-                log.warn(f"{handler} already closed.\n{e}")
+                log.warning(f"{handler} already closed.\n{e}")
         execl(sys.executable, sys.executable, *sys.argv)
 
 
-async def setup(maon: Bot) -> None:
+async def setup(maon: Maon) -> None:
     await maon.add_cog(Console(maon))
 
 
-async def teardown(maon: Bot) -> None:
+async def teardown(maon: Maon) -> None:
     """ Clean up here, if needed, before unloading the extension """
     await maon.remove_cog("Console")
