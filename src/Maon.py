@@ -18,13 +18,15 @@ from discord import HTTPException
 
 logbook.getLogger("discord")
 log: Logger = logbook.getLogger("maon")
-__maon_version__ = "23.2.21"
+__maon_version__ = "23.2.22"
 
 
 class Maon(Bot):
     def __init__(self) -> None:
         log.info(f"Maon v{__maon_version__}")
         log.info(f"Discord.py v{__version__}")
+        log.info("Starting Maon...")
+        self.extensions_list: list[str] = ["admin", "audio", "console", "error_manager"]
         self.custom: dict[str, str | list[str]] = self._load_customization()
         self.settings: dict[str, str | int | float] = self._load_settings()
         super().__init__(
@@ -36,7 +38,7 @@ class Maon(Bot):
 
     
     async def setup_hook(self) -> None:
-        for ext in ["admin", "console"]:
+        for ext in self.extensions_list:
             log.info(f"Loading {ext} extension...")
             await self.load_extension(f"{ext}")
 
@@ -177,24 +179,19 @@ class Maon(Bot):
         return token
 
 
-    async def go(self) -> None:
-        log.info("Starting Maon...")
-        try:
-            await self.start(self._env_get_token())
-        except TypeError:
-            log.error("I need a discord API token to log in. You can change it by starting me with\n\n   ./run setup\n")
-            exit(1)
-        except LoginFailure:
-            log.error("It looks like my API token is faulty, make sure you have entered it correctly or re-paste it with:\n\n   ./run setup\n")
-            exit(1)
-        except (ClientConnectorError, HTTPException, ConnectionClosed):
-            log.error("It looks like my connection to Discord has issues.")
-            exit(1)
-
-
 if __name__ == "__main__":
     try:
         maon = Maon()
-        asyncio.run(maon.go())
+        asyncio.run(maon.start(maon._env_get_token()))
+        log.log(logbook.RAW, "\nMaybe I'll take over the world some other time.\n")
     except KeyboardInterrupt:
         log.info("Shutting down...\n")
+    except TypeError:
+        log.error("I need a discord API token to log in. You can change it by starting me with\n\n   ./run setup\n")
+        exit(1)
+    except LoginFailure:
+        log.error("It looks like my API token is faulty, make sure you have entered it correctly or re-paste it with:\n\n   ./run setup\n")
+        exit(1)
+    except (ClientConnectorError, HTTPException, ConnectionClosed):
+        log.error("It looks like my connection to Discord has issues.")
+        exit(1)

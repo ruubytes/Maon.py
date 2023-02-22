@@ -174,6 +174,10 @@ unregister, unreg <username>
 
 ### Discord Tokens & IDs:
 
+Maon needs a **discord API token**, your discord **ID**, and some **intents** enabled.
+
+#### Deprecated:
+
 Maon needs a **bot token**, **Maon's ID** and the **ID** of the **bot owner** for a successful login.
 The first step to get all of these is to create a new application on the [discord developer page][discord-developer-url].
 

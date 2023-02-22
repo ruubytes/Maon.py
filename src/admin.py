@@ -7,9 +7,12 @@ from asyncio import Task
 from discord import Activity
 from discord import ActivityType
 from discord import CustomActivity
+from discord import Message
+from discord import TextChannel
 from discord.ext.commands import Cog
 from discord.ext.commands import command
 from discord.ext.commands import Context
+from discord.ext.commands import guild_only
 from discord.ext.commands import is_owner
 from logging import Logger
 from maon import Maon
@@ -21,7 +24,7 @@ from random import choice
 
 log: Logger = logbook.getLogger("admin")
 
-
+# TODO custom activity broken
 class Admin(Cog):
     def __init__(self, maon: Maon) -> None:
         self.maon: Maon = maon
@@ -49,20 +52,19 @@ class Admin(Cog):
                 log.info(f"Set new hourly {activity} status.")
                 await sleep(3600)
         except CancelledError:
-            pass
+            log.info(f"status_task cancelled.")
 
 
     @command(aliases=["kill"])
     @is_owner()
-    async def shutdown(self, context: Context) -> None:
+    async def shutdown(self, ctx: Context) -> None:
         log.warning("Shutting down...")
-        log.log(logbook.RAW, "\nMaybe I'll take over the world some other time.\n")
         await self.maon.close()
 
 
     @command()
     @is_owner()
-    async def restart(self, context: Context) -> None:
+    async def restart(self, ctx: Context) -> None:
         log.warning("Restarting...\n\n---\n")
         p: Process = Process(getpid())
         for handler in p.open_files() + p.connections():
@@ -72,6 +74,44 @@ class Admin(Cog):
                 log.warning(f"{handler} already closed.\n{e}")
         execl(sys.executable, sys.executable, *sys.argv)
 
+
+    @command()
+    @is_owner()
+    async def reload(self, ctx: Context, ext: str | None) -> None | Message:
+        if not ext:
+            return await ctx.channel.send("Do you want to reload a specific extension, like `audio` or `all` all of them?")
+        if ext.lower() in self.maon.extensions_list:
+            log.info(f"Reloading {ext.lower()} extension...")
+            await self.maon.reload_extension(f"{ext.lower()}")
+            log.info(f"{ext.lower()} extension reloaded.")
+            return await ctx.channel.send(f"{ext.lower()} extension reloaded.")
+        elif ext.lower() == "all":
+            for ext in self.maon.extensions_list:
+                log.info(f"Reloading {ext.lower()} extension...")
+                await self.maon.reload_extension(f"{ext.lower()}")
+            log.info("All extensions reloaded.")
+            return await ctx.channel.send("All extensions reloaded.")
+        else:
+            return await ctx.channel.send(f"I can't find an extension called {ext.lower()}.")
+
+    
+    @command(aliases=["clear", "delete"])
+    @guild_only()
+    async def remove(self, ctx: Context, amount: int | None) -> None | Message:
+        if not isinstance(ctx.channel, TextChannel): return
+        channel: TextChannel = ctx.channel
+        if not amount:
+            return await channel.send("How many messages do you want me to purge from the chat? (Max 50 messages)")
+        if amount > 0 and amount < 51:
+            await channel.purge(limit=amount + 1)
+        else:
+            return await channel.send("I can only delete 50 messages at a time.")
+
+    
+    @command()
+    async def emojiname(self, ctx: Context, emoji: str | None) -> None | Message:
+        if emoji: return await ctx.channel.send(f"`{str(emoji.encode('ascii', 'namereplace'))}`")
+
     
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════
     @Cog.listener()
@@ -79,10 +119,15 @@ class Admin(Cog):
         log.log(logbook.RAW, "\n\tI'm ready\n")
 
 
+    # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════
+    async def cog_unload(self) -> None:
+        log.info("Cancelling status_task...")
+        self.status_task.cancel()
+
+
 async def setup(maon: Maon) -> None:
     await maon.add_cog(Admin(maon))
 
 
 async def teardown(maon: Maon) -> None:
-    """ Clean up here, if needed, before unloading the extension """
     await maon.remove_cog("Admin")
