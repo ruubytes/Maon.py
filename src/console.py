@@ -3,9 +3,12 @@ from admin import Admin
 from aioconsole import ainput
 from asyncio import create_task
 from asyncio import Task
+from discord import Activity
+from discord import ActivityType
 from discord.ext.commands import Cog
 from logging import Logger
 from maon import Maon
+from random import choice
 from typing import Callable
 
 from asyncio import CancelledError
@@ -93,18 +96,36 @@ class Console(Cog):
             await self.maon.save_customization()  
         else:
             log.info("Usage: save <settings/custom>")
-            
+
 
     async def status(self, argv: list[str] | None = None) -> None:
         if not argv or len(argv) < 2:
-            return log.info("Status only accepts 'cancel' and 'restart' as arguments.")
+            return log.info("Usage: \n\tstatus <(cancel / restart)>\n\tstatus <listening / playing / watching> <text>")
         admin: Admin | None = self.maon.get_cog("Admin") # type: ignore
         if admin and argv[1].lower() == "cancel":
             await admin._status_cancel()
         elif admin and argv[1].lower() == "restart":
             await admin._status_restart()
+        elif admin and len(argv) > 2:
+            if argv[1].lower() == "listening":
+                argv.pop(0)
+                argv.pop(0)
+                text: str = " ".join(argv)
+                await self.maon.change_presence(activity=Activity(type=ActivityType.listening, name=text))
+            elif argv[1].lower() == "playing":
+                argv.pop(0)
+                argv.pop(0)
+                text: str = " ".join(argv)
+                await self.maon.change_presence(activity=Activity(type=ActivityType.playing, name=text))
+            elif argv[1].lower() == "watching":
+                argv.pop(0)
+                argv.pop(0)
+                text: str = " ".join(argv)
+                await self.maon.change_presence(activity=Activity(type=ActivityType.watching, name=text))
+            else:
+                log.info("Usage: \n\tstatus <(cancel / restart)>\n\tstatus <listening / playing / watching> <text>")
         else:
-            log.info("Status only accepts 'cancel' and 'restart' as arguments.")
+            log.info("Usage: \n\tstatus <(cancel / restart)>\n\tstatus <listening / playing / watching> <text>")
 
     
     # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════
