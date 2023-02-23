@@ -25,7 +25,7 @@ from random import choice
 
 log: Logger = logbook.getLogger("admin")
 
-# TODO custom activity broken
+
 class Admin(Cog):
     def __init__(self, maon: Maon) -> None:
         self.maon: Maon = maon
@@ -75,7 +75,7 @@ class Admin(Cog):
 
     @command()
     @is_owner()
-    async def restart(self, ctx: Context | None) -> None:
+    async def restart(self, ctx: Context) -> None:
         await self._restart()
 
     
@@ -129,6 +129,13 @@ class Admin(Cog):
     @command()
     async def emojiname(self, ctx: Context, emoji: str | None) -> None | Message:
         if emoji: return await ctx.channel.send(f"`{str(emoji.encode('ascii', 'namereplace'))}`")
+
+    
+    @command()
+    async def ping(self, ctx: Context) -> None | Message:
+        lat: int = int(self.maon.latency * 1000)
+        log.info(f"WebSocket latency: {lat}ms")
+        return await ctx.channel.send(f"Pong! `WebSocket {lat}ms`")
 
     
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════

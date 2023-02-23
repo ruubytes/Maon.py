@@ -26,7 +26,7 @@ class Maon(Bot):
         log.info(f"Maon v{__maon_version__}")
         log.info(f"Discord.py v{__version__}")
         log.info("Starting Maon...")
-        self.extensions_list: list[str] = ["admin", "audio", "console", "error_manager"]
+        self.extensions_list: list[str] = ["admin", "audio", "console", "error_manager", "misc"]
         self.custom: dict[str, str | list[str]] = self._load_customization()
         self.settings: dict[str, str | int | float] = self._load_settings()
         super().__init__(
@@ -41,6 +41,8 @@ class Maon(Bot):
         for ext in self.extensions_list:
             log.info(f"Loading {ext} extension...")
             await self.load_extension(f"{ext}")
+        log.info("Synchronizing application (slash) commands to discord...")
+        await self.tree.sync()
 
 
     def _load_customization(self) -> dict[str, str | list[str]]:
