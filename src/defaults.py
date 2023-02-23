@@ -44,8 +44,5 @@ DEFAULT_CUSTOMIZATION: dict[str, str | list[str]] = {
     "status_playing": [
         "with fire",
         "with my tail"
-    ],
-    "status_custom": [
-        "enter maon help for more information"
     ]
 }

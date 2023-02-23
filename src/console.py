@@ -1,16 +1,11 @@
 import logbook
-import sys
+from admin import Admin
 from aioconsole import ainput
 from asyncio import create_task
 from asyncio import Task
-from audio import Audio
 from discord.ext.commands import Cog
 from logging import Logger
 from maon import Maon
-from os import close
-from os import execl
-from os import getpid
-from psutil import Process
 from typing import Callable
 
 from asyncio import CancelledError
@@ -30,7 +25,9 @@ class Console(Cog):
             "kill": self.shutdown,
             "shutdown": self.shutdown,
             "restart": self.restart,
-            "reload": self.reload        
+            "reload": self.reload,
+            "save": self.save,
+            "status": self.status
         }
         self.console_task: Task = create_task(self.console_loop(), name="console_task")
 
@@ -63,18 +60,11 @@ class Console(Cog):
 
 
     async def restart(self, argv: list[str] | None = None) -> None:
-        log.warning("Restarting...\n\n---\n")
-        p: Process = Process(getpid())
-        for handler in p.open_files() + p.connections():
-            try:
-                close(handler.fd)
-            except Exception as e:
-                log.warning(f"{handler} already closed.\n{e}")
-        execl(sys.executable, sys.executable, *sys.argv)
+        admin: Admin | None = self.maon.get_cog("Admin") # type: ignore
+        if admin: await admin._restart()
 
 
     async def reload(self, argv: list[str] | None = None) -> None:
-        log.info("Reload called")
         if not argv or len(argv) < 2:
             return await self.usage()
         if argv[1].lower() in self.maon.extensions_list:
@@ -86,8 +76,35 @@ class Console(Cog):
                 log.info(f"Reloading {ext.lower()} extension...")
                 await self.maon.reload_extension(f"{ext.lower()}")
             log.info("All extensions reloaded.")
+        elif argv[1].lower() == "settings":
+            await self.maon.reload_settings()
+        elif argv[1].lower() in ["custom", "customization"]:
+            await self.maon.reload_customization()
         else:
-            log.info(f"I can't find an extension called {argv[1].lower()}.")
+            log.info(f"I can't find an extension or configuration file called {argv[1].lower()}.")
+
+    
+    async def save(self, argv: list[str] | None = None) -> None:
+        if not argv or len(argv) < 2:
+            return await self.usage()
+        if argv[1].lower() == "settings":
+            await self.maon.save_settings()
+        elif argv[1].lower() in ["custom", "customization"]:
+            await self.maon.save_customization()  
+        else:
+            log.info("Usage: save <settings/custom>")
+            
+
+    async def status(self, argv: list[str] | None = None) -> None:
+        if not argv or len(argv) < 2:
+            return log.info("Status only accepts 'cancel' and 'restart' as arguments.")
+        admin: Admin | None = self.maon.get_cog("Admin") # type: ignore
+        if admin and argv[1].lower() == "cancel":
+            await admin._status_cancel()
+        elif admin and argv[1].lower() == "restart":
+            await admin._status_restart()
+        else:
+            log.info("Status only accepts 'cancel' and 'restart' as arguments.")
 
     
     # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════

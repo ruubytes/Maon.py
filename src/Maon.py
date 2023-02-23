@@ -55,7 +55,6 @@ class Maon(Bot):
                 with open("./configs/custom.json", "r") as cjson:
                     # If yes, load from file 
                     custom = json.load(cjson)
-                
                 # Add new defaults if missing
                 changed: bool = False
                 for k, v in DEFAULT_CUSTOMIZATION.items():
@@ -68,20 +67,38 @@ class Maon(Bot):
                 return custom
             except json.JSONDecodeError:    
                 pass    # File is corrupted, overwrite it with the defaults
-
         # If no or corrupted, create a new one with the default settings and save it
         with open("./configs/custom.json", "w") as cjson:
             json.dump(DEFAULT_CUSTOMIZATION, cjson, sort_keys=True, indent=4)
             return DEFAULT_CUSTOMIZATION
 
 
-    async def reload_customization(self):
-        return
+    async def reload_customization(self) -> None:
+        if not exists(f"./configs/custom.json"):
+            return log.error("My custom.json file got deleted.")
+        custom: dict[str, str | list[str]] = {}
+        try:
+            with open("./configs/custom.json", "r") as cjson:
+                custom = json.load(cjson)
+            # Add new defaults if missing
+            changed: bool = False
+            for k, v in DEFAULT_CUSTOMIZATION.items():
+                if k not in custom:
+                    custom[k] = v
+                    changed = True
+            if changed:
+                with open("./configs/custom.json", "w") as cjson:
+                    json.dump(custom, cjson, sort_keys=True, indent=4)
+            self.custom = custom
+            log.info("Customizations reloaded.")
+        except json.JSONDecodeError:    
+            log.error("My custom.json file is corrupted.")
 
 
     async def save_customization(self) -> None:
         with open("./configs/custom.json", "w") as cjson:
             json.dump(self.custom, cjson, sort_keys=True, indent=4)
+            log.info("Customizations saved.")
 
 
     def _load_settings(self) -> dict[str, str | int | float]:
@@ -96,7 +113,6 @@ class Maon(Bot):
                 with open("./configs/settings.json", "r") as cjson:
                     # If yes, load from file 
                     settings = json.load(cjson)
-                
                 # Add new defaults if missing
                 changed: bool = False
                 for k, v in DEFAULT_SETTINGS.items():
@@ -109,7 +125,6 @@ class Maon(Bot):
                 return settings
             except json.JSONDecodeError:    
                 pass    # File is corrupted, overwrite it with the defaults
-
         # If no or corrupted, create a new one with the default settings and save it
         with open("./configs/settings.json", "w") as cjson:
             json.dump(DEFAULT_SETTINGS, cjson, sort_keys=True, indent=4)
@@ -117,12 +132,31 @@ class Maon(Bot):
 
 
     async def reload_settings(self) -> None:
-        return
+        if not exists(f"./configs/settings.json"):
+            return log.error("My settings.json file got deleted.")
+        settings: dict[str, str | int | float] = {}
+        try:
+            with open("./configs/settings.json", "r") as cjson:
+                settings = json.load(cjson)
+            # Add new defaults if missing
+            changed: bool = False
+            for k, v in DEFAULT_SETTINGS.items():
+                if k not in settings:
+                    settings[k] = v
+                    changed = True
+            if changed:
+                with open("./configs/settings.json", "w") as cjson:
+                    json.dump(settings, cjson, sort_keys=True, indent=4)
+            self.settings = settings
+            log.info("Settings reloaded.")
+        except json.JSONDecodeError:    
+            log.error("My settings.json file is corrupted.")
 
 
     async def save_settings(self) -> None:
         with open(f"./configs/settings.json", "w") as cjson:
             json.dump(self.settings, cjson, sort_keys=True, indent=4)
+            log.info("Settings saved.")
 
 
     def _set_prefix(self) -> str | list[str]:
