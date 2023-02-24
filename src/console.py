@@ -8,12 +8,35 @@ from discord import ActivityType
 from discord.ext.commands import Cog
 from logging import Logger
 from maon import Maon
-from random import choice
 from typing import Callable
 
 from asyncio import CancelledError
 
 log: Logger = logbook.getLogger("console")
+USAGE: str = """Commands:
+help, usage, info
+        Prints what you are looking at right now.
+
+q, quit, exit, kill, shutdown
+        Closes Maon and exits the program.
+
+reload <extension / settings / custom / all>
+        Reloads a configuration file like settings or
+        custom, or reloads an extension or all of them.
+
+restart
+        Restarts Maon with the same arguments she was
+        launched with.
+
+save <custom / settings>
+        Save the customizations or settings to their
+        respective files in the configs folder.
+
+status <cancel / restart>
+status <listening / playing / watching> <text>
+        Cancel or restart the status message loop, or
+        set your own custom status message.
+"""
 
 
 class Console(Cog):
@@ -21,6 +44,7 @@ class Console(Cog):
         self.maon: Maon = maon
         self.commands: dict[str, Callable] = {
             "help": self.usage,
+            "info": self.usage,
             "usage": self.usage,
             "q": self.shutdown,
             "quit": self.shutdown,
@@ -52,10 +76,8 @@ class Console(Cog):
 
 
     async def usage(self, argv: list[str] | None = None) -> None:
-        log.log(logbook.RAW, "Available commands:")
-        for key in self.commands:
-            log.log(logbook.RAW, f"\t{str(key)}")
-
+        log.info(USAGE)
+       
 
     async def shutdown(self, argv: list[str] | None = None) -> None:
         log.warning("Shutting down...")

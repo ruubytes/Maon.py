@@ -1,6 +1,7 @@
 import logbook
 import requests
 from discord import app_commands
+from discord import Interaction
 from discord import Message
 from discord.ext.commands import Cog
 from discord.ext.commands import command
@@ -24,10 +25,27 @@ class Misc(Cog):
         self.maon: Maon = maon
 
 
-    @hybrid_command()
+    @app_commands.command()
     @app_commands.describe(a="The first number to add", b="The second number to add")
-    async def add(self, ctx: Context, a: app_commands.Range[int, 0, 100], b: app_commands.Range[int, 0, 200]):
-        return await ctx.channel.send(f"{a+b}")
+    async def add(self, interaction: Interaction, a: int, b: int) -> None | Message:
+        await interaction.response.send_message(f"{a} + {b} = {a+b}")
+        
+
+    @command()
+    async def ping(self, ctx: Context) -> None | Message:
+        lat: int = int(self.maon.latency * 1000)
+        log.info(f"WebSocket latency: {lat}ms")
+        return await ctx.channel.send(f"Pong! `WebSocket {lat}ms`")
+    
+
+    @hybrid_command()
+    async def help(self, ctx: Context) -> None | Message:
+        if ctx.interaction:
+            log.info("Correctly identified this as a slash command")
+            await ctx.send("Replied as slash command reply")
+        else:
+            log.info("Hopefully correctly identified this as not a slash command")
+            await ctx.channel.send("Replied as traditional command")
 
     
     @command(aliases=["coin", "toss"])

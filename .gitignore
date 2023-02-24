@@ -24,6 +24,6 @@ src/data/
 configs/
 .sandbox/
 errors/
-*.txt
+Notes.txt
 old/
 .env

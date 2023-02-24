@@ -26,6 +26,7 @@ from random import choice
 log: Logger = logbook.getLogger("admin")
 
 
+# TODO Permission check for removing messages needed
 class Admin(Cog):
     def __init__(self, maon: Maon) -> None:
         self.maon: Maon = maon
@@ -131,16 +132,13 @@ class Admin(Cog):
         if emoji: return await ctx.channel.send(f"`{str(emoji.encode('ascii', 'namereplace'))}`")
 
     
-    @command()
-    async def ping(self, ctx: Context) -> None | Message:
-        lat: int = int(self.maon.latency * 1000)
-        log.info(f"WebSocket latency: {lat}ms")
-        return await ctx.channel.send(f"Pong! `WebSocket {lat}ms`")
-
-    
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════
     @Cog.listener()
     async def on_ready(self) -> None:
+        if len(self.maon.guilds) < 11:
+            log.info("Maon is a member of:")
+            for g in self.maon.guilds:
+                log.info(f"{g.id} | {g.name}")
         log.log(logbook.RAW, "\n\tI'm ready\n")
 
 
