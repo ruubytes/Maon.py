@@ -8,6 +8,7 @@ from asyncio import sleep
 from asyncio import Task
 from discord import Activity
 from discord import ActivityType
+from discord import Guild
 from discord import Message
 from discord import TextChannel
 from discord.ext.commands import Cog
@@ -140,6 +141,11 @@ class Admin(Cog):
             for g in self.maon.guilds:
                 log.info(f"{g.id} | {g.name}")
         log.log(logbook.RAW, "\n\tI'm ready\n")
+
+
+    @Cog.listener()
+    async def on_guild_join(self, guild: Guild) -> None:
+        log.info(f"Joined a new guild! {guild.id} | {guild.name}")
 
 
     # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════

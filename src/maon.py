@@ -45,6 +45,18 @@ class Maon(Bot):
         await self.tree.sync()
 
 
+    async def _get_prefix(self) -> str:
+        """Returns a single prefix string. \n
+        The discord.py built-in `get_prefix(ctx)` returns all the prefixes instead."""
+        prefix: str | list[str] | None = self.custom.get("prefix")
+        if prefix and isinstance(prefix, list):
+            return prefix[0]
+        elif prefix and isinstance(prefix, str):
+            return prefix
+        else:
+            return "m "
+
+
     def _load_customization(self) -> dict[str, str | list[str]]:
         log.info("Loading customizations...")
         if not exists(f"./configs/"):
