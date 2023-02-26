@@ -1,7 +1,6 @@
 import logbook
 import sys
 from asyncio import all_tasks
-from asyncio import CancelledError
 from asyncio import create_task
 from asyncio import get_running_loop
 from asyncio import sleep
@@ -11,10 +10,14 @@ from discord import ActivityType
 from discord import Guild
 from discord import Message
 from discord import TextChannel
+from discord.ext.commands import bot_has_guild_permissions
+from discord.ext.commands import bot_has_permissions
 from discord.ext.commands import Cog
 from discord.ext.commands import command
 from discord.ext.commands import Context
 from discord.ext.commands import guild_only
+from discord.ext.commands import has_guild_permissions
+from discord.ext.commands import has_permissions
 from discord.ext.commands import is_owner
 from logging import Logger
 from maon import Maon
@@ -24,10 +27,12 @@ from os import getpid
 from psutil import Process
 from random import choice
 
+from asyncio import CancelledError
+from discord.ext.commands import CheckFailure
+
 log: Logger = logbook.getLogger("admin")
 
 
-# TODO Permission check for removing messages needed
 class Admin(Cog):
     def __init__(self, maon: Maon) -> None:
         self.maon: Maon = maon
@@ -117,15 +122,28 @@ class Admin(Cog):
     
     @command(aliases=["clear", "delete"])
     @guild_only()
+    @has_permissions(manage_messages=True)
+    @bot_has_permissions(manage_messages=True, read_message_history=True)
     async def remove(self, ctx: Context, amount: int | None) -> None | Message:
-        if not isinstance(ctx.channel, TextChannel): return
-        channel: TextChannel = ctx.channel
+        if not isinstance(ctx.channel, TextChannel) or not ctx.guild: return
         if not amount:
-            return await channel.send("How many messages do you want me to purge from the chat? (Max 50 messages)")
+            return await ctx.channel.send("How many messages do you want me to purge from the chat? (Max 50 messages)")
         if amount > 0 and amount < 51:
-            await channel.purge(limit=amount + 1)
+            log.info(f"Trying to delete {amount} messages in {ctx.guild.name}: {ctx.channel.name} for {ctx.author.name}#{ctx.author.discriminator}.")
+            await ctx.channel.purge(limit=amount + 1)
         else:
-            return await channel.send("I can only delete 50 messages at a time.")
+            return await ctx.channel.send("I can only delete 50 messages at a time.")
+        
+    
+    @remove.error
+    async def remove_error(self, ctx: Context, e: Exception):
+        if isinstance(e, CheckFailure):
+            if "Bot requires Manage" in e.__str__():
+                await ctx.channel.send("I lack the permissions to manage messages.")
+            if "Bot requires Read Message" in e.__str__():
+                await ctx.channel.send("I lack the permissions to read the message history.")
+            else:
+                await ctx.channel.send("You don't have permissions to manage messages.")
 
     
     @command()

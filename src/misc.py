@@ -180,6 +180,21 @@ class Misc(Cog):
             return "I could not find an entry or could not fetch any information, maybe try again in a few seconds."
 
 
+    @app_commands.command(name="roll", description="Roll dices, like 1d6 or 2d20.")
+    async def _ac_roll(self, itc: Interaction, dice: int, range: int) -> None | Message:
+        return
+    
+    
+    @command(aliases=["r", "roll", "rng", "dice"])
+    async def _c_roll(self, ctx: Context, *argv: str) -> None | Message:
+        return
+    
+
+    async def roll(self, dice: int, range: int) -> None | list[int]:
+        return
+
+
+
     # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════
     async def cog_unload(self) -> None:
         #log.info("Cancelling XXX_task...")

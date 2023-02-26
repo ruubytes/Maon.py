@@ -58,7 +58,7 @@ class Maon(Bot):
         
     
     async def get_color_accent(self) -> int:
-        """Returns a hex literal (0xf8d386) of Maon's accent color."""
+        """Returns an int from a hex (0xf8d386) of Maon's accent color."""
         color: str | list[str] | None = self.custom.get("color_accent")
         if not isinstance(color, str):
             color = "0xf8d386"
