@@ -46,12 +46,3 @@ DEFAULT_CUSTOMIZATION: dict[str, str | list[str]] = {
         "with my tail"
     ]
 }
-
-CMDS_EMBED_MUSIC_STR: str = """
-"""
-CMDS_EMBED_MISC_STR: str = """
-"""
-CMDS_EMBED_MOD_STR: str = """
-"""
-CMDS_EMBED_ADMIN_STR: str = f""":flag_kp: ***Admin Commands:***
-"""

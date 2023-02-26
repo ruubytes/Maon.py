@@ -1,12 +1,16 @@
 import logbook
 import requests
+from asyncio import sleep
 from discord import app_commands
 from discord import Interaction
+from discord import Member
 from discord import Message
+from discord import Embed
+from discord import TextChannel
+from discord import User
 from discord.ext.commands import Cog
 from discord.ext.commands import command
 from discord.ext.commands import Context
-from discord.ext.commands import hybrid_command
 from logging import Logger
 from maon import Maon
 from random import choice
@@ -21,75 +25,115 @@ MAL_API_A_SEARCH_URL: str = "https://api.jikan.moe/v4/anime?q="
 MAL_API_M_SEARCH_URL: str = "https://api.jikan.moe/v4/manga?q="
 
 
+# TODO Help: only show commands applicable to the permissions of the user asking for help
 class Misc(Cog):
     def __init__(self, maon: Maon) -> None:
         self.maon: Maon = maon
 
 
-    @command()
-    async def ping(self, ctx: Context) -> None | Message:
+    @app_commands.command(name="ping", description="Shows Maon's websocket latency")
+    async def _ac_ping(self, itc: Interaction) -> None | Message:
+        return await itc.response.send_message(f"Pong! `WebSocket {await self.ping()}ms`")
+
+
+    @command(aliases=["ping", "latency"])
+    async def _c_ping(self, ctx: Context) -> None | Message:
+        return await ctx.channel.send(f"Pong! `WebSocket {await self.ping()}ms`")
+    
+
+    async def ping(self) -> int:
         lat: int = int(self.maon.latency * 1000)
         log.info(f"WebSocket latency: {lat}ms")
-        return await ctx.channel.send(f"Pong! `WebSocket {lat}ms`")
+        return lat
+
+
+    @app_commands.command(name="help", description="Display all of Maon's available commands and functionalities")
+    async def _ac_help(self, itc: Interaction) -> None | Message:
+        embeds: list[Embed] = await self.get_help_embeds(itc.user)
+        await itc.response.send_message(embed=embeds[0])
+        embeds.pop(0)
+        await sleep(.25)
+        for embed in embeds:
+            if isinstance(itc.channel, TextChannel):
+                await itc.channel.send(embed=embed)
+                await sleep(.25)
     
 
-    @hybrid_command()
-    async def help(self, ctx: Context) -> None | Message:
-        if ctx.interaction:
-            log.info("Correctly identified this as a slash command")
-            await ctx.send("Replied as slash command reply")
-        else:
-            log.info("Hopefully correctly identified this as not a slash command")
-            await ctx.channel.send("Replied as traditional command")
-
-    
-    async def _prepare_help_embed_music(self, is_interaction: bool = False) -> None | str:
-        #prefix: str = "/" if is_interaction else await self.maon.get_prefix()
-        return
-
-    
-    @command(aliases=["coin", "toss"])
-    async def flip(self, ctx: Context) -> None | Message:
-        return await ctx.channel.send(f"It's {choice(['heads', 'tails'])}")
+    @command(aliases=["h", "help", "info", "infocard"])
+    async def _c_help(self, ctx: Context) -> None | Message:
+        embeds: list[Embed] = await self.get_help_embeds(ctx.author)
+        for embed in embeds:
+            await ctx.channel.send(embed=embed)
+            await sleep(.25)
     
 
-    @app_commands.command()
-    @app_commands.describe(a="The first number to add", b="The second number to add")
-    async def add(self, interaction: Interaction, a: int, b: int) -> None | Message:
-        await interaction.response.send_message(f"{a} + {b} = {a+b}")
+    async def get_help_embeds(self, user: User | Member) -> list[Embed]:
+        prefix: str = await self.maon.get_prefix_str()
+        color: int = await self.maon.get_color_accent()
+        embeds: list[Embed] = []
+        if user.id == self.maon.owner_id:
+            cmds_embed_admin_title: str = f":flag_kp: ***Owner Commands***:"
+            cmds_embed_admin_list: list[str] = [
+                f"`{prefix}shutdown`　Shuts Maon down.\n",
+                f"`{prefix}reload <ext / config / all>`　Reload an extension or all of them, or reload from the custom or settings files.\n",
+                f"`{prefix}status <cancel / restart>`　Cancels the hourly status message change or restarts it.\n",
+                f"`{prefix}status <listening / watching / playing> <text>`　Sets Maon's status message.\n"
+            ]
+            embeds.append(Embed(title=cmds_embed_admin_title, description="".join(cmds_embed_admin_list), color=color))
+
+        cmds_embed_mod_title: str = f":rainbow_flag: ***Moderator Commands***:"
+        cmds_embed_mod_list: list[str] = [
+            f"`{prefix}remove <0 - 50>`　Delete a number of messages in bulk.\n"
+        ]
+        embeds.append(Embed(title=cmds_embed_mod_title, description="".join(cmds_embed_mod_list), color=color))
+        cmds_embed_misc_title: str = f":beginner: ***Misc Commands***:"
+        cmds_embed_misc_list: list[str] = [
+            f"`{prefix}ping`　Displays Maon's websocket latency.\n",
+            f"`{prefix}flip`　Flip a coin.\n",
+            f"`{prefix}anime <search query>`　Look up an anime show on MyAnimeList.\n",
+            f"`{prefix}manga <search query>`　Look up a manga on MyAnimeList.\n",
+            f"`{prefix}<question>`　Maon will reply to a closed (am, is, are, do, can...) question.\n"
+        ]
+        embeds.append(Embed(title=cmds_embed_misc_title, description="".join(cmds_embed_misc_list), color=color))
+        return embeds
 
 
-    @app_commands.command(name="anime")
+
+    @app_commands.command(name="coin", description="Flip a coin!")
+    async def _ac_flip(self, itc: Interaction) -> None | Message:
+        return await itc.response.send_message(f"It's {choice(['heads', 'tails'])}!")
+
+    
+    @command(aliases=["coin", "flip", "toss"])
+    async def _c_flip(self, ctx: Context) -> None | Message:
+        return await ctx.channel.send(f"It's {choice(['heads', 'tails'])}!")
+
+
+    @app_commands.command(name="anime", description="Search for an anime on MyAnimeList")
     @app_commands.describe(search="Search query for an anime on MyAnimeList. (min 3 characters)")
-    async def _ac_anime(self, interaction: Interaction, search: str) -> None | Message:
-        return await interaction.response.send_message(await self._mal(search))
+    async def _ac_mal_anime(self, itc: Interaction, search: str) -> None | Message:
+        return await itc.response.send_message(await self.mal(search))
     
 
-    @app_commands.command(name="mal")
-    @app_commands.describe(search="Search query for an anime on MyAnimeList. (min 3 characters)")
-    async def _ac_mal(self, interaction: Interaction, search: str) -> None | Message:
-        return await interaction.response.send_message(await self._mal(search))
-    
-
-    @app_commands.command(name="manga")
-    @app_commands.describe(search="Search query for manga on MyAnimeList. (min 3 characters)")
-    async def _ac_manga(self, interaction: Interaction, search: str) -> None | Message:
-        return await interaction.response.send_message(await self._mal(search, anime=False))
+    @app_commands.command(name="manga", description="Search for a manga on MyAnimeList")
+    @app_commands.describe(search="Search query for a manga on MyAnimeList. (min 3 characters)")
+    async def _ac_mal_manga(self, itc: Interaction, search: str) -> None | Message:
+        return await itc.response.send_message(await self.mal(search, anime=False))
     
 
     @command(aliases=["mal", "anime", "animu", "manga", "mango", "myanimelist"])
     async def _c_mal(self, ctx: Context, *argv: str) -> None | Message:
-        prefix: str = await self.maon._get_prefix()
+        prefix: str = await self.maon.get_prefix_str()
         if not argv:
             return await ctx.channel.send(f"You can search for an anime or manga if you provide me a search term, like `{prefix}anime Psycho-Pass`")
         query: str = " ".join(argv)
         if ctx.invoked_with == "manga":
-            return await ctx.channel.send(await self._mal(query, anime=False))
+            return await ctx.channel.send(await self.mal(query, anime=False))
         else:
-            return await ctx.channel.send(await self._mal(query))
+            return await ctx.channel.send(await self.mal(query))
 
 
-    async def _mal(self, query: str, anime: bool = True) -> str:
+    async def mal(self, query: str, anime: bool = True) -> str:
         search_query: str = query
         for c in search_query:
             if c == " ":
@@ -104,11 +148,13 @@ class Misc(Cog):
         try:
             log.info(f"Looking up {query} on MyAnimeList...")
             if anime: r: Response = requests.get(f"{MAL_API_A_SEARCH_URL}{search_query}")
-            else: r: Response = requests.get(f"{MAL_API_M_SEARCH_URL}{query}")
+            else: r: Response = requests.get(f"{MAL_API_M_SEARCH_URL}{search_query}")
 
             if r.status_code == 200:
                 data: list[dict] | None = r.json().get("data")
-                if not data: raise TypeError
+                if not data: 
+                    log.info(f"No MyAnimeList entry found for: {query}")
+                    return f"I could not find an entry for the requested query: {query}"
                 first_entry: dict = data[0]
                 url: str | None = first_entry.get("url")
                 titles: list[dict] | None = first_entry.get("titles")

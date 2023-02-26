@@ -45,7 +45,7 @@ class Maon(Bot):
         await self.tree.sync()
 
 
-    async def _get_prefix(self) -> str:
+    async def get_prefix_str(self) -> str:
         """Returns a single prefix string. \n
         The discord.py built-in `get_prefix(ctx)` returns all the prefixes instead."""
         prefix: str | list[str] | None = self.custom.get("prefix")
@@ -55,6 +55,18 @@ class Maon(Bot):
             return prefix
         else:
             return "m "
+        
+    
+    async def get_color_accent(self) -> int:
+        """Returns a hex literal (0xf8d386) of Maon's accent color."""
+        color: str | list[str] | None = self.custom.get("color_accent")
+        if not isinstance(color, str):
+            color = "0xf8d386"
+        try:
+            color_hex = int(color, base=16)
+        except ValueError:
+            color_hex = 0xf8d386
+        return color_hex
 
 
     def _load_customization(self) -> dict[str, str | list[str]]:
