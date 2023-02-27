@@ -7,7 +7,9 @@ from asyncio import sleep
 from asyncio import Task
 from discord import Activity
 from discord import ActivityType
+from discord import app_commands
 from discord import Guild
+from discord import Interaction
 from discord import Message
 from discord import TextChannel
 from discord.ext.commands import bot_has_guild_permissions
@@ -28,6 +30,7 @@ from psutil import Process
 from random import choice
 
 from asyncio import CancelledError
+from discord.app_commands import AppCommandError
 from discord.ext.commands import CheckFailure
 
 log: Logger = logbook.getLogger("admin")
@@ -109,17 +112,39 @@ class Admin(Cog):
             log.info(f"Reloading {ext.lower()} extension...")
             await self.maon.reload_extension(f"{ext.lower()}")
             log.info(f"{ext.lower()} extension reloaded.")
-            return await ctx.channel.send(f"{ext.lower()} extension reloaded.")
+            await ctx.channel.send(f"{ext.lower()} extension reloaded.")
         elif ext.lower() == "all":
             for ext in self.maon.extensions_list:
                 log.info(f"Reloading {ext.lower()} extension...")
                 await self.maon.reload_extension(f"{ext.lower()}")
             log.info("All extensions reloaded.")
-            return await ctx.channel.send("All extensions reloaded.")
+            await ctx.channel.send("All extensions reloaded.")
         else:
             return await ctx.channel.send(f"I can't find an extension called {ext.lower()}.")
+        await self.maon.sync_app_cmds()
+
+
+    @app_commands.command(name="delete", description="Delete a number of messages in a channel. (Max 75)")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.checks.bot_has_permissions(manage_messages=True, read_message_history=True)
+    async def _ac_remove(self, itc: Interaction, amount: app_commands.Range[int, 1, 75]) -> None | Message:
+        if not isinstance(itc.channel, TextChannel) or not itc.guild: return
+        log.info(f"Trying to delete {amount} messages in {itc.guild.name}: {itc.channel.name} for {itc.user.name}#{itc.user.discriminator}.")
+        await itc.response.send_message(f"Deleting {amount} messages.", ephemeral=True, delete_after=16)
+        await itc.channel.purge(limit=amount + 1, bulk=True)
 
     
+    @_ac_remove.error
+    async def _ac_remove_error(self, itc: Interaction, e: AppCommandError) -> None:
+        if isinstance(e, app_commands.CheckFailure):
+            if "Bot requires Manage" in e.__str__():
+                await itc.response.send_message("I lack the permissions to manage messages.")
+            elif "Bot requires Read Message" in e.__str__():
+                await itc.response.send_message("I lack the permissions to read the message history.")
+            else:
+                await itc.response.send_message("You lack the permissions to manage messages.")
+
+
     @command(aliases=["clear", "delete"])
     @guild_only()
     @has_permissions(manage_messages=True)
@@ -127,16 +152,17 @@ class Admin(Cog):
     async def remove(self, ctx: Context, amount: int | None) -> None | Message:
         if not isinstance(ctx.channel, TextChannel) or not ctx.guild: return
         if not amount:
-            return await ctx.channel.send("How many messages do you want me to purge from the chat? (Max 50 messages)")
-        if amount > 0 and amount < 51:
+            return await ctx.channel.send("How many messages do you want me to purge from the chat? (Max 75 messages)")
+        if amount > 0 and amount < 76:
             log.info(f"Trying to delete {amount} messages in {ctx.guild.name}: {ctx.channel.name} for {ctx.author.name}#{ctx.author.discriminator}.")
-            await ctx.channel.purge(limit=amount + 1)
+            await ctx.channel.purge(limit=amount + 1, bulk=True)
+            return await ctx.channel.send(f"{amount} messages deleted.", delete_after=16)
         else:
-            return await ctx.channel.send("I can only delete 50 messages at a time.")
+            return await ctx.channel.send("I can only delete 75 messages at a time.")
         
     
     @remove.error
-    async def remove_error(self, ctx: Context, e: Exception):
+    async def remove_error(self, ctx: Context, e: Exception) -> None:
         if isinstance(e, CheckFailure):
             if "Bot requires Manage" in e.__str__():
                 await ctx.channel.send("I lack the permissions to manage messages.")

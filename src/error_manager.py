@@ -26,7 +26,7 @@ class ErrorManager(Cog):
                 log.error(f"{ctx.guild.name if ctx.guild else user}: I don't have the permissions to perform '{ctx.message.content}' for {ctx.author.name}\nCause: {e.__cause__}\n{print_tb(e.__traceback__) if e.__traceback__ else ''}")
         elif isinstance(e, CheckFailure):
             if "You are missing" in e.__str__():
-                log.error(f"{user} lacked the permissions for: {ctx.invoked_with}")
+                log.error(f"{user} lacks the permissions for: {ctx.invoked_with}")
             else:
                 log.error(f"{ctx.guild.name if ctx.guild else user}: {e.__str__()} ({ctx.invoked_with})")
         else:

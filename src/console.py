@@ -96,11 +96,13 @@ class Console(Cog):
             log.info(f"Reloading {argv[1].lower()} extension...")
             await self.maon.reload_extension(f"{argv[1].lower()}")
             log.info(f"{argv[1].lower()} extension reloaded.")
+            await self.maon.sync_app_cmds()
         elif argv[1].lower() == "all":
             for ext in self.maon.extensions_list:
                 log.info(f"Reloading {ext.lower()} extension...")
                 await self.maon.reload_extension(f"{ext.lower()}")
             log.info("All extensions reloaded.")
+            await self.maon.sync_app_cmds()
         elif argv[1].lower() == "settings":
             await self.maon.reload_settings()
         elif argv[1].lower() in ["custom", "customization"]:

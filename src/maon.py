@@ -18,7 +18,7 @@ from discord import HTTPException
 
 logbook.getLogger("discord")
 log: Logger = logbook.getLogger("maon")
-__maon_version__ = "23.2.22"
+__maon_version__ = "23.2.27"
 
 
 class Maon(Bot):
@@ -41,6 +41,10 @@ class Maon(Bot):
         for ext in self.extensions_list:
             log.info(f"Loading {ext} extension...")
             await self.load_extension(f"{ext}")
+        await self.sync_app_cmds()
+
+    
+    async def sync_app_cmds(self) -> None:
         log.info("Synchronizing application (slash) commands to discord...")
         await self.tree.sync()
 

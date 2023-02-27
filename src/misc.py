@@ -13,7 +13,7 @@ from discord.ext.commands import command
 from discord.ext.commands import Context
 from logging import Logger
 from maon import Maon
-from random import choice
+from random import choice, randint
 from requests import Response
 
 from json import JSONDecodeError
@@ -181,19 +181,55 @@ class Misc(Cog):
 
 
     @app_commands.command(name="roll", description="Roll dices, like 1d6 or 2d20.")
-    async def _ac_roll(self, itc: Interaction, dice: int, range: int) -> None | Message:
-        return
-    
+    @app_commands.describe(dices="The amount of dices to roll. (max 16)", sides="Roll from 1 to ? (max 99999)")
+    async def _ac_roll(self, itc: Interaction, dices: app_commands.Range[int, 1, 16], sides: app_commands.Range[int, 2, 99999]) -> None | Message:
+        return await itc.response.send_message(f"{itc.user.display_name} rolled **{'**, **'.join(await self.roll(dices, sides))}**.")
+        #return await itc.response.send_message(await self.roll(itc.user.display_name, dices, sides))
+        
     
     @command(aliases=["r", "roll", "rng", "dice"])
-    async def _c_roll(self, ctx: Context, *argv: str) -> None | Message:
-        return
+    async def _c_roll(self, ctx: Context, *argv: str | None) -> None | Message:
+        prefix: str = await self.maon.get_prefix_str()
+        usage: str = f"You can roll dices, like a 6-sided die with `{prefix}r 1d6`.\nOr you can roll for a number from 0 to 9999 with `{prefix}r 9999`.\nThese can be combined like `{prefix}r 2d20 2d6 99`."
+        if not argv:
+            return await ctx.channel.send(usage)
+        
+        rolled: list[str] = []
+        for roll in argv:
+            if roll and "d" in roll:
+                print("XdXX roll identified")
+                dices_and_sides: list[str] = roll.split('d')
+                print(dices_and_sides)
+                print(len(dices_and_sides))
+                if len(dices_and_sides) != 2: continue
+                try:
+                    rolled += await self.roll(int(dices_and_sides[0]), int(dices_and_sides[1]))
+                    print(rolled)
+                except ValueError:
+                    continue
+            elif roll:
+                try:
+                    up_to: int = int(roll)
+                except ValueError:
+                    continue
+                rolled.append(*await self.roll(None, up_to))
+            else:
+                continue
+        if rolled:
+            return await ctx.channel.send(f"{ctx.author.display_name} rolled **{'**, **'.join(rolled)}**.")
+        else:
+            return await ctx.channel.send(usage)
     
 
-    async def roll(self, dice: int, range: int) -> None | list[int]:
-        return
-
-
+    async def roll(self, dices: int | None, sides: int) -> list[str]:
+        rolled: list[str] = []
+        if dices: 
+            for _ in range(dices):
+                rolled.append(str(randint(1, sides)).zfill(len(str(sides))))
+        else:
+            rolled.append(str(randint(0, sides)).zfill(len(str(sides))))
+        return rolled
+        
 
     # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════
     async def cog_unload(self) -> None:
