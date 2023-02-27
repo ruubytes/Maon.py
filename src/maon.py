@@ -18,12 +18,11 @@ from discord import HTTPException
 
 logbook.getLogger("discord")
 log: Logger = logbook.getLogger("maon")
-__maon_version__ = "23.2.27"
 
 
 class Maon(Bot):
     def __init__(self) -> None:
-        log.info(f"Maon v{__maon_version__}")
+        log.info(f"Maon v23.2.27")
         log.info(f"Discord.py v{__version__}")
         log.info("Starting Maon...")
         self.extensions_list: list[str] = ["admin", "audio", "console", "error_manager", "misc"]

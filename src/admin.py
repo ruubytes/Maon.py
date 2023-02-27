@@ -127,15 +127,15 @@ class Admin(Cog):
     @app_commands.command(name="delete", description="Delete a number of messages in a channel. (Max 75)")
     @app_commands.checks.has_permissions(manage_messages=True)
     @app_commands.checks.bot_has_permissions(manage_messages=True, read_message_history=True)
-    async def _ac_remove(self, itc: Interaction, amount: app_commands.Range[int, 1, 75]) -> None | Message:
+    async def _remove_ac(self, itc: Interaction, amount: app_commands.Range[int, 1, 75]) -> None | Message:
         if not isinstance(itc.channel, TextChannel) or not itc.guild: return
         log.info(f"Trying to delete {amount} messages in {itc.guild.name}: {itc.channel.name} for {itc.user.name}#{itc.user.discriminator}.")
         await itc.response.send_message(f"Deleting {amount} messages.", ephemeral=True, delete_after=16)
         await itc.channel.purge(limit=amount + 1, bulk=True)
 
     
-    @_ac_remove.error
-    async def _ac_remove_error(self, itc: Interaction, e: AppCommandError) -> None:
+    @_remove_ac.error
+    async def _remove_ac_error(self, itc: Interaction, e: AppCommandError) -> None:
         if isinstance(e, app_commands.CheckFailure):
             if "Bot requires Manage" in e.__str__():
                 await itc.response.send_message("I lack the permissions to manage messages.")
@@ -145,11 +145,11 @@ class Admin(Cog):
                 await itc.response.send_message("You lack the permissions to manage messages.")
 
 
-    @command(aliases=["clear", "delete"])
+    @command(aliases=["remove", "clear", "delete"])
     @guild_only()
     @has_permissions(manage_messages=True)
     @bot_has_permissions(manage_messages=True, read_message_history=True)
-    async def remove(self, ctx: Context, amount: int | None) -> None | Message:
+    async def _remove(self, ctx: Context, amount: int | None) -> None | Message:
         if not isinstance(ctx.channel, TextChannel) or not ctx.guild: return
         if not amount:
             return await ctx.channel.send("How many messages do you want me to purge from the chat? (Max 75 messages)")
@@ -161,8 +161,8 @@ class Admin(Cog):
             return await ctx.channel.send("I can only delete 75 messages at a time.")
         
     
-    @remove.error
-    async def remove_error(self, ctx: Context, e: Exception) -> None:
+    @_remove.error
+    async def _remove_error(self, ctx: Context, e: Exception) -> None:
         if isinstance(e, CheckFailure):
             if "Bot requires Manage" in e.__str__():
                 await ctx.channel.send("I lack the permissions to manage messages.")

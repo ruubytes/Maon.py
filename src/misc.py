@@ -38,12 +38,12 @@ class Misc(Cog):
 
 
     @app_commands.command(name="ping", description="Shows Maon's websocket latency")
-    async def _ac_ping(self, itc: Interaction) -> None | Message:
+    async def _ping_ac(self, itc: Interaction) -> None | Message:
         return await itc.response.send_message(f"Pong! `WebSocket {await self.ping()}ms`")
 
 
     @command(aliases=["ping", "latency"])
-    async def _c_ping(self, ctx: Context) -> None | Message:
+    async def _ping(self, ctx: Context) -> None | Message:
         return await ctx.channel.send(f"Pong! `WebSocket {await self.ping()}ms`")
     
 
@@ -54,7 +54,7 @@ class Misc(Cog):
 
 
     @app_commands.command(name="help", description="Display all of Maon's available commands and functionalities")
-    async def _ac_help(self, itc: Interaction) -> None | Message:
+    async def _help_ac(self, itc: Interaction) -> None | Message:
         embeds: list[Embed] = await self.get_help_embeds(itc.user)
         await itc.response.send_message(embed=embeds[0])
         embeds.pop(0)
@@ -66,7 +66,7 @@ class Misc(Cog):
     
 
     @command(aliases=["h", "help", "info", "infocard"])
-    async def _c_help(self, ctx: Context) -> None | Message:
+    async def _help(self, ctx: Context) -> None | Message:
         embeds: list[Embed] = await self.get_help_embeds(ctx.author)
         for embed in embeds:
             await ctx.channel.send(embed=embed)
@@ -74,60 +74,87 @@ class Misc(Cog):
     
 
     async def get_help_embeds(self, user: User | Member) -> list[Embed]:
-        prefix: str = await self.maon.get_prefix_str()
-        color: int = await self.maon.get_color_accent()
         embeds: list[Embed] = []
         if user.id == self.maon.owner_id:
-            cmds_embed_admin_title: str = f":flag_kp: ***Owner Commands***:"
-            cmds_embed_admin_list: list[str] = [
-                f"`{prefix}shutdown`　Shuts Maon down.\n",
-                f"`{prefix}reload <ext / config / all>`　Reload an extension or all of them, or reload from the custom or settings files.\n",
-                f"`{prefix}status <cancel / restart>`　Cancels the hourly status message change or restarts it.\n",
-                f"`{prefix}status <listening / watching / playing> <text>`　Sets Maon's status message.\n"
-            ]
-            embeds.append(Embed(title=cmds_embed_admin_title, description="".join(cmds_embed_admin_list), color=color))
+            embeds.append(await self.get_cmds_embed_owner())
+        embeds.append(await self.get_cmds_embed_mod())
+        embeds.append(await self.get_cmds_embed_music())
+        embeds.append(await self.get_cmds_embed_misc())
+        return embeds
+    
 
+    async def get_cmds_embed_owner(self) -> Embed:
+        prefix: str = await self.maon.get_prefix_str()
+        color: int = await self.maon.get_color_accent()
+        cmds_embed_owner_title: str = f":flag_kp: ***Owner Commands***:"
+        cmds_embed_owner_list: list[str] = [
+            f"`{prefix}shutdown`　Shuts Maon down.\n",
+            f"`{prefix}reload <ext / config / all>`　Reload an extension or all of them, or reload from the custom or settings files.\n",
+            f"`{prefix}status <cancel / restart>`　Cancels the hourly status message change or restarts it.\n",
+            f"`{prefix}status <listening / watching / playing> <text>`　Sets Maon's status message.\n"
+        ]
+        return Embed(title=cmds_embed_owner_title, description="".join(cmds_embed_owner_list), color=color)
+
+
+    async def get_cmds_embed_mod(self) -> Embed:
+        prefix: str = await self.maon.get_prefix_str()
+        color: int = await self.maon.get_color_accent()
         cmds_embed_mod_title: str = f":rainbow_flag: ***Moderator Commands***:"
         cmds_embed_mod_list: list[str] = [
-            f"`{prefix}remove <0 - 50>`　Delete a number of messages in bulk.\n"
+            f"`{prefix}remove <0 - 75>`　Delete a number of messages in bulk.\n"
         ]
-        embeds.append(Embed(title=cmds_embed_mod_title, description="".join(cmds_embed_mod_list), color=color))
+        return Embed(title=cmds_embed_mod_title, description="".join(cmds_embed_mod_list), color=color)
+    
+
+    async def get_cmds_embed_music(self) -> Embed:
+        prefix: str = await self.maon.get_prefix_str()
+        color: int = await self.maon.get_color_accent()
+        cmds_embed_music_title: str = f":notes: ***Music Commands***:"
+        cmds_embed_music_list: list[str] = [
+            f"tba"
+        ]
+        return Embed(title=cmds_embed_music_title, description="".join(cmds_embed_music_list), color=color)
+    
+
+    async def get_cmds_embed_misc(self) -> Embed:
+        prefix: str = await self.maon.get_prefix_str()
+        color: int = await self.maon.get_color_accent()
         cmds_embed_misc_title: str = f":beginner: ***Misc Commands***:"
         cmds_embed_misc_list: list[str] = [
             f"`{prefix}ping`　Displays Maon's websocket latency.\n",
             f"`{prefix}flip`　Flip a coin.\n",
+            f"`{prefix}r 1d20`　Roll dices, like a 20-sided die in this example.\n",
             f"`{prefix}anime <search query>`　Look up an anime show on MyAnimeList.\n",
             f"`{prefix}manga <search query>`　Look up a manga on MyAnimeList.\n",
             f"`{prefix}<question>`　Maon will reply to a closed (am, is, are, do, can...) question.\n"
         ]
-        embeds.append(Embed(title=cmds_embed_misc_title, description="".join(cmds_embed_misc_list), color=color))
-        return embeds
+        return Embed(title=cmds_embed_misc_title, description="".join(cmds_embed_misc_list), color=color)
 
 
     @app_commands.command(name="coin", description="Flip a coin!")
-    async def _ac_flip(self, itc: Interaction) -> None | Message:
+    async def _flip_ac(self, itc: Interaction) -> None | Message:
         return await itc.response.send_message(f"It's {choice(['heads', 'tails'])}!")
 
     
     @command(aliases=["coin", "flip", "toss"])
-    async def _c_flip(self, ctx: Context) -> None | Message:
+    async def _flip(self, ctx: Context) -> None | Message:
         return await ctx.channel.send(f"It's {choice(['heads', 'tails'])}!")
 
 
     @app_commands.command(name="anime", description="Search for an anime on MyAnimeList")
     @app_commands.describe(search="Search query for an anime on MyAnimeList. (min 3 characters)")
-    async def _ac_mal_anime(self, itc: Interaction, search: str) -> None | Message:
+    async def _mal_ac(self, itc: Interaction, search: str) -> None | Message:
         return await itc.response.send_message(await self.mal(search))
     
 
     @app_commands.command(name="manga", description="Search for a manga on MyAnimeList")
     @app_commands.describe(search="Search query for a manga on MyAnimeList. (min 3 characters)")
-    async def _ac_mal_manga(self, itc: Interaction, search: str) -> None | Message:
+    async def _mal_manga_ac(self, itc: Interaction, search: str) -> None | Message:
         return await itc.response.send_message(await self.mal(search, anime=False))
     
 
     @command(aliases=["mal", "anime", "animu", "manga", "mango", "myanimelist"])
-    async def _c_mal(self, ctx: Context, *argv: str) -> None | Message:
+    async def _mal(self, ctx: Context, *argv: str) -> None | Message:
         prefix: str = await self.maon.get_prefix_str()
         if not argv:
             return await ctx.channel.send(f"You can search for an anime or manga if you provide me a search term, like `{prefix}anime Psycho-Pass`")
@@ -187,12 +214,12 @@ class Misc(Cog):
 
     @app_commands.command(name="roll", description="Roll dices, like 1d6 or 2d20.")
     @app_commands.describe(dices="The amount of dices to roll. (max 16)", sides="How many sides do the dices have?")
-    async def _ac_roll(self, itc: Interaction, dices: app_commands.Range[int, 1, 16], sides: app_commands.Range[int, 2, 99999]) -> None | Message:
+    async def _roll_ac(self, itc: Interaction, dices: app_commands.Range[int, 1, 16], sides: app_commands.Range[int, 2, 99999]) -> None | Message:
         return await itc.response.send_message(f"{itc.user.display_name} rolled **{'**, **'.join(await self.roll(dices, sides))}**.")
         
     
     @command(aliases=["r", "roll", "rng", "dice"])
-    async def _c_roll(self, ctx: Context, *argv: str | None) -> None | Message:
+    async def _roll(self, ctx: Context, *argv: str | None) -> None | Message:
         prefix: str = await self.maon.get_prefix_str()
         usage: str = f"You can roll dices, like a 6-sided die with `{prefix}r 1d6`.\nOr you can roll for a number from 0 to 9999 with `{prefix}r 9999`.\nThese can be combined like `{prefix}r 2d20 2d6 99`."
         if not argv:

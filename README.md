@@ -10,10 +10,10 @@ if you can install the required libraries below.
 ## Table of Contents:
 
 - [List of Commands](#list-of-commands)
-    - [Owner Commands](#🇰🇵-owner)
-    - [Moderators](#🏳️‍🌈-moderators)
-    - [Music](#🎶-music)
-    - [Misc](#🔰-misc)
+    - [Owner Commands](#--owner)
+    - [Moderators](#--moderators)
+    - [Music](#--music)
+    - [Misc](#--misc)
 - [Installation](#installation)
     - [Discord Tokens & IDs](#discord-tokens--ids)
     - [Linux](#linux)
@@ -56,8 +56,8 @@ Required packages for maon to function are `python3-pip`, `ffmpeg` and `opus-too
 
         sudo apt-get install python3-pip ffmpeg opus-tools -y
 
-To install the necessary dependencies and run Maon, simply execute the `run` script in the main directory of Maon and follow the instructions.
-Once all python dependencies are installed, Maon will ask for the **discord API token** and your **discord ID**.
+Next, simpy execute the `run` script in the main directory of Maon and let it install the required python dependencies.
+Afterwards, Maon will ask for the **discord API token** and your **discord ID**.
 
 Additional run arguments are `./run noupdate` to skip the update check, and `./run setup` to re-setup the **discord API token** and **discord ID**.
 
