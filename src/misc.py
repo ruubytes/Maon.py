@@ -1,6 +1,7 @@
 import logbook
 import requests
 from asyncio import sleep
+from defaults import DEFAULT_CUSTOMIZATION
 from discord import app_commands
 from discord import Interaction
 from discord import Member
@@ -29,6 +30,11 @@ MAL_API_M_SEARCH_URL: str = "https://api.jikan.moe/v4/manga?q="
 class Misc(Cog):
     def __init__(self, maon: Maon) -> None:
         self.maon: Maon = maon
+        self.eightball_trigger: list[str] = []
+        self.eightball_reply_default: list[str] = []
+        self.eightball_reply_why: list[str] = []
+        self.eightball_reply: list[str] = []
+        self._setup_eightball_strings()
 
 
     @app_commands.command(name="ping", description="Shows Maon's websocket latency")
@@ -96,7 +102,6 @@ class Misc(Cog):
         ]
         embeds.append(Embed(title=cmds_embed_misc_title, description="".join(cmds_embed_misc_list), color=color))
         return embeds
-
 
 
     @app_commands.command(name="coin", description="Flip a coin!")
@@ -181,10 +186,9 @@ class Misc(Cog):
 
 
     @app_commands.command(name="roll", description="Roll dices, like 1d6 or 2d20.")
-    @app_commands.describe(dices="The amount of dices to roll. (max 16)", sides="Roll from 1 to ? (max 99999)")
+    @app_commands.describe(dices="The amount of dices to roll. (max 16)", sides="How many sides do the dices have?")
     async def _ac_roll(self, itc: Interaction, dices: app_commands.Range[int, 1, 16], sides: app_commands.Range[int, 2, 99999]) -> None | Message:
         return await itc.response.send_message(f"{itc.user.display_name} rolled **{'**, **'.join(await self.roll(dices, sides))}**.")
-        #return await itc.response.send_message(await self.roll(itc.user.display_name, dices, sides))
         
     
     @command(aliases=["r", "roll", "rng", "dice"])
@@ -197,14 +201,10 @@ class Misc(Cog):
         rolled: list[str] = []
         for roll in argv:
             if roll and "d" in roll:
-                print("XdXX roll identified")
                 dices_and_sides: list[str] = roll.split('d')
-                print(dices_and_sides)
-                print(len(dices_and_sides))
                 if len(dices_and_sides) != 2: continue
                 try:
                     rolled += await self.roll(int(dices_and_sides[0]), int(dices_and_sides[1]))
-                    print(rolled)
                 except ValueError:
                     continue
             elif roll:
@@ -229,7 +229,41 @@ class Misc(Cog):
         else:
             rolled.append(str(randint(0, sides)).zfill(len(str(sides))))
         return rolled
+    
+
+    def _setup_eightball_strings(self):
+        eightball_trigger: str | list[str] | None = self.maon.custom.get("8ball_trigger")
+        if isinstance(eightball_trigger, list):
+            self.eightball_trigger = eightball_trigger
+        eightball_reply_default: str | list[str] | None = self.maon.custom.get("8ball_reply_default")
+        if isinstance(eightball_reply_default, list):
+            self.eightball_reply_default = eightball_reply_default
+        eightball_reply_why: str | list[str] | None = self.maon.custom.get("8ball_reply_why")
+        if isinstance(eightball_reply_why, list):
+            self.eightball_reply_why = eightball_reply_why
+        eightball_reply: str | list[str] | None = self.maon.custom.get("8ball_reply")
+        if isinstance(eightball_reply, list):
+            self.eightball_reply = eightball_reply
+
+
+    @command(aliases=DEFAULT_CUSTOMIZATION.get("8ball_trigger"))
+    async def eightball(self, ctx: Context, *, question: str | None) -> None | Message:
+        if not self.eightball_trigger or not self.eightball_reply_default or not self.eightball_reply_why or not self.eightball_reply:
+            return
+        if question is None:
+            return await ctx.channel.send(choice(self.eightball_reply_default))
+        elif ctx.invoked_with and "why" in ctx.invoked_with:
+            return await ctx.channel.send(choice(self.eightball_reply_why))
+        else:
+            return await ctx.channel.send(choice(self.eightball_reply))
         
+
+    @Cog.listener()
+    async def on_message(self, msg: Message) -> None | Message:
+        if self.maon.user and msg.author.id != self.maon.user.id:
+            if msg.content.lower() == "maon":
+                return await msg.channel.send(choice(self.eightball_reply_default))
+
 
     # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════
     async def cog_unload(self) -> None:

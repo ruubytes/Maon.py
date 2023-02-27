@@ -30,10 +30,11 @@ class Maon(Bot):
         self.custom: dict[str, str | list[str]] = self._load_customization()
         self.settings: dict[str, str | int | float] = self._load_settings()
         super().__init__(
-            command_prefix=self._set_prefix(),
             help_command=None, 
-            intents=self._set_intents(), 
-            options=self._set_options()
+            command_prefix=self._set_prefix(),
+            intents=self._set_intents(),
+            owner_id=self._set_owner_id(), 
+            case_insensitive=True
         )
 
     
@@ -213,17 +214,14 @@ class Maon(Bot):
         intents.voice_states = True
         return intents
 
-    
-    def _set_options(self) -> dict[str, int | bool]:
-        log.info("Setting options...")
-        options: dict[str, int | bool] = {}
+
+    def _set_owner_id(self) -> int:
+        log.info("Setting owner id...")
         try:
-            options["owner_id"] = self._env_get_owner_id()
+            return self._env_get_owner_id()
         except (TypeError, ValueError):
             log.error(f"Your owner_id looks to be faulty. You can set it again with: \n\n    ./run setup\n")
             exit(1)
-        options["case_insensitive"] = True
-        return options
 
 
     def _env_get_owner_id(self) -> int:
