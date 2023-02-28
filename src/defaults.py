@@ -4,7 +4,8 @@ DEFAULT_SETTINGS: dict[str, str | int | float] = {
     "audio_path_music": "./music/",
     "audio_path_sfx": "./sfx/",
     "audio_player_timeout": 5400,
-    "audio_sfx_volume": .25,
+    "audio_volume_default": .15,
+    "audio_volume_sfx": .3,
     "audio_track_caching_duration_max": 4000
 }
 

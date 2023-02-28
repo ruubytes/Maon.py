@@ -61,6 +61,12 @@ Afterwards, Maon will ask for the **discord API token** and your **discord ID**.
 
 Additional run arguments are `./run noupdate` to skip the update check, and `./run setup` to re-setup the **discord API token** and **discord ID**.
 
+## Troubleshooting:
+
+- ClientException when trying to play audio.
+
+ffmpeg needs to be in the system path, because the audio_player creates a subprocess with ffmpeg to stream audio.
+
 
 [issues-shield]: https://img.shields.io/github/issues-raw/raesoft/Maon.py?color=F8D386&style=flat-square
 [issues-url]: https://github.com/raesoft/Maon.py/issues
