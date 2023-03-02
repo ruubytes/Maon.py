@@ -17,6 +17,7 @@ if you can install the required libraries below.
 - [Installation](#installation)
     - [Discord Tokens & IDs](#discord-tokens--ids)
     - [Linux](#linux)
+- [Troubleshooting](#troubleshooting)
 
 ## List of Commands
 

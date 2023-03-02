@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logbook
 import sys
 from asyncio import all_tasks
@@ -22,7 +23,6 @@ from discord.ext.commands import has_guild_permissions
 from discord.ext.commands import has_permissions
 from discord.ext.commands import is_owner
 from logging import Logger
-from maon import Maon
 from os import close
 from os import execl
 from os import getpid
@@ -32,6 +32,10 @@ from random import choice
 from asyncio import CancelledError
 from discord.app_commands import AppCommandError
 from discord.ext.commands import CheckFailure
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from maon import Maon
 
 log: Logger = logbook.getLogger("admin")
 

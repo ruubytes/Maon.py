@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logbook
 import requests
 from asyncio import sleep
@@ -19,6 +20,10 @@ from requests import Response
 
 from json import JSONDecodeError
 from requests import ConnectionError
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from maon import Maon
 
 log: Logger = logbook.getLogger("misc")
 RFC_3986_CHARS: str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%"

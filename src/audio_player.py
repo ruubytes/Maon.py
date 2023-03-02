@@ -1,31 +1,124 @@
+from __future__ import annotations
 import logbook
+from asyncio import create_task
+from asyncio import Event
+from asyncio import Queue
+from asyncio import Task
+from async_timeout import timeout
+from discord import FFmpegOpusAudio
+from discord import FFmpegPCMAudio
+from discord import Guild
 from discord import Interaction
 from discord import Message
+from discord import PCMVolumeTransformer
 from discord import TextChannel
 from discord.ext.commands import Context
 from logging import Logger
-from maon import Maon
+from traceback import format_exc
+
+from asyncio import CancelledError
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from audio import Audio
+    from maon import Maon
+    from track import Track
 
 log: Logger = logbook.getLogger("audio_player")
 
 
 class AudioPlayer():
-    def __new__(cls, maon: Maon, cim: Context | Interaction | Message):
-        if cim.channel and isinstance(cim.channel, TextChannel):
-            return super(AudioPlayer, cls).__new__(cls, maon, cim, cim.channel)
-        else:
-            return None
-
-
-    def __init__(self, maon: Maon, cim: Context | Interaction | Message, channel: TextChannel) -> None:
+    def __init__(self, maon: Maon, cim: Context | Interaction | Message) -> None:
         self.maon: Maon = maon
-        self.channel: TextChannel = channel
+        self.audio: Audio = self.maon.get_cog("Audio") # type: ignore
+        self.channel: TextChannel = cim.channel # type: ignore
+        self.guild: Guild = cim.guild   # type: ignore
+        self.name: str = cim.guild.name # type: ignore
+        self._next: Event = Event()
+        self.now_playing: str = ""
+        self.queue: Queue = Queue()
+        self.timeout: int = self._set_timeout()
+        self.track: None | Track = None
         self.volume: float = self._set_volume_default()
         self.volume_sfx: float = self._set_volume_sfx()
+        self.player_task: Task = create_task(self._player_loop(), name="audio_player_task")
+        log.info(f"{self.guild.name}: Audio player created.") # type: ignore
 
 
-    def _set_channel(self, cim: Context | Interaction | Message) -> TextChannel:
-        return cim.channel # type: ignore
+    def close(self):
+        self.player_task.cancel()
+
+
+    async def _player_loop(self):
+        try:
+            await self.maon.wait_until_ready()
+            while True:
+                self._next.clear()
+
+                await self._get_track()
+                await self._refresh_url()
+                await self._play()
+
+                await self._next.wait()
+
+        except CancelledError as e:
+            log.info(f"{self.guild.name}: Cancelling audio player...")
+
+        except TimeoutError as e:
+            log.info(f"{self.guild.name}: Audio player has been inactive for {self.timeout} seconds, cancelling...")
+
+        finally:
+            if self.guild.voice_client:
+                if self.guild.voice_client.is_playing():        # type: ignore
+                    self.guild.voice_client.stop()              # type: ignore
+            await self.guild.voice_client.disconnect(force=True)    # type: ignore
+            return self.audio.remove_player(self.guild.id)
+
+
+    async def _get_track(self) -> None:
+        log.info(f"{self.guild.name}: Grabbing track from queue...")
+        async with timeout(self.timeout):
+            self.track = await self.queue.get()
+
+
+    async def _refresh_url(self):
+        if self.track and not self.track.track_type in ["stream", "live"]:
+            return
+        log.info(f"{self.guild.name}: Refreshing streaming url...")
+        return
+    
+
+    async def _play(self):
+        if not self.track: return
+        log.info(f"{self.guild.name}: Playing {self.track.title if self.track else None}")
+        volume: float = self.volume if self.track.track_type != "sfx" else self.volume_sfx
+        self.guild.voice_client.play(       # type: ignore
+            PCMVolumeTransformer(
+                FFmpegPCMAudio(
+                    self.track.url
+                ),
+                volume
+            ),
+            after=lambda e: self._after_play(e)
+        )
+        if self.now_playing != self.track.title:
+            self.now_playing = self.track.title
+            await self.channel.send(f":cd: Now playing: {self.now_playing}, at {int(volume * 100)}% volume.")
+    
+
+    def _after_play(self, e: Exception | None):
+        if e:
+            log.error(f"{self.guild.name}: Error within _play occurred: {e}\n{format_exc()}")
+        self._next.set()
+
+
+    def _set_timeout(self) -> int:
+        player_timeout: float | str | int | None = self.maon.settings.get("audio_player_timeout")
+        if isinstance(player_timeout, int):
+            return player_timeout
+        else:
+            log.warning("My settings file doesn't have a valid player timeout set.")
+            return 3600
 
 
     def _set_volume_default(self) -> float:
@@ -45,3 +138,5 @@ class AudioPlayer():
             log.warning(f"My settings file doesn't have a valid default volume set for sound effects.")
             return 0.3
     
+
+

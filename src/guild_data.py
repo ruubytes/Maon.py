@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logbook
 from logging import Logger
 

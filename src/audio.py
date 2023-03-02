@@ -1,5 +1,8 @@
+from __future__ import annotations
 import logbook
+from audio_player import AudioPlayer
 from discord import app_commands
+from discord import Embed
 from discord import Guild
 from discord import Interaction
 from discord import Member
@@ -13,14 +16,19 @@ from discord.ext.commands import Context
 from discord.ext.commands import guild_only
 from discord.ext.commands import has_guild_permissions
 from logging import Logger
-from maon import Maon
-from misc import Misc
 from os.path import exists
-from track import Track, create_local_track, create_stream_track
+from track import create_local_track
+from track import create_stream_track
 from utils import send_response
 
 from discord.ext.commands import CheckFailure
 from discord.ext.commands import CommandError
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from maon import Maon
+    from misc import Misc
+    from track import Track
 
 log: Logger = logbook.getLogger("audio")
 
@@ -30,6 +38,8 @@ class Audio(Cog):
         self.maon: Maon = maon
         self.path_music: str = self._set_path("music")
         self.path_sfx: str = self._set_path("sfx")
+        self.cached_tracks: dict[str, str] = {}
+        self.players: dict[int, AudioPlayer] = {}
 
 
     def _set_path(self, folder_name: str) -> str:
@@ -72,29 +82,45 @@ class Audio(Cog):
                 cim.guild.voice_client.resume()
                 return await send_response(cim, ":arrow_forward: Continuing...")
             return await send_response(cim, usage)
+        
+        track: None | Track = None
         if url.startswith("https://"):
-            await self.create_stream_track(cim, url) 
-        elif exists(f"{self.path_music}{url}.mp3") or exists(f"{self.path_music}{url}.wav"):
-            await self.create_local_track(cim, url)
-        elif exists(f"{self.path_music}{url}.ogg") or exists(f"{self.path_music}{url}.flac"):
-            await self.create_local_track(cim, url)
-        elif exists(f"{self.path_sfx}{url}.mp3") or exists(f"{self.path_sfx}{url}.wav"):
-            await self.create_local_track(cim, url)
-        elif exists(f"{self.path_sfx}{url}.ogg") or exists(f"{self.path_sfx}{url}.flac"):
-            await self.create_local_track(cim, url)
+            track = await create_stream_track(self, cim, url) 
         else:
-            return await send_response(cim, "I need a Youtube link to stream or a file path to play from my music folder.")
+            for ext in [".mp3", ".flac", ".ogg", ".wav"]:
+                if exists(f"{self.path_music}{url}{ext}"):
+                    track = await create_local_track(self, cim, f"{self.path_music}{url}{ext}")
+                elif exists(f"{self.path_sfx}{url}{ext}"):
+                    track = await create_local_track(self, cim, f"{self.path_sfx}{url}{ext}")
+        if not track:
+            return await send_response(cim, usage)
+        
+        log.info(f"{cim.guild.name}: Track \"{track.title}\" created.")
+        
+        await self.join_voice(cim)
+        if not cim.guild.voice_client: 
+            log.error(f"{cim.guild.name}: Could not connect to the voice channel.")
+            return
 
-    
-    async def create_stream_track(self, cim: Context | Interaction | Message, url: str) -> None | Message:
-        log.info(f"{cim.guild}: Creating stream track for {url}")
-        track: None | Track = await create_stream_track(cim, url)
-        return
-    
+        log.info("Fetching audio player...")
+        
+        player: None | AudioPlayer = self.players.get(cim.guild.id)
+        if not player:
+            log.info(f"{cim.guild.name}: Creating new audio player...")
+            player = AudioPlayer(self.maon, cim)
+            if player: 
+                self.players[cim.guild.id] = player
+            else: 
+                log.error(f"{cim.guild.name}: Creation of my audio player failed.")
+                return await send_response(cim, f"I could not create my audio player.")
+        await player.queue.put(track) 
+        if isinstance(cim, Interaction):
+            await send_response(cim, f"{track.title} added to queue.")
 
-    async def create_local_track(self, cim: Context | Interaction | Message, url: str) -> None | Message:
-        log.info(f"{cim.guild}: Creating local track for {url}")
-        return
+
+    def remove_player(self, id: int):
+        if id in self.players.keys():
+            self.players.pop(id)
 
 
     @app_commands.command(name="join", description="Make Maon join your voice channel.")
@@ -112,7 +138,6 @@ class Audio(Cog):
         await self.join_voice(ctx)
 
 
-    @_play.error
     @_join.error
     async def _join_error(self, ctx: Context, e: CommandError):
         if isinstance(e, CheckFailure):
@@ -129,7 +154,8 @@ class Audio(Cog):
             user: Member = cim.user
         elif isinstance(cim, Context | Message) and isinstance(cim.author, Member):
             user: Member = cim.author
-        else: return
+        else: 
+            return
         if not user.voice or not user.voice.channel:
             return await send_response(cim, "You're not in a voice channel, if you are in a voice channel, I can't see it. :eyes:")
         if user.voice.channel.user_limit != 0 and user.voice.channel.user_limit - len(user.voice.channel.members) <= 0:
@@ -137,10 +163,15 @@ class Audio(Cog):
         if guild.voice_client:
             if user.voice.channel != guild.voice_client.channel:
                 return await send_response(cim, "Come in my voice channel, if you want me to play something. :eyes:")
+            else:
+                return
+            
         await user.voice.channel.connect()
+        log.info(f"{guild.name}: Joined voice channel '{guild.voice_client.channel.name}'.")
         misc: Misc | None = self.maon.get_cog("Misc") # type: ignore
         if misc:
-            return await send_response(cim, await misc.get_cmds_embed_music())
+            embed: Embed = await misc.get_cmds_embed_music()
+            return await send_response(cim, embed)
         else:    
             return await send_response(cim, ":notes:")
 
@@ -179,9 +210,11 @@ class Audio(Cog):
                 
     # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════
     async def cog_unload(self) -> None:
-        #log.info("Cancelling XXX_task...")
-        #self.XXX_task.cancel()
-        return
+        log.info("Cancelling player tasks...")
+        players = self.players.copy()
+        for id, player in players.items():
+            log.info(f"Closing {player.name} audio player...")
+            player.close()
 
 
 async def setup(maon: Maon) -> None:

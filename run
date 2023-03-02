@@ -44,7 +44,7 @@ fi
 # Install python dependencies that are not installed
 installed=$(pip list)
 installMePip=""
-for package in "pip" "aioconsole" "discord.py" "psutil" "PyNaCl" "requests" "simplejson" "tinytag" "yt-dlp"; do
+for package in "pip" "aioconsole" "discord.py" "psutil" "PyNaCl" "requests" "simplejson" "yt-dlp"; do
   if ! [[ $(echo "$installed" | grep "$package") ]]; then
     installMePip+=" $package"
   fi
@@ -63,7 +63,7 @@ if [ "$noupdate" = false ]; then
   echo "Looking for updates..."
   outdated=$(pip list --outdated)
   updateMePip=""
-  for package in "pip" "aioconsole" "discord.py" "psutil" "PyNaCl" "requests" "simplejson" "tinytag" "yt-dlp"; do
+  for package in "pip" "aioconsole" "discord.py" "psutil" "PyNaCl" "requests" "simplejson" "yt-dlp"; do
     if [[ $(echo "$outdated" | grep "$package") ]]; then
       updateMePip+=" $package"
     fi

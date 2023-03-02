@@ -1,14 +1,18 @@
+from __future__ import annotations
 import logbook
 from discord import Message
 from discord.ext.commands import Cog
 from discord.ext.commands import Context
 from logging import Logger
-from maon import Maon
 from traceback import print_tb
 
 from discord.ext.commands import CheckFailure
 from discord.ext.commands import CommandError
 from discord.ext.commands import CommandInvokeError
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from maon import Maon
 
 log: Logger = logbook.getLogger("error_manager")
 

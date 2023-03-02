@@ -1,5 +1,5 @@
+from __future__ import annotations
 import logbook
-from admin import Admin
 from aioconsole import ainput
 from asyncio import create_task
 from asyncio import Task
@@ -7,10 +7,14 @@ from discord import Activity
 from discord import ActivityType
 from discord.ext.commands import Cog
 from logging import Logger
-from maon import Maon
 from typing import Callable
 
 from asyncio import CancelledError
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from admin import Admin
+    from maon import Maon
 
 log: Logger = logbook.getLogger("console")
 USAGE: str = """Commands:
