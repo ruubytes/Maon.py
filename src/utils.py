@@ -1,5 +1,6 @@
 from discord import Embed
 from discord import Interaction
+from discord import Member
 from discord import Message
 from discord.ext.commands import Context
 
@@ -15,3 +16,13 @@ async def send_response(cim: Context | Interaction | Message, text: str | Embed)
         if isinstance(text, Embed):
             return await cim.channel.send(embed=text)
         return await cim.channel.send(text)
+
+
+async def get_user(cim: Context | Interaction | Message) -> Member | None:
+    """Fetches the command requestee for guild only commands from `Context`, `Interaction` and `Message` objects."""
+    if isinstance(cim, Interaction) and isinstance(cim.user, Member):
+        return cim.user
+    elif isinstance(cim, Context | Message) and isinstance(cim.author, Member):
+        return cim.author
+    else: return
+    

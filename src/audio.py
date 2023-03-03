@@ -19,6 +19,7 @@ from logging import Logger
 from os.path import exists
 from track import create_local_track
 from track import create_stream_track
+from utils import get_user
 from utils import send_response
 
 from discord.ext.commands import CheckFailure
@@ -33,6 +34,7 @@ if TYPE_CHECKING:
 log: Logger = logbook.getLogger("audio")
 
 
+# TODO Fetch bitrate of voice channel and adjust ffmpeg stream accordingly
 class Audio(Cog):
     def __init__(self, maon: Maon) -> None:
         self.maon: Maon = maon
@@ -53,10 +55,11 @@ class Audio(Cog):
 
     @app_commands.command(name="play", description="Play a youtube link or a file from Maon's music folder.")
     @app_commands.describe(url="This can be a Youtube link or file path inside Maon's music folder.")
+    @app_commands.guild_only()
     @app_commands.checks.has_permissions(connect=True)
     @app_commands.checks.bot_has_permissions(connect=True, speak=True)
     async def _play_ac(self, itc: Interaction, url: str) -> None | Message:
-        return await itc.response.send_message("Cool.")
+        return await self.play(itc, url)
 
 
     @command(aliases=["p", "play", "stream", "yt"])
@@ -93,17 +96,14 @@ class Audio(Cog):
                 elif exists(f"{self.path_sfx}{url}{ext}"):
                     track = await create_local_track(self, cim, f"{self.path_sfx}{url}{ext}")
         if not track:
-            return await send_response(cim, usage)
-        
+            return await send_response(cim, f"I could not find that song in my folders.\n{usage}")
         log.info(f"{cim.guild.name}: Track \"{track.title}\" created.")
         
         await self.join_voice(cim)
         if not cim.guild.voice_client: 
-            log.error(f"{cim.guild.name}: Could not connect to the voice channel.")
-            return
+            return log.error(f"{cim.guild.name}: Could not connect to the voice channel.")
 
         log.info("Fetching audio player...")
-        
         player: None | AudioPlayer = self.players.get(cim.guild.id)
         if not player:
             log.info(f"{cim.guild.name}: Creating new audio player...")
@@ -115,7 +115,9 @@ class Audio(Cog):
                 return await send_response(cim, f"I could not create my audio player.")
         await player.queue.put(track) 
         if isinstance(cim, Interaction):
-            await send_response(cim, f"{track.title} added to queue.")
+            if not cim.response.is_done():
+                return await send_response(cim, f"{track.title} added to queue.")
+        return await send_response(cim, f"{track.title} added to queue.")
 
 
     def remove_player(self, id: int):
@@ -124,9 +126,12 @@ class Audio(Cog):
 
 
     @app_commands.command(name="join", description="Make Maon join your voice channel.")
+    @app_commands.guild_only()
     @app_commands.checks.has_permissions(connect=True)
     @app_commands.checks.bot_has_permissions(connect=True, speak=True)
     async def _join_ac(self, itc: Interaction) -> None | Message:
+        if itc.guild and itc.guild.voice_client:
+            return await itc.response.send_message("I'm already in a voice channel.")
         await self.join_voice(itc)
 
 
@@ -139,7 +144,7 @@ class Audio(Cog):
 
 
     @_join.error
-    async def _join_error(self, ctx: Context, e: CommandError):
+    async def _join_error(self, ctx: Context, e: CommandError) -> None:
         if isinstance(e, CheckFailure):
             if "Bot requires" in e.__str__():
                 await ctx.channel.send("I lack permissions to join and speak in a voice channel.")
@@ -149,25 +154,31 @@ class Audio(Cog):
 
     async def join_voice(self, cim: Context | Interaction | Message) -> None | Message:
         if not cim.guild: return
-        guild: Guild = cim.guild
-        if isinstance(cim, Interaction) and isinstance(cim.user, Member):
-            user: Member = cim.user
-        elif isinstance(cim, Context | Message) and isinstance(cim.author, Member):
-            user: Member = cim.author
-        else: 
-            return
+        user: Member | None = await get_user(cim)
+        if not user: return
+
         if not user.voice or not user.voice.channel:
             return await send_response(cim, "You're not in a voice channel, if you are in a voice channel, I can't see it. :eyes:")
         if user.voice.channel.user_limit != 0 and user.voice.channel.user_limit - len(user.voice.channel.members) <= 0:
             return await send_response(cim, "The voice channel is full, someone has to scoot over. :flushed:")
-        if guild.voice_client:
-            if user.voice.channel != guild.voice_client.channel:
-                return await send_response(cim, "Come in my voice channel, if you want me to play something. :eyes:")
-            else:
-                return
-            
-        await user.voice.channel.connect()
-        log.info(f"{guild.name}: Joined voice channel '{guild.voice_client.channel.name}'.")
+        if cim.guild.voice_client:
+            if user.voice.channel != cim.guild.voice_client.channel:
+                return await send_response(cim, "We're not in the same voice channel. :eyes:")
+            else: return
+
+        try:
+            voice_client: VoiceClient = await user.voice.channel.connect()
+        except TimeoutError:
+            return await send_response(cim, "I could not connect to the voice channel.")
+        log.info(f"{cim.guild.name}: Joined voice channel '{voice_client.channel.name}'.")
+        log.info(f"{cim.guild.name}: Creating new audio player...")
+        player: AudioPlayer = AudioPlayer(self.maon, cim)
+        if player: 
+            self.players[cim.guild.id] = player
+        else: 
+            log.error(f"{cim.guild.name}: Creation of my audio player failed.")
+            return await send_response(cim, f"I could not create my audio player.")
+        
         misc: Misc | None = self.maon.get_cog("Misc") # type: ignore
         if misc:
             embed: Embed = await misc.get_cmds_embed_music()
@@ -177,6 +188,7 @@ class Audio(Cog):
 
     
     @app_commands.command(name="stop", description="Maon will stop playing music and leave the voice channel.")
+    @app_commands.guild_only()
     async def _stop_ac(self, itc: Interaction) -> None | Message:
         await self.stop(itc)
         
@@ -188,25 +200,72 @@ class Audio(Cog):
 
     async def stop(self, cim: Context | Interaction | Message) -> None | Message:
         if not cim.guild: return
-        guild: Guild = cim.guild
-        if isinstance(cim, Interaction) and isinstance(cim.user, Member):
-            user: Member = cim.user
-        elif isinstance(cim, Context | Message) and isinstance(cim.author, Member):
-            user: Member = cim.author
-        else: return
+        user: Member | None = await get_user(cim)
+        if not user: return
+
         if user.voice is None:
             if isinstance(cim, Interaction):
                 return await cim.response.send_message("You are not connected to a voice channel.")
             return
-        if not guild.voice_client:
+        if not cim.guild.voice_client:
             return await send_response(cim, "I'm not connected to a voice channel.")
-        if user.voice.channel != guild.voice_client.channel:
+        if user.voice.channel != cim.guild.voice_client.channel:
             return await send_response(cim, "You're not in the same voice channel as me.")
-        log.info(f"{guild.name}: Stop request received for the audio player.")
-        await guild.voice_client.disconnect(force=True)
+        
+        log.info(f"{cim.guild.name}: Stop request received for the audio player.")
+        player: None | AudioPlayer = self.players.get(cim.guild.id)
+        if not player:
+            return await send_response(cim, "I lost track of my audio player... How did that happen.")
+        player.close()
         if isinstance(cim, Interaction):
             return await cim.response.send_message("Disconnected from voice.")
-    
+        
+
+    @app_commands.command(name="volume", description="Change Maon's audio player volume.")
+    @app_commands.describe(volume="Enter an audio volume amount, ranging from 0 to 100.")
+    @app_commands.guild_only()
+    async def _volume_ac(self, itc: Interaction, volume: app_commands.Range[int, 0, 100]) -> None | Message:
+        return await self.volume(itc, volume)
+
+
+    @command(aliases=["v", "vol", "volume"])
+    async def _volume(self, ctx: Context, v: int | None) -> None | Message:
+        return await self.volume(ctx, v)
+
+
+    # TODO volume of 0 not working
+    async def volume(self, cim: Context | Interaction | Message, v: int | None) -> None | Message:
+        if not cim.guild: return
+        user: Member | None = await get_user(cim)
+        if not user: return
+
+        if not user.voice:
+            return await send_response(cim, "You're not in a voice channel.")
+        if not cim.guild.voice_client or (cim.guild.id not in self.players):
+            return await send_response(cim, "I'm not playing anything right now.")
+        if cim.guild.voice_client.channel != user.voice.channel:
+            return await send_response(cim, "We're in different voice channels, silly.")
+        player: AudioPlayer | None = self.players.get(cim.guild.id)
+        if not player:
+            return await send_response(cim, "I'm not playing anything right now.")
+        if not v:
+            return await send_response(cim, f"The volume is set to {int(player.volume * 100)}%.")
+        if v < 0 or v > 100:
+            return await send_response(cim, f"The volume can only range from 0 to 100.")
+        
+        v_old: int = int(player.volume * 100)
+        await player.volume_controller.put(v)
+        log.info(f"{cim.guild.name}: Changed volume of audio player to {v}%.")
+        if v > v_old:
+            return await send_response(cim, f":arrow_up_small: Volume set to {v}%.")
+        elif v < v_old:
+            return await send_response(cim, f":arrow_down_small: Volume set to {v}%.")
+        elif v == v_old:
+            return await send_response(cim, f"The volume is set to {v}%.")
+        else:
+            # TODO Change this to pause the playback at some point.
+            return await send_response(cim, "Okay, I'm quietly playing for myself, then.")
+
                 
     # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════
     async def cog_unload(self) -> None:

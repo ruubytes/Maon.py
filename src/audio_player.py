@@ -3,9 +3,9 @@ import logbook
 from asyncio import create_task
 from asyncio import Event
 from asyncio import Queue
+from asyncio import sleep
 from asyncio import Task
 from async_timeout import timeout
-from discord import FFmpegOpusAudio
 from discord import FFmpegPCMAudio
 from discord import Guild
 from discord import Interaction
@@ -36,12 +36,14 @@ class AudioPlayer():
         self.name: str = cim.guild.name # type: ignore
         self._next: Event = Event()
         self.now_playing: str = ""
-        self.queue: Queue = Queue()
+        self.queue: Queue[Track] = Queue()
         self.timeout: int = self._set_timeout()
         self.track: None | Track = None
         self.volume: float = self._set_volume_default()
         self.volume_sfx: float = self._set_volume_sfx()
         self.player_task: Task = create_task(self._player_loop(), name="audio_player_task")
+        self.volume_controller: Queue[int] = Queue()
+        self.volume_controller_task: Task = create_task(self._volume_controller_loop(), name="volume_controller_task")
         log.info(f"{self.guild.name}: Audio player created.") # type: ignore
 
 
@@ -49,7 +51,35 @@ class AudioPlayer():
         self.player_task.cancel()
 
 
-    async def _player_loop(self):
+    async def _volume_controller_loop(self) -> None:
+        try:
+            await self.maon.wait_until_ready()
+            while True:
+                v: int = await self.volume_controller.get()
+                v_old: int = int(self.volume * 100)
+                if self.guild.voice_client.is_playing():    # type: ignore
+                    if v > v_old:
+                        while v > v_old:
+                            v_old += 1
+                            self.guild.voice_client.source.volume = float(v_old / 100) if v_old != 0 else 0  # type: ignore
+                            await sleep(0.01)
+                        self.volume = float(v / 100)
+                    elif v < v_old:
+                        while v < v_old:
+                            v_old -= 1
+                            self.guild.voice_client.source.volume = float(v_old / 100) if v_old != 0 else 0  # type: ignore
+                            await sleep(0.01)
+                        self.volume = float(v / 100) if v != 0 else 0
+                else:
+                    self.volume = float(v / 100) if v != 0 else 0
+
+
+        except CancelledError:
+            log.info(f"{self.guild.name}: Cancelling volume controller task..")
+                
+
+
+    async def _player_loop(self) -> None:
         try:
             await self.maon.wait_until_ready()
             while True:
@@ -81,14 +111,13 @@ class AudioPlayer():
             self.track = await self.queue.get()
 
 
-    async def _refresh_url(self):
+    async def _refresh_url(self) -> None:
         if self.track and not self.track.track_type in ["stream", "live"]:
             return
-        log.info(f"{self.guild.name}: Refreshing streaming url...")
-        return
+        return log.info(f"{self.guild.name}: Refreshing streaming url...")
+        
     
-
-    async def _play(self):
+    async def _play(self) -> None:
         if not self.track: return
         log.info(f"{self.guild.name}: Playing {self.track.title if self.track else None}")
         volume: float = self.volume if self.track.track_type != "sfx" else self.volume_sfx
@@ -106,7 +135,7 @@ class AudioPlayer():
             await self.channel.send(f":cd: Now playing: {self.now_playing}, at {int(volume * 100)}% volume.")
     
 
-    def _after_play(self, e: Exception | None):
+    def _after_play(self, e: Exception | None) -> None:
         if e:
             log.error(f"{self.guild.name}: Error within _play occurred: {e}\n{format_exc()}")
         self._next.set()
