@@ -52,7 +52,7 @@ done
 if ! [ -z "$installMePip" ]; then
   read -p "Install required python dependencies? [Y/N]: " YN
   if [[ $YN == "Y" || $YN == "y" || $YN == "Yes" || $YN == "yes" ]]; then
-    python3 -m pip install "$installMePip"
+    python3 -m pip install $installMePip
   else
     exit 0
   fi
@@ -69,7 +69,7 @@ if [ "$noupdate" = false ]; then
     fi
   done
   if ! [ -z "$updateMePip" ]; then
-    python3 -m pip install -U "$updateMePip"
+    python3 -m pip install -U $updateMePip
   fi
 
   # Update maon

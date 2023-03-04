@@ -48,6 +48,7 @@ class AudioPlayer():
 
 
     def close(self):
+        self.volume_controller_task.cancel()
         self.player_task.cancel()
 
 
@@ -121,10 +122,12 @@ class AudioPlayer():
         if not self.track: return
         log.info(f"{self.guild.name}: Playing {self.track.title if self.track else None}")
         volume: float = self.volume if self.track.track_type != "sfx" else self.volume_sfx
+        before_options: str = "-re" if self.track.track_type in ["music", "sfx"] else "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 -re"
         self.guild.voice_client.play(       # type: ignore
             PCMVolumeTransformer(
                 FFmpegPCMAudio(
-                    self.track.url
+                    self.track.url,
+                    before_options=before_options
                 ),
                 volume
             ),

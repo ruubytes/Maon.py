@@ -19,7 +19,7 @@ async def send_response(cim: Context | Interaction | Message, text: str | Embed)
 
 
 async def get_user(cim: Context | Interaction | Message) -> Member | None:
-    """Fetches the command requestee for guild only commands from `Context`, `Interaction` and `Message` objects."""
+    """Fetches the command requestee from `Context`, `Interaction` and `Message` objects."""
     if isinstance(cim, Interaction) and isinstance(cim.user, Member):
         return cim.user
     elif isinstance(cim, Context | Message) and isinstance(cim.author, Member):

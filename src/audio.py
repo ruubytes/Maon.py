@@ -96,6 +96,7 @@ class Audio(Cog):
                 elif exists(f"{self.path_sfx}{url}{ext}"):
                     track = await create_local_track(self, cim, f"{self.path_sfx}{url}{ext}")
         if not track:
+            # TODO needs a response for links too
             return await send_response(cim, f"I could not find that song in my folders.\n{usage}")
         log.info(f"{cim.guild.name}: Track \"{track.title}\" created.")
         
@@ -117,6 +118,7 @@ class Audio(Cog):
         if isinstance(cim, Interaction):
             if not cim.response.is_done():
                 return await send_response(cim, f"{track.title} added to queue.")
+            else: return
         return await send_response(cim, f"{track.title} added to queue.")
 
 
@@ -185,6 +187,26 @@ class Audio(Cog):
             return await send_response(cim, embed)
         else:    
             return await send_response(cim, ":notes:")
+        
+
+    async def check_voice(self, cim: Context | Interaction | Message) -> bool:
+        if not cim.guild: return False
+        user: Member | None = await get_user(cim)
+        if not user: return False
+
+        if not user.voice:
+            if isinstance(cim, Interaction):
+                await cim.response.send_message("You are not connected to a voice channel.")
+                return False
+            else:
+                return False
+        if not cim.guild.voice_client or (cim.guild.id not in self.players):
+            await send_response(cim, "I'm not connected to a voice channel.")
+            return False
+        if user.voice.channel != cim.guild.voice_client.channel:
+            await send_response(cim, "You're not in the same voice channel as me.")
+            return False
+        return True
 
     
     @app_commands.command(name="stop", description="Maon will stop playing music and leave the voice channel.")
@@ -200,18 +222,8 @@ class Audio(Cog):
 
     async def stop(self, cim: Context | Interaction | Message) -> None | Message:
         if not cim.guild: return
-        user: Member | None = await get_user(cim)
-        if not user: return
+        if not await self.check_voice(cim): return
 
-        if user.voice is None:
-            if isinstance(cim, Interaction):
-                return await cim.response.send_message("You are not connected to a voice channel.")
-            return
-        if not cim.guild.voice_client:
-            return await send_response(cim, "I'm not connected to a voice channel.")
-        if user.voice.channel != cim.guild.voice_client.channel:
-            return await send_response(cim, "You're not in the same voice channel as me.")
-        
         log.info(f"{cim.guild.name}: Stop request received for the audio player.")
         player: None | AudioPlayer = self.players.get(cim.guild.id)
         if not player:
@@ -236,15 +248,8 @@ class Audio(Cog):
     # TODO volume of 0 not working
     async def volume(self, cim: Context | Interaction | Message, v: int | None) -> None | Message:
         if not cim.guild: return
-        user: Member | None = await get_user(cim)
-        if not user: return
-
-        if not user.voice:
-            return await send_response(cim, "You're not in a voice channel.")
-        if not cim.guild.voice_client or (cim.guild.id not in self.players):
-            return await send_response(cim, "I'm not playing anything right now.")
-        if cim.guild.voice_client.channel != user.voice.channel:
-            return await send_response(cim, "We're in different voice channels, silly.")
+        if not await self.check_voice(cim): return
+        
         player: AudioPlayer | None = self.players.get(cim.guild.id)
         if not player:
             return await send_response(cim, "I'm not playing anything right now.")
@@ -265,6 +270,34 @@ class Audio(Cog):
         else:
             # TODO Change this to pause the playback at some point.
             return await send_response(cim, "Okay, I'm quietly playing for myself, then.")
+        
+
+    @app_commands.command(name="skip", description="Skips the currently playing song.")
+    @app_commands.guild_only()
+    async def _skip_ac(self, itc: Interaction) -> None | Message:
+        return await self.skip(itc)
+    
+    
+    @command(aliases=["n", "next", "nxt", "skip"])
+    async def _skip(self, ctx: Context) -> None | Message:
+        return await self.skip(ctx)
+    
+
+    async def skip(self, cim: Context | Interaction | Message) -> None | Message:
+        if not cim.guild: return
+        if not await self.check_voice(cim): return
+
+        player: AudioPlayer | None = self.players.get(cim.guild.id)
+        if not player:
+            return await send_response(cim, "I'm not playing anything right now.")
+        if not cim.guild.voice_client.is_playing(): # type: ignore
+            if isinstance(cim, Interaction):
+                return await send_response(cim, "I'm not playing anything right now.")
+            else:
+                return
+        else:
+            cim.guild.voice_client.stop()   # type: ignore
+            return await send_response(cim, ":track_next: Skipping...")
 
                 
     # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════
