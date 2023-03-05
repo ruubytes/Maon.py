@@ -1,5 +1,6 @@
 from __future__ import annotations
 import logbook
+from asyncio import Queue
 from audio_player import AudioPlayer
 from discord import app_commands
 from discord import Embed
@@ -40,8 +41,11 @@ class Audio(Cog):
         self.maon: Maon = maon
         self.path_music: str = self._set_path("music")
         self.path_sfx: str = self._set_path("sfx")
-        self.cached_tracks: dict[str, str] = {}
+        self.cached_tracks: dict[str, str] = {
+            "f84w1gEAXYQ": "./music/.Cached Tracks/Dive Into the Mellow (Aquatic Mine) - Sonic Adventure 2 [OST]-f84w1gEAXYQ.mp3"
+        }
         self.players: dict[int, AudioPlayer] = {}
+        self.download_q: Queue = Queue()
 
 
     def _set_path(self, folder_name: str) -> str:
@@ -96,9 +100,12 @@ class Audio(Cog):
                 elif exists(f"{self.path_sfx}{url}{ext}"):
                     track = await create_local_track(self, cim, f"{self.path_sfx}{url}{ext}")
         if not track:
-            # TODO needs a response for links too
-            return await send_response(cim, f"I could not find that song in my folders.\n{usage}")
-        log.info(f"{cim.guild.name}: Track \"{track.title}\" created.")
+            if isinstance(cim, Interaction) and cim.response.is_done(): return
+            if url.startswith("https://"):
+                return await send_response(cim, f"This link doesn't look like a valid Youtube link to me.")
+            else: 
+                return await send_response(cim, f"I could not find that song in my folders.\n{usage}")
+        log.info(f"{cim.guild.name}: Track created: \n{track}")
         
         await self.join_voice(cim)
         if not cim.guild.voice_client: 
@@ -277,7 +284,7 @@ class Audio(Cog):
     async def _skip_ac(self, itc: Interaction) -> None | Message:
         return await self.skip(itc)
     
-    
+
     @command(aliases=["n", "next", "nxt", "skip"])
     async def _skip(self, ctx: Context) -> None | Message:
         return await self.skip(ctx)

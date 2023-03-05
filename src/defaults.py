@@ -1,5 +1,5 @@
 DEFAULT_SETTINGS: dict[str, str | int | float] = {
-    "audio_cache_max_size_mb": 51200,
+    "audio_cache_max_size_mb": 65536,
     "audio_download_rate_bandwidth_limit": "3M",
     "audio_path_music": "./music/",
     "audio_path_sfx": "./sfx/",

@@ -55,12 +55,16 @@ Maon needs a **discord API token**, your **discord ID**, and some **intents** en
 
 Required packages for maon to function are `python3-pip`, `ffmpeg` and `opus-tools`. These can be installed with:
 
-        sudo apt-get install python3-pip ffmpeg opus-tools -y
+    sudo apt-get install python3-pip ffmpeg opus-tools -y
 
-Next, simpy execute the `run` script in the main directory of Maon and let it install the required python dependencies.
+Next, simply execute the `run` script in the main directory of Maon and let it install the required python dependencies.
 Afterwards, Maon will ask for the **discord API token** and your **discord ID**.
 
 Additional run arguments are `./run noupdate` to skip the update check, and `./run setup` to re-setup the **discord API token** and **discord ID**.
+
+My preferred way to run Maon is with a terminal multiplexer like tmux:
+
+    tmux new -d -s "maon" /home/user/Maon.py/run
 
 ## Troubleshooting:
 
