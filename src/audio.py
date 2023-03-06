@@ -1,14 +1,15 @@
 from __future__ import annotations
 import logbook
+import subprocess
+from asyncio import create_task
 from asyncio import Queue
+from asyncio import Task
 from audio_player import AudioPlayer
 from discord import app_commands
 from discord import Embed
-from discord import Guild
 from discord import Interaction
 from discord import Member
 from discord import Message
-from discord import User
 from discord import VoiceClient
 from discord.ext.commands import bot_has_guild_permissions
 from discord.ext.commands import Cog
@@ -17,12 +18,15 @@ from discord.ext.commands import Context
 from discord.ext.commands import guild_only
 from discord.ext.commands import has_guild_permissions
 from logging import Logger
+from os import listdir
 from os.path import exists
+from os.path import getsize
 from track import create_local_track
 from track import create_stream_track
 from utils import get_user
 from utils import send_response
 
+from asyncio import CancelledError
 from discord.ext.commands import CheckFailure
 from discord.ext.commands import CommandError
 
@@ -36,16 +40,19 @@ log: Logger = logbook.getLogger("audio")
 
 
 # TODO Fetch bitrate of voice channel and adjust ffmpeg stream accordingly
+# TODO Implement guild data again for incrementing cached tracks size
+# TODO Volume of 0 not working
 class Audio(Cog):
     def __init__(self, maon: Maon) -> None:
         self.maon: Maon = maon
         self.path_music: str = self._set_path("music")
         self.path_sfx: str = self._set_path("sfx")
-        self.cached_tracks: dict[str, str] = {
-            "f84w1gEAXYQ": "./music/.Cached Tracks/Dive Into the Mellow (Aquatic Mine) - Sonic Adventure 2 [OST]-f84w1gEAXYQ.mp3"
-        }
+        self.rate_limit: str = self._set_rate_limit()
+        self.cached_tracks: dict[str, str] = self._load_cache()
         self.players: dict[int, AudioPlayer] = {}
-        self.download_q: Queue = Queue()
+        self.download_q: Queue[Track] = Queue()
+        self.cache_q: Queue[Track] = Queue()
+        self.download_task: Task = create_task(self.download_loop(), name="download_task")
 
 
     def _set_path(self, folder_name: str) -> str:
@@ -55,6 +62,71 @@ class Audio(Cog):
         else:
             log.error(f"The path ({path}) to my {folder_name} folder is faulty, please change it in my settings.json file.")
             exit(1)
+
+
+    def _set_rate_limit(self) -> str:
+        rate: str | int | float | None = self.maon.settings.get("audio_download_rate_bandwidth_limit")
+        if isinstance(rate, str):
+            return rate
+        else:
+            log.error(f"The bandwidth limit is not set correctly in my settings file, please change it in my settings.json file.")
+            return "3M"
+        
+
+    def _load_cache(self) -> dict[str, str]:
+        log.info("Loading audio cache...")
+        try:
+            cache_dir: list[str] = listdir(f"{self.path_music}.Cached Tracks/")
+            cached_tracks: dict[str, str] = {}
+            for file_name in cache_dir:
+                if file_name.endswith(".mp3"):
+                    video_id = file_name[len(file_name) - 15 : len(file_name) - 4]
+                    cached_tracks[video_id] = f"{self.path_music}.Cached Tracks/{file_name}"
+            return cached_tracks
+        except FileNotFoundError:
+            log.warning("The '.Cached Tracks' folder does not exist, skipped loading the cache.")
+            return {}
+
+
+    async def download_loop(self) -> None:
+        download_cmd: list[str] = [
+            "yt-dlp", "--extract-audio", "--audio-format", "mp3", "--audio-quality", "192K",
+            "--prefer-ffmpeg", "--limit-rate", f"{self.rate_limit}", "--embed-thumbnail",
+            "--age-limit", "21", "--windows-filenames", "-o",
+            f"{self.path_music}.Cached Tracks/%(title)s-%(id)s.%(ext)s",
+            "-f", "format id goes here (16)", "url goes here (17)"
+        ]
+        try:
+            while True:
+                track: Track = await self.download_q.get()
+                if not track.video_id or not track.format or not track.url_original or track.video_id in self.cached_tracks: continue
+
+                download_cmd[16] = track.format[0]
+                download_cmd[17] = track.url_original
+                log.info(f"Beginning background download for {track.title} with command:\n{' '.join(download_cmd)}")
+                r = await self.maon.loop.run_in_executor(
+                    None, lambda: subprocess.run(download_cmd, stdout=subprocess.PIPE).returncode
+                )
+                if r == 0:
+                    await self._cache_track(track.video_id)
+                else:
+                    log.error(f"Background download failed for {track.title}. Error code: {r}")
+
+        except CancelledError:
+            pass
+
+
+    async def _cache_track(self, video_id: str) -> None:
+        try:
+            track_size: float = 0
+            cache_dir: list[str] = listdir(f"{self.path_music}.Cached Tracks/")
+            for file_name in cache_dir:
+                if file_name.endswith(f"{video_id}.mp3"):
+                    self.cached_tracks[video_id] = f"{self.path_music}.Cached Tracks/{file_name}"
+                    track_size = round(getsize(f"{self.path_music}.Cached Tracks/{file_name}") / (1024**2), 2)
+                    log.info(f"Cached track: {self.path_music}.Cached Tracks/{file_name} | Size: {track_size} MB")
+        except FileNotFoundError:
+            log.error(f"I lost the track I should add to the cache directory... how did that happen.")
 
 
     @app_commands.command(name="play", description="Play a youtube link or a file from Maon's music folder.")
@@ -108,8 +180,7 @@ class Audio(Cog):
         log.info(f"{cim.guild.name}: Track created: \n{track}")
         
         await self.join_voice(cim)
-        if not cim.guild.voice_client: 
-            return log.error(f"{cim.guild.name}: Could not connect to the voice channel.")
+        if not cim.guild.voice_client: return
 
         log.info("Fetching audio player...")
         player: None | AudioPlayer = self.players.get(cim.guild.id)
@@ -305,6 +376,20 @@ class Audio(Cog):
         else:
             cim.guild.voice_client.stop()   # type: ignore
             return await send_response(cim, ":track_next: Skipping...")
+
+
+    # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════
+    @Cog.listener()
+    async def on_message(self, msg: Message) -> None | Message:
+        if not msg.guild or (msg.author.id == self.maon.user.id): return    # type: ignore
+        try:
+            if not msg.author.voice: return     # type: ignore
+        except AttributeError:
+            return log.info(f"{msg.guild.name}: Attribute error caught for author lacking a voice protocol.")
+        
+        log.info(f"A user in a voice channel posted a message.")
+        # Is the message in the bot channel?
+        # TODO Needs guild_data implemented
 
                 
     # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════

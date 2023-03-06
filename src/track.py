@@ -25,25 +25,30 @@ class Track():
             url: str, 
             track_type: str, 
             *, 
-            url_original: str | None = None,
-            format: tuple[str, str] | None = None
+            format: tuple[str, str] = ("", ""),
+            url_original: str = "",
+            video_id: str = ""
         ) -> None:
         self.title: str = title
         self.url: str = url
-        self.url_original: str | None = url_original
         self.track_type: str = track_type
+        self.format: tuple[str, str] = format
+        self.url_original: str = url_original
+        self.video_id: str = video_id
         self.time_stamp: float = time()
-        self.format: tuple[str, str] | None = format
 
     
     def __repr__(self) -> str:
-        return dumps(self, default=vars, indent=4)
+        return dumps(self, default=vars, indent=4, ensure_ascii=False)
 
 
 async def create_local_track(audio: Audio, cim: Context | Interaction | Message, url: str, track_type: str = "music") -> None | Track:
     log.info(f"{cim.guild}: Creating local track from {url}")
-    title: str = url[url.rfind("/") + 1:] if "/" in url else url
-    title = title[:title.rfind(".")]
+    if "/.Cached Tracks/" in url:
+        title: str = url[url.rfind("/") + 1 : -16]
+    else:
+        title: str = url[url.rfind("/") + 1:] if "/" in url else url
+        title = title[:title.rfind(".")]
     return Track(title, url, track_type)
 
 
@@ -78,11 +83,10 @@ async def create_stream_track(audio: Audio, cim: Context | Interaction | Message
             if not format: 
                 await send_response(cim, "I could not find a suitable audio format to stream.")
                 return None
-            # Build a track and pass the video info to the downloader loop
             title: str = video_info["title"]
             url_original: str = url
             url_stream: str = format[1]
-            track: Track = Track(title, url_stream, "stream", url_original=url_original, format=format)
+            track: Track = Track(title, url_stream, "stream", url_original=url_original, format=format, video_id=id)
             await audio.download_q.put(track)
             return track
     elif url.startswith("https://open.spotify.com/"):

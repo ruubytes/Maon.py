@@ -32,8 +32,8 @@ class AudioPlayer():
         self.maon: Maon = maon
         self.audio: Audio = self.maon.get_cog("Audio") # type: ignore
         self.channel: TextChannel = cim.channel # type: ignore
-        self.guild: Guild = cim.guild   # type: ignore
-        self.name: str = cim.guild.name # type: ignore
+        self.guild: Guild = cim.guild       # type: ignore
+        self.name: str = cim.guild.name     # type: ignore
         self._next: Event = Event()
         self.now_playing: str = ""
         self.queue: Queue[Track] = Queue()
@@ -44,7 +44,7 @@ class AudioPlayer():
         self.player_task: Task = create_task(self._player_loop(), name="audio_player_task")
         self.volume_controller: Queue[int] = Queue()
         self.volume_controller_task: Task = create_task(self._volume_controller_loop(), name="volume_controller_task")
-        log.info(f"{self.guild.name}: Audio player created.") # type: ignore
+        log.info(f"{self.name}: Audio player created.") # type: ignore
 
 
     def close(self):
@@ -76,7 +76,7 @@ class AudioPlayer():
 
 
         except CancelledError:
-            log.info(f"{self.guild.name}: Cancelling volume controller task..")
+            log.info(f"{self.name}: Cancelling volume controller task..")
                 
 
 
@@ -93,10 +93,10 @@ class AudioPlayer():
                 await self._next.wait()
 
         except CancelledError as e:
-            log.info(f"{self.guild.name}: Cancelling audio player...")
+            log.info(f"{self.name}: Cancelling audio player...")
 
         except TimeoutError as e:
-            log.info(f"{self.guild.name}: Audio player has been inactive for {self.timeout} seconds, cancelling...")
+            log.info(f"{self.name}: Audio player has been inactive for {self.timeout} seconds, cancelling...")
 
         finally:
             if self.guild.voice_client:
@@ -106,8 +106,9 @@ class AudioPlayer():
             return self.audio.remove_player(self.guild.id)
 
 
+    # TODO Check if track has video id and if it is in the cache now, switch to local track then
     async def _get_track(self) -> None:
-        log.info(f"{self.guild.name}: Grabbing track from queue...")
+        log.info(f"{self.name}: Grabbing track from queue...")
         async with timeout(self.timeout):
             self.track = await self.queue.get()
 
@@ -115,12 +116,12 @@ class AudioPlayer():
     async def _refresh_url(self) -> None:
         if self.track and not self.track.track_type in ["stream", "live"]:
             return
-        return log.info(f"{self.guild.name}: Refreshing streaming url...")
+        return log.info(f"{self.name}: Refreshing streaming url...")
         
     
     async def _play(self) -> None:
         if not self.track: return
-        log.info(f"{self.guild.name}: Playing {self.track.title if self.track else None}")
+        log.info(f"{self.name}: Playing {self.track.title if self.track else None}")
         volume: float = self.volume if self.track.track_type != "sfx" else self.volume_sfx
         before_options: str = "-re" if self.track.track_type in ["music", "sfx"] else "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 -re"
         self.guild.voice_client.play(       # type: ignore
@@ -140,7 +141,7 @@ class AudioPlayer():
 
     def _after_play(self, e: Exception | None) -> None:
         if e:
-            log.error(f"{self.guild.name}: Error within _play occurred: {e}\n{format_exc()}")
+            log.error(f"{self.name}: Error within _play occurred: {e}\n{format_exc()}")
         self._next.set()
 
 

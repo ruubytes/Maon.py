@@ -45,6 +45,12 @@ tba
 tba
 ```
 
+### ⌨️ Console
+
+```
+tba
+```
+
 ## Installation:
 
 ### Discord Tokens & IDs:
