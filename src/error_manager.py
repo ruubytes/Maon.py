@@ -4,6 +4,7 @@ from discord import Message
 from discord.ext.commands import Cog
 from discord.ext.commands import Context
 from logging import Logger
+from sys import exc_info
 from traceback import print_tb
 
 from discord.ext.commands import CheckFailure
@@ -22,6 +23,12 @@ class ErrorManager(Cog):
         self.maon: Maon = maon
 
     
+    @Cog.listener()
+    async def on_error(self, event: str) -> None:
+        log.error(f"Caught an event:\n{event}\n{exc_info()[2]}")
+        return
+
+
     @Cog.listener()
     async def on_command_error(self, ctx: Context, e: CommandError) -> None | Message:
         user: str = f"{ctx.author.name}#{ctx.author.discriminator}"

@@ -7,6 +7,7 @@ from asyncio import Task
 from audio_player import AudioPlayer
 from discord import app_commands
 from discord import Embed
+from discord import Guild
 from discord import Interaction
 from discord import Member
 from discord import Message
@@ -17,8 +18,10 @@ from discord.ext.commands import command
 from discord.ext.commands import Context
 from discord.ext.commands import guild_only
 from discord.ext.commands import has_guild_permissions
+from guild_data import get_guild_data
 from logging import Logger
 from os import listdir
+from os import makedirs
 from os.path import exists
 from os.path import getsize
 from track import create_local_track
@@ -35,12 +38,13 @@ if TYPE_CHECKING:
     from maon import Maon
     from misc import Misc
     from track import Track
+    from guild_data import GuildData
 
 log: Logger = logbook.getLogger("audio")
 
 
+# TODO Max duration missing in background downloader
 # TODO Fetch bitrate of voice channel and adjust ffmpeg stream accordingly
-# TODO Implement guild data again for incrementing cached tracks size
 # TODO Volume of 0 not working
 class Audio(Cog):
     def __init__(self, maon: Maon) -> None:
@@ -53,6 +57,8 @@ class Audio(Cog):
         self.download_q: Queue[Track] = Queue()
         self.cache_q: Queue[Track] = Queue()
         self.download_task: Task = create_task(self.download_loop(), name="download_task")
+        self.guild_data: dict[int, GuildData] = {}
+        create_task(self._set_guild_data())
 
 
     def _set_path(self, folder_name: str) -> str:
@@ -71,6 +77,17 @@ class Audio(Cog):
         else:
             log.error(f"The bandwidth limit is not set correctly in my settings file, please change it in my settings.json file.")
             return "3M"
+        
+
+    async def _set_guild_data(self) -> None:
+        if not exists("./src/data/"):
+            makedirs("./src/data/")
+        await self.maon.wait_until_ready()
+        for g in self.maon.guilds:
+            log.info(f"Fetching data for {g.name}...")
+            gd: GuildData = await get_guild_data(g)
+            await gd.trim_summoned_from(g.channels)
+            self.guild_data[g.id] = gd
         
 
     def _load_cache(self) -> dict[str, str]:
@@ -108,7 +125,7 @@ class Audio(Cog):
                     None, lambda: subprocess.run(download_cmd, stdout=subprocess.PIPE).returncode
                 )
                 if r == 0:
-                    await self._cache_track(track.video_id)
+                    await self._cache_track(track.video_id, guild_id=track.guild_id if track.guild_id else 0)
                 else:
                     log.error(f"Background download failed for {track.title}. Error code: {r}")
 
@@ -116,7 +133,7 @@ class Audio(Cog):
             pass
 
 
-    async def _cache_track(self, video_id: str) -> None:
+    async def _cache_track(self, video_id: str, *, guild_id: int = 0) -> None:
         try:
             track_size: float = 0
             cache_dir: list[str] = listdir(f"{self.path_music}.Cached Tracks/")
@@ -124,6 +141,7 @@ class Audio(Cog):
                 if file_name.endswith(f"{video_id}.mp3"):
                     self.cached_tracks[video_id] = f"{self.path_music}.Cached Tracks/{file_name}"
                     track_size = round(getsize(f"{self.path_music}.Cached Tracks/{file_name}") / (1024**2), 2)
+                    if guild_id: await self.guild_data[guild_id].inc_music_cached_total_mb(track_size)
                     log.info(f"Cached track: {self.path_music}.Cached Tracks/{file_name} | Size: {track_size} MB")
         except FileNotFoundError:
             log.error(f"I lost the track I should add to the cache directory... how did that happen.")
@@ -248,6 +266,7 @@ class Audio(Cog):
 
         try:
             voice_client: VoiceClient = await user.voice.channel.connect()
+            await self.guild_data[cim.guild.id].inc_summoned_from(cim.channel.id)   # type: ignore
         except TimeoutError:
             return await send_response(cim, "I could not connect to the voice channel.")
         log.info(f"{cim.guild.name}: Joined voice channel '{voice_client.channel.name}'.")
@@ -390,6 +409,13 @@ class Audio(Cog):
         log.info(f"A user in a voice channel posted a message.")
         # Is the message in the bot channel?
         # TODO Needs guild_data implemented
+
+
+    @Cog.listener()
+    async def on_guild_join(self, guild: Guild) -> None:
+        gd: GuildData = await get_guild_data(guild)
+        self.guild_data[guild.id] = gd
+        await gd.save_guild_data()
 
                 
     # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════

@@ -26,6 +26,7 @@ class Track():
             track_type: str, 
             *, 
             format: tuple[str, str] = ("", ""),
+            guild_id: int = 0,
             url_original: str = "",
             video_id: str = ""
         ) -> None:
@@ -33,6 +34,7 @@ class Track():
         self.url: str = url
         self.track_type: str = track_type
         self.format: tuple[str, str] = format
+        self.guild_id: int = guild_id
         self.url_original: str = url_original
         self.video_id: str = video_id
         self.time_stamp: float = time()
@@ -52,7 +54,8 @@ async def create_local_track(audio: Audio, cim: Context | Interaction | Message,
     return Track(title, url, track_type)
 
 
-async def create_stream_track(audio: Audio, cim: Context | Interaction | Message, url: str, track_type: str = "stream") -> None | Track:
+async def create_stream_track(audio: Audio, cim: Context | Interaction | Message, url: str) -> None | Track:
+    if not cim.guild: return
     log.info(f"{cim.guild}: Creating stream track from {url}")
     if url.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
         id: str | None = await _get_yt_video_id(url)
@@ -86,7 +89,7 @@ async def create_stream_track(audio: Audio, cim: Context | Interaction | Message
             title: str = video_info["title"]
             url_original: str = url
             url_stream: str = format[1]
-            track: Track = Track(title, url_stream, "stream", url_original=url_original, format=format, video_id=id)
+            track: Track = Track(title, url_stream, "stream", url_original=url_original, format=format, guild_id=cim.guild.id, video_id=id)
             await audio.download_q.put(track)
             return track
     elif url.startswith("https://open.spotify.com/"):

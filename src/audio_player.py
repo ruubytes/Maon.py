@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 log: Logger = logbook.getLogger("audio_player")
 
 
+# TODO Check if track has video id and if it is in the cache now, switch to local track then
 class AudioPlayer():
     def __init__(self, maon: Maon, cim: Context | Interaction | Message) -> None:
         self.maon: Maon = maon
