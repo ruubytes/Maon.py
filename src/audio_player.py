@@ -103,7 +103,7 @@ class AudioPlayer():
             if self.guild.voice_client:
                 if self.guild.voice_client.is_playing():        # type: ignore
                     self.guild.voice_client.stop()              # type: ignore
-            await self.guild.voice_client.disconnect(force=True)    # type: ignore
+            await self.guild.voice_client.disconnect()          # type: ignore
             return self.audio.remove_player(self.guild.id)
 
 

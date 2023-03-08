@@ -43,6 +43,7 @@ if TYPE_CHECKING:
 log: Logger = logbook.getLogger("audio")
 
 
+# TODO Voice client seems to be stuck inside the channel when closing down Maon.
 # TODO Max duration missing in background downloader
 # TODO Fetch bitrate of voice channel and adjust ffmpeg stream accordingly
 # TODO Volume of 0 not working
@@ -406,9 +407,24 @@ class Audio(Cog):
         except AttributeError:
             return log.info(f"{msg.guild.name}: Attribute error caught for author lacking a voice protocol.")
         
-        log.info(f"A user in a voice channel posted a message.")
         # Is the message in the bot channel?
-        # TODO Needs guild_data implemented
+        gd: GuildData = self.guild_data[msg.guild.id]
+        if msg.channel.id != await gd.get_music_channel_id(): return
+        # Is it a valid Youtube link?
+        if msg.content.startswith(("https://www.youtube.com/", "https://youtu.be/", "https://m.youtube.com/", "https://youtube.com/")):
+            log.info(f"Command-less Youtube video play request received in the bot channel!")
+            await self.join_voice(msg)
+            if msg.author.voice.channel != msg.guild.voice_client.channel: return   # type: ignore
+            return await self.play(msg, msg.content.split()[0])
+        
+        # Is it a valid music file or sound effect?
+        for ext in [".mp3", ".flac", ".wav", ".ogg"]:
+            if exists(f"{self.path_music}{msg.content}{ext}"):
+                log.info(f"Command-less music file play request received in the bot channel!")
+                return await self.play(msg, msg.content)
+            if exists(f"{self.path_sfx}{msg.content}{ext}"):
+                log.info(f"Command-less sfx play request received in the bot channel!")
+                return await self.play(msg, msg.content)
 
 
     @Cog.listener()
@@ -425,6 +441,8 @@ class Audio(Cog):
         for id, player in players.items():
             log.info(f"Closing {player.name} audio player...")
             player.close()
+        log.info("Cancelling download task...")
+        self.download_task.cancel()
 
 
 async def setup(maon: Maon) -> None:

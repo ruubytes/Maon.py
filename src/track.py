@@ -45,13 +45,14 @@ class Track():
 
 
 async def create_local_track(audio: Audio, cim: Context | Interaction | Message, url: str, track_type: str = "music") -> None | Track:
+    if not cim.guild: return
     log.info(f"{cim.guild}: Creating local track from {url}")
     if "/.Cached Tracks/" in url:
         title: str = url[url.rfind("/") + 1 : -16]
     else:
         title: str = url[url.rfind("/") + 1:] if "/" in url else url
         title = title[:title.rfind(".")]
-    return Track(title, url, track_type)
+    return Track(title, url, track_type, guild_id=cim.guild.id)
 
 
 async def create_stream_track(audio: Audio, cim: Context | Interaction | Message, url: str) -> None | Track:
@@ -79,7 +80,7 @@ async def create_stream_track(audio: Audio, cim: Context | Interaction | Message
             title: str = video_info.get("title")[:-17]   # type: ignore
             url_original: str = url
             url_stream: str = video_info.get("url")      # type: ignore
-            return Track(title, url_stream, "live", url_original=url_original)
+            return Track(title, url_stream, "live", guild_id=cim.guild.id, url_original=url_original)
         else:
             log.info(f"Stream track is a normal stream.")
             format: tuple[str, str] | None = await _get_yt_video_best_audio_format(video_info)
@@ -89,7 +90,7 @@ async def create_stream_track(audio: Audio, cim: Context | Interaction | Message
             title: str = video_info["title"]
             url_original: str = url
             url_stream: str = format[1]
-            track: Track = Track(title, url_stream, "stream", url_original=url_original, format=format, guild_id=cim.guild.id, video_id=id)
+            track: Track = Track(title, url_stream, "stream", format=format, guild_id=cim.guild.id, url_original=url_original, video_id=id)
             await audio.download_q.put(track)
             return track
     elif url.startswith("https://open.spotify.com/"):
