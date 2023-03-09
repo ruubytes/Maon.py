@@ -43,7 +43,9 @@ if TYPE_CHECKING:
 log: Logger = logbook.getLogger("audio")
 
 
-# TODO Voice client seems to be stuck inside the channel when closing down Maon.
+# TODO Playlist and song loop command is missing
+# TODO Music / SFX folder browser is missing -> Use the new interaction view
+# TODO Voice client seems to be stuck inside the channel when closing down Maon. Only with console
 # TODO Max duration missing in background downloader
 # TODO Fetch bitrate of voice channel and adjust ffmpeg stream accordingly
 # TODO Volume of 0 not working
@@ -164,7 +166,14 @@ class Audio(Cog):
         return await self.play(ctx, url)
     
 
-    async def play(self, cim: Context | Interaction | Message, url: str | None) -> None | Message:
+    @command(aliases=["s", "sfx", "sound", "effect"])
+    @has_guild_permissions(connect=True)
+    @bot_has_guild_permissions(connect=True, speak=True)
+    async def _sfx(self, ctx: Context, *, url: str) -> None | Message:
+        return await self.play(ctx, url, sfx=True)
+    
+
+    async def play(self, cim: Context | Interaction | Message, url: str | None, sfx: bool = False) -> None | Message:
         if not cim.guild: return
         log.info(f"{cim.guild}: Play request received for {url}")
         prefix: str = await self.maon.get_prefix_str()
@@ -189,12 +198,14 @@ class Audio(Cog):
                 if exists(f"{self.path_music}{url}{ext}"):
                     track = await create_local_track(self, cim, f"{self.path_music}{url}{ext}")
                 elif exists(f"{self.path_sfx}{url}{ext}"):
-                    track = await create_local_track(self, cim, f"{self.path_sfx}{url}{ext}")
+                    sfx = True
+                    track = await create_local_track(self, cim, f"{self.path_sfx}{url}{ext}", "sfx")
         if not track:
             if isinstance(cim, Interaction) and cim.response.is_done(): return
             if url.startswith("https://"):
                 return await send_response(cim, f"This link doesn't look like a valid Youtube link to me.")
             else: 
+                if sfx: return
                 return await send_response(cim, f"I could not find that song in my folders.\n{usage}")
         log.info(f"{cim.guild.name}: Track created: \n{track}")
         
@@ -211,19 +222,20 @@ class Audio(Cog):
             else: 
                 log.error(f"{cim.guild.name}: Creation of my audio player failed.")
                 return await send_response(cim, f"I could not create my audio player.")
-        await player.queue.put(track) 
         if isinstance(cim, Interaction):
             if not cim.response.is_done():
                 return await send_response(cim, f"{track.title} added to queue.")
             else: return
-        return await send_response(cim, f"{track.title} added to queue.")
+        if not player.queue.empty():
+            if not sfx: await send_response(cim, f"{track.title} added to queue.")
+        await player.queue.put(track) 
 
 
     def remove_player(self, id: int):
         if id in self.players.keys():
             self.players.pop(id)
 
-
+    
     @app_commands.command(name="join", description="Make Maon join your voice channel.")
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(connect=True)
@@ -405,7 +417,7 @@ class Audio(Cog):
         try:
             if not msg.author.voice: return     # type: ignore
         except AttributeError:
-            return log.info(f"{msg.guild.name}: Attribute error caught for author lacking a voice protocol.")
+            return log.info(f"{msg.guild.name}: Attribute error caught for author lacking a voice protocol. It's probably a webhook message. ({msg.author.name})")
         
         # Is the message in the bot channel?
         gd: GuildData = self.guild_data[msg.guild.id]

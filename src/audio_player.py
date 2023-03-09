@@ -15,6 +15,7 @@ from discord import TextChannel
 from discord.ext.commands import Context
 from logging import Logger
 from traceback import format_exc
+from track import create_local_track
 
 from asyncio import CancelledError
 
@@ -27,12 +28,12 @@ if TYPE_CHECKING:
 log: Logger = logbook.getLogger("audio_player")
 
 
-# TODO Check if track has video id and if it is in the cache now, switch to local track then
 class AudioPlayer():
     def __init__(self, maon: Maon, cim: Context | Interaction | Message) -> None:
         self.maon: Maon = maon
         self.audio: Audio = self.maon.get_cog("Audio") # type: ignore
         self.channel: TextChannel = cim.channel # type: ignore
+        self.cim: Context | Interaction | Message = cim
         self.guild: Guild = cim.guild       # type: ignore
         self.name: str = cim.guild.name     # type: ignore
         self._next: Event = Event()
@@ -74,8 +75,6 @@ class AudioPlayer():
                         self.volume = float(v / 100) if v != 0 else 0
                 else:
                     self.volume = float(v / 100) if v != 0 else 0
-
-
         except CancelledError:
             log.info(f"{self.name}: Cancelling volume controller task..")
                 
@@ -93,10 +92,10 @@ class AudioPlayer():
 
                 await self._next.wait()
 
-        except CancelledError as e:
+        except CancelledError:
             log.info(f"{self.name}: Cancelling audio player...")
 
-        except TimeoutError as e:
+        except TimeoutError:
             log.info(f"{self.name}: Audio player has been inactive for {self.timeout} seconds, cancelling...")
 
         finally:
@@ -107,11 +106,13 @@ class AudioPlayer():
             return self.audio.remove_player(self.guild.id)
 
 
-    # TODO Check if track has video id and if it is in the cache now, switch to local track then
     async def _get_track(self) -> None:
         log.info(f"{self.name}: Grabbing track from queue...")
         async with timeout(self.timeout):
             self.track = await self.queue.get()
+            if self.track.track_type == "stream" and self.track.video_id in self.audio.cached_tracks:
+                log.info(f"{self.name}: {self.track.title} has already been added to the cache, changing to local stream...")
+                self.track = await create_local_track(self.audio, self.cim, self.audio.cached_tracks[self.track.video_id], "music")
 
 
     async def _refresh_url(self) -> None:
@@ -137,7 +138,8 @@ class AudioPlayer():
         )
         if self.now_playing != self.track.title:
             self.now_playing = self.track.title
-            await self.channel.send(f":cd: Now playing: {self.now_playing}, at {int(volume * 100)}% volume.")
+            if self.track.track_type != "sfx":
+                await self.channel.send(f":cd: Now playing: {self.now_playing}, at {int(volume * 100)}% volume.")
     
 
     def _after_play(self, e: Exception | None) -> None:
