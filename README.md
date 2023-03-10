@@ -20,7 +20,13 @@ Maon is written in **Python3.9+** and tested on **Ubuntu 22.04 Server / WSL Ubun
 
 ## List of Commands
 
+The commands require Maon's prefix (`m ` or `maon `) and some are also available as "slash" commands.
+
+For example `maon play despacito` or `/play despacito`.
+
 ### 🇰🇵 Owner
+
+Requires ownership of Maon.
 
 ```
 shutdown, kill
@@ -35,16 +41,23 @@ reload <extension / all>
 
 ### 🏳️‍🌈 Moderators
 
+Requires `Manage Messages` and `Read Message History` permissions.
+
 ```
+/delete <1 - 75>
 remove, clear, delete <1 - 75>
         Deletes a number of messages from the channel.
         Requires manage_messages permissions for both the
         requestee and Maon.
+
 ```
 
 ### 🎶 Music
 
+Requires `Connect` and `Speak` permissions.
+
 ```
+/play <link / path>
 p, play, yt, stream <link / path>
         Maon will join and play a Youtube link or a local file
         from the music or sfx folder.
@@ -55,23 +68,27 @@ p, play, yt, stream <link / path>
         it.
 
 s, sfx, sound, effect <path>
-        Play a sound effect from the sfx folder.
-        If Maon is already in the voice channel, or has
+        Maon will join and play a sound effect from the sfx 
+        folder. If Maon is already in the voice channel, or has
         recognized the bot channel after having been summoned
         more than 3 times, the command is no longer necessary.
         The name of the sound effect alone will suffice to play
         it.
 
+/join
 j, join
         Maon will join the voice channel.
 
+/stop
 stop, exit, quit, leave
         Maon will stop playing audio and leave the voice
         channel.
 
+/volume <0 - 100>
 v, vol, volume <0 - 100>
         Changes the audio player's volume.
 
+/skip
 n, next, nxt, skip
         Skips to the next song in the audio player's queue or
         just skips over the current song.
@@ -80,21 +97,27 @@ n, next, nxt, skip
 ### 🔰 Misc
 
 ```
+/help
 h, help, info, infocard
         Maon will paste several embeds containing her commands,
         which depend on the requestee's permissions.
 
+/ping
 ping, latency
         Maon will reply with a message containing the websocket
         latency.
 
+/coin
 coin, flip, toss
         Flips a coin! Heads or tails.
 
+/anime <search term>
+/manga <search term>
 mal, anime, animu, manga, mango, myanimelist <search term>
         Will search for an anime or manga on MyAnimeList and
         replies with the top-most result.
 
+/roll <ndn / number>
 r, roll, rng, dice <ndn / number>
         Maon will roll some dices. Examples:
         "maon r 1d6" will roll a 6-sided die once.

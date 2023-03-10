@@ -35,6 +35,7 @@ class AudioPlayer():
         self.channel: TextChannel = cim.channel # type: ignore
         self.cim: Context | Interaction | Message = cim
         self.guild: Guild = cim.guild       # type: ignore
+        self.looping: str = "off"
         self.name: str = cim.guild.name     # type: ignore
         self._next: Event = Event()
         self.now_playing: str = ""
@@ -109,11 +110,15 @@ class AudioPlayer():
     async def _get_track(self) -> None:
         log.info(f"{self.name}: Grabbing track from queue...")
         async with timeout(self.timeout):
+            if self.track and self.looping == "song": 
+                return
+            elif self.track and self.looping == "playlist": 
+                await self.queue.put(self.track)
             self.track = await self.queue.get()
             if self.track.track_type == "stream" and self.track.video_id in self.audio.cached_tracks:
                 log.info(f"{self.name}: {self.track.title} has already been added to the cache, changing to local stream...")
                 self.track = await create_local_track(self.audio, self.cim, self.audio.cached_tracks[self.track.video_id], "music")
-
+                
 
     async def _refresh_url(self) -> None:
         if self.track and not self.track.track_type in ["stream", "live"]:
@@ -140,7 +145,7 @@ class AudioPlayer():
             self.now_playing = self.track.title
             if self.track.track_type != "sfx":
                 await self.channel.send(f":cd: Now playing: {self.now_playing}, at {int(volume * 100)}% volume.")
-    
+
 
     def _after_play(self, e: Exception | None) -> None:
         if e:

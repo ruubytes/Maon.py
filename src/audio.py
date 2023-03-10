@@ -26,6 +26,7 @@ from os.path import exists
 from os.path import getsize
 from track import create_local_track
 from track import create_stream_track
+from typing import Literal
 from utils import get_user
 from utils import send_response
 
@@ -43,7 +44,6 @@ if TYPE_CHECKING:
 log: Logger = logbook.getLogger("audio")
 
 
-# TODO Playlist and song loop command is missing
 # TODO Music / SFX folder browser is missing -> Use the new interaction view
 # TODO Voice client seems to be stuck inside the channel when closing down Maon. Only with console
 # TODO Max duration missing in background downloader
@@ -222,12 +222,12 @@ class Audio(Cog):
             else: 
                 log.error(f"{cim.guild.name}: Creation of my audio player failed.")
                 return await send_response(cim, f"I could not create my audio player.")
-        if isinstance(cim, Interaction):
-            if not cim.response.is_done():
-                return await send_response(cim, f"{track.title} added to queue.")
-            else: return
-        if not player.queue.empty():
-            if not sfx: await send_response(cim, f"{track.title} added to queue.")
+            
+        if not player.queue.empty() or cim.guild.voice_client.is_playing():     # type: ignore
+            if isinstance(cim, Interaction):
+                if not cim.response.is_done():
+                    await send_response(cim, f"{track.title} added to queue.")
+            elif not sfx: await send_response(cim, f"{track.title} added to queue.")
         await player.queue.put(track) 
 
 
@@ -408,6 +408,78 @@ class Audio(Cog):
         else:
             cim.guild.voice_client.stop()   # type: ignore
             return await send_response(cim, ":track_next: Skipping...")
+
+
+    @app_commands.command(name="loop", description="Set Maon's audio player to loop the playlist, the current song or turn it off.")
+    @app_commands.describe(mode="Loop the playlist, the song, or turn it off.")
+    async def _repeat_ac(self, itc: Interaction, mode: Literal["🔁 Playlist", "🔁 Song", "❌ Turn off looping"]) -> None | Message:
+        if "Playlist" in mode:
+            mode_str = "playlist"
+        elif "Song" in mode:
+            mode_str = "song"
+        else:
+            mode_str = "off"
+        return await self.repeat(itc, mode_str)
+
+
+    @command(aliases=["l", "loop", "repeat"])
+    async def _repeat(self, ctx: Context, mode: str | None):
+        return await self.repeat(ctx, mode)
+    
+
+    async def repeat(self, cim: Context | Interaction, mode: str | None) -> None | Message:
+        if not cim.guild: return
+        if not await self.check_voice(cim): return
+
+        if not mode or mode not in ["playlist", "queue", "song", "off"]:
+            return await send_response(cim, f"Do you want to loop the `playlist`, a `song` or turn looping `off`?\nExample: `{await self.maon.get_prefix_str()}loop playlist`")
+        
+        player: AudioPlayer | None = self.players.get(cim.guild.id)
+        if not player: return
+        if mode in ["playlist", "queue"]:
+            if player.looping not in ["playlist", "queue"]:
+                player.looping = "playlist"
+                return await send_response(cim, ":repeat: Looping the playlist.")
+        elif mode == "song":
+            if player.looping != "song":
+                player.looping = "song"
+                return await send_response(cim, ":repeat: Looping the song.")
+        player.looping = "off"
+        return await send_response(cim, ":x: Turned off looping.")
+    
+
+    @app_commands.command(name="playlist", description="Show the current playlist in Maon's audio player.")
+    async def _playlist_ac(self, itc: Interaction) -> None | Message:
+        return await self.playlist(itc)
+    
+    @command(aliases=["q", "queue", "playlist"])
+    async def _playlist(self, ctx: Context) -> None | Message:
+        return await self.playlist(ctx)
+    
+    async def playlist(self, cim: Context | Interaction) -> None | Message:
+        if not cim.guild: return
+        if not await self.check_voice(cim): return
+
+        player: AudioPlayer | None = self.players.get(cim.guild.id)
+        if not player: return
+        if not player.track and player.queue.empty() or player.track and player.queue.empty() and not cim.guild.voice_client.is_playing(): # type: ignore
+            return await send_response(cim, "The playlist is empty.")
+        tracks: list[Track] = player.queue._queue.copy()        # type: ignore
+        
+        title: str = ""
+        if player.track and cim.guild.voice_client.is_playing():    # type: ignore
+            title = f":cd: Now Playing: {player.track.title}"
+        
+        description: str = ""
+        if tracks:
+            description = "**:track_next: Up Next:**\n"
+            i = 1
+            for track in tracks:
+                description += f"`{str(i).zfill(2)}` {track.title}\n"
+                i += 1
+                if i > 24: break
+
+        return await send_response(cim, Embed(title=title, description=description, color=await self.maon.get_color_accent()))
 
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════
