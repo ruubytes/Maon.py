@@ -25,6 +25,7 @@ from os import makedirs
 from os.path import exists
 from os.path import getsize
 from track import create_local_track
+from track import create_meme_track
 from track import create_stream_track
 from typing import Literal
 from utils import get_user
@@ -48,7 +49,6 @@ log: Logger = logbook.getLogger("audio")
 # TODO Voice client seems to be stuck inside the channel when closing down Maon. Only with console
 # TODO Max duration missing in background downloader
 # TODO Fetch bitrate of voice channel and adjust ffmpeg stream accordingly
-# TODO Volume of 0 not working
 class Audio(Cog):
     def __init__(self, maon: Maon) -> None:
         self.maon: Maon = maon
@@ -155,14 +155,14 @@ class Audio(Cog):
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(connect=True)
     @app_commands.checks.bot_has_permissions(connect=True, speak=True)
-    async def _play_ac(self, itc: Interaction, url: str) -> None | Message:
+    async def _play_ac(self, itc: Interaction, url: str | None) -> None | Message:
         return await self.play(itc, url)
 
 
     @command(aliases=["p", "play", "stream", "yt"])
     @has_guild_permissions(connect=True)
     @bot_has_guild_permissions(connect=True, speak=True)
-    async def _play(self, ctx: Context, *, url: str) -> None | Message:
+    async def _play(self, ctx: Context, url: str | None) -> None | Message:
         return await self.play(ctx, url)
     
 
@@ -200,6 +200,8 @@ class Audio(Cog):
                 elif exists(f"{self.path_sfx}{url}{ext}"):
                     sfx = True
                     track = await create_local_track(self, cim, f"{self.path_sfx}{url}{ext}", "sfx")
+        if not track:
+            track = await create_meme_track(self, cim, url)
         if not track:
             if isinstance(cim, Interaction) and cim.response.is_done(): return
             if url.startswith("https://"):
@@ -355,15 +357,14 @@ class Audio(Cog):
         return await self.volume(ctx, v)
 
 
-    # TODO volume of 0 not working
-    async def volume(self, cim: Context | Interaction | Message, v: int | None) -> None | Message:
+    async def volume(self, cim: Context | Interaction, v: int | None) -> None | Message:
         if not cim.guild: return
         if not await self.check_voice(cim): return
         
         player: AudioPlayer | None = self.players.get(cim.guild.id)
         if not player:
             return await send_response(cim, "I'm not playing anything right now.")
-        if not v:
+        if v is None:
             return await send_response(cim, f"The volume is set to {int(player.volume * 100)}%.")
         if v < 0 or v > 100:
             return await send_response(cim, f"The volume can only range from 0 to 100.")
@@ -371,15 +372,14 @@ class Audio(Cog):
         v_old: int = int(player.volume * 100)
         await player.volume_controller.put(v)
         log.info(f"{cim.guild.name}: Changed volume of audio player to {v}%.")
-        if v > v_old:
+        if v == 0:
+            return await self.pause(cim)
+        elif v > v_old:
             return await send_response(cim, f":arrow_up_small: Volume set to {v}%.")
         elif v < v_old:
             return await send_response(cim, f":arrow_down_small: Volume set to {v}%.")
         elif v == v_old:
             return await send_response(cim, f"The volume is set to {v}%.")
-        else:
-            # TODO Change this to pause the playback at some point.
-            return await send_response(cim, "Okay, I'm quietly playing for myself, then.")
         
 
     @app_commands.command(name="skip", description="Skips the currently playing song.")
@@ -480,6 +480,27 @@ class Audio(Cog):
                 if i > 24: break
 
         return await send_response(cim, Embed(title=title, description=description, color=await self.maon.get_color_accent()))
+
+
+    @app_commands.command(name="pause", description="Pause Maon's audio player. Continue it with /play")
+    async def _pause_ac(self, itc: Interaction) -> None | Message:
+        return await self.pause(itc)
+    
+
+    @command(aliases=["pause", "halt"])
+    async def _pause(self, ctx: Context) -> None | Message:
+        return await self.pause(ctx)
+
+    
+    async def pause(self, cim: Context | Interaction) -> None | Message:
+        if not cim.guild: return
+        if not await self.check_voice(cim): return
+
+        if cim.guild.voice_client.is_playing():     # type: ignore
+            cim.guild.voice_client.pause()          # type: ignore
+            return await send_response(cim, ":pause_button: Paused.")
+        elif isinstance(cim, Interaction) and not cim.response.is_done():
+            return await send_response(cim, "I can't pause my audio player, I'm not playing anything right now.")
 
 
     # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════

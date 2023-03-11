@@ -99,6 +99,13 @@ async def create_stream_track(audio: Audio, cim: Context | Interaction | Message
     return None
 
 
+async def create_meme_track(audio: Audio, cim: Context | Interaction | Message, url: str) -> None | Track:
+    if url.lower() == "despacito":
+        log.info(f"Creating meme track for \"{url}\"")
+        return await create_stream_track(audio, cim, "https://www.youtube.com/watch?v=kJQP7kiw5Fk")
+    return None
+
+
 async def _get_yt_video_id(url: str) -> str | None:
     """Get the 11 chars long video id from a Youtube link."""
     if url.find("?v=") > 0:

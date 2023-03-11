@@ -66,6 +66,7 @@ p, play, yt, stream <link / path>
         more than 2 times, the command is no longer necessary.
         A youtube link or file path alone will suffice to play
         it.
+        This also resumes a paused audio player.
 
 s, sfx, sound, effect <path>
         Maon will join and play a sound effect from the sfx 
@@ -86,12 +87,26 @@ stop, exit, quit, leave
 
 /volume <0 - 100>
 v, vol, volume <0 - 100>
-        Changes the audio player's volume.
+        Changes the audio player's volume, 0 pauses it.
+        Unpause with an empty play command.
 
 /skip
 n, next, nxt, skip
         Skips to the next song in the audio player's queue or
         just skips over the current song.
+
+/loop <playlist / song / off>
+l, loop, repeat <playlist / song / off>
+        Loops the playlist, a song or turns looping off.
+
+/playlist
+q, queue, playlist
+        Shows the current playlist in the audio player.
+
+/pause
+pause, halt
+        Pause Maon's audio player. Continue with an empty play
+        command.
 ```
 
 ### 🔰 Misc
