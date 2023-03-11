@@ -1,310 +1,210 @@
-import os
+from __future__ import annotations
+import logbook
 import sys
-import psutil
-import discord
-import asyncio
-from os import path
-from src import logbook
-from configs import custom
-from configs import settings
+from asyncio import all_tasks
+from asyncio import create_task
+from asyncio import get_running_loop
 from asyncio import sleep
-from shutil import rmtree
+from asyncio import Task
+from discord import Activity
+from discord import ActivityType
+from discord import app_commands
+from discord import Guild
+from discord import Interaction
+from discord import Message
+from discord import TextChannel
+from discord.ext.commands import bot_has_guild_permissions
+from discord.ext.commands import bot_has_permissions
+from discord.ext.commands import Cog
+from discord.ext.commands import command
+from discord.ext.commands import Context
+from discord.ext.commands import guild_only
+from discord.ext.commands import has_guild_permissions
+from discord.ext.commands import has_permissions
+from discord.ext.commands import is_owner
+from logging import Logger
+from os import close
+from os import execl
+from os import getpid
+from psutil import Process
 from random import choice
-from discord.ext import commands
 
 from asyncio import CancelledError
+from discord.app_commands import AppCommandError
+from discord.ext.commands import CheckFailure
 
-from asyncio import Task
-from discord import Message
-from src.audioplayer import AudioPlayer
-from discord.ext.commands import Context
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from maon import Maon
 
-
-class Admin(commands.Cog):
-    __slots__ = ["client", "log", "status_task", "running"]
-
-    def __init__(self, client: commands.Bot):
-        self.client: commands.Bot = client
-        self.log = logbook.getLogger(self.__class__.__name__)
-        self.status_task: Task = None
-        self.running: bool = True
+log: Logger = logbook.getLogger("admin")
 
 
-    # ═══ Commands ═════════════════════════════════════════════════════════════════════════════════════════════════════
-    @commands.command(aliases=["kill"])
-    @commands.is_owner()
-    async def shutdown(self, message: Context = None):
-        """ Shuts down Maon gracefully by first logging out and closing all event loops. """
-        self.log.warn("Shutting down Maon...")
-        player: AudioPlayer
-        for player in self.client.get_cog("Audio").players.values():
-            player.shutdown()
-        vc: discord.VoiceClient
-        for vc in self.client.voice_clients:
-            await vc.disconnect()
-        self.log.log(logbook.RAW, "\nMaybe I'll take over the world some other time.\n")
-        await self.client.close()
+class Admin(Cog):
+    def __init__(self, maon: Maon) -> None:
+        self.maon: Maon = maon
+        self.status_task: Task = create_task(self.status_loop(), name="status_task")
+
+    
+    async def status_loop(self) -> None:
+        await self.maon.wait_until_ready()
+        try:
+            while True:            
+                activity: str = choice(["listening", "playing", "watching"])
+                text_list: str | list[str] | None = self.maon.custom.get(f"status_{activity}")
+                if not text_list or isinstance(text_list, str):
+                    continue
+                if activity == "listening":
+                    await self.maon.change_presence(activity=Activity(type=ActivityType.listening, name=choice(text_list)))
+                elif activity == "playing":
+                    await self.maon.change_presence(activity=Activity(type=ActivityType.playing, name=choice(text_list)))
+                elif activity == "watching":
+                    await self.maon.change_presence(activity=Activity(type=ActivityType.watching, name=choice(text_list)))
+                else:
+                    continue
+                log.info(f"Set new hourly {activity} status.")
+                await sleep(3600)
+        except CancelledError:
+            log.info(f"status_task cancelled.")
+
+    
+    async def _status_cancel(self) -> None:
+        if not self.status_task.done():
+            self.status_task.cancel()
+
+    
+    async def _status_restart(self) -> None:
+        if self.status_task.done():
+            self.status_task: Task = create_task(self.status_loop(), name="status_task")
+        else:
+            log.info("status_task still running.")
 
 
-    @commands.command()
-    @commands.is_owner()
-    async def restart(self, message: Context = None):
-        """ Restarts Maon by killing all connections and then restarts the process with the same arguments. """
-        self.log.warn("Restarting Maon...")
-        player: AudioPlayer
-        for player in self.client.get_cog("Audio").players.values():
-            player.shutdown()
-        vc: discord.VoiceClient
-        for vc in self.client.voice_clients:
-            await vc.disconnect()
-        
-        p = psutil.Process(os.getpid())
+    @command(aliases=["kill"])
+    @is_owner()
+    async def shutdown(self, ctx: Context) -> None:
+        log.warning("Shutting down...")
+        await self.maon.close()
+
+
+    @command()
+    @is_owner()
+    async def restart(self, ctx: Context) -> None:
+        await self._restart()
+
+    
+    async def _restart(self) -> None:
+        log.warning("Restarting...\n\n---\n")
+        for task in [*all_tasks(get_running_loop())]:
+            if not task.cancelled():
+                task.cancel()
+        p: Process = Process(getpid())
         for handler in p.open_files() + p.connections():
             try:
-                os.close(handler.fd)
+                close(handler.fd)
             except Exception as e:
                 pass
+        execl(sys.executable, sys.executable, *sys.argv)
 
-        os.execl(sys.executable, sys.executable, *sys.argv)
 
-
-    @commands.command()
-    @commands.is_owner()
-    async def reload(self, message: Context, *, extension: str = None):
-        """ Reloads selected or all extension modules. """
-        if extension is None:
-            return await message.send("Do you want me to reload a specific extension or `all`?")
-
-        if extension.lower() in settings.EXTENSION_LIST:
-            try:
-                self.log.info(f"Reloading {extension.lower()} extension...")
-                await self.client.reload_extension(f"{settings.EXTENSION_PATH}{extension.lower()}")
-                return await message.send(f"{extension.lower()} extension reloaded!")
-            except discord.ext.commands.errors.ExtensionNotLoaded:
-                return await message.send(f"Cannot reload {extension.lower()} because it is disabled. Did you want to `enable` it?")
-        elif extension.lower() == "all":
-            for ext in settings.EXTENSION_LIST:
-                try:
-                    self.log.info(f"Reloading {ext} extension...")
-                    await self.client.reload_extension(f"{settings.EXTENSION_PATH}{ext}")
-                except discord.ext.commands.errors.ExtensionNotLoaded:
-                    pass
-            return await message.send("All extensions reloaded!")
+    @command()
+    @is_owner()
+    async def reload(self, ctx: Context, ext: str | None) -> None | Message:
+        if not ext:
+            return await ctx.channel.send("Do you want to reload a specific extension, like `audio` or `all` all of them?")
+        if ext.lower() in self.maon.extensions_list:
+            log.info(f"Reloading {ext.lower()} extension...")
+            await self.maon.reload_extension(f"{ext.lower()}")
+            log.info(f"{ext.lower()} extension reloaded.")
+            await ctx.channel.send(f"{ext.lower()} extension reloaded.")
+        elif ext.lower() == "all":
+            for ext in self.maon.extensions_list:
+                log.info(f"Reloading {ext.lower()} extension...")
+                await self.maon.reload_extension(f"{ext.lower()}")
+            log.info("All extensions reloaded.")
+            await ctx.channel.send("All extensions reloaded.")
         else:
-            return await message.send(f"I don't think I have an extension called {extension.lower()}.")
+            return await ctx.channel.send(f"I can't find an extension called {ext.lower()}.")
+        await self.maon.sync_app_cmds()
 
 
-    @commands.command()
-    @commands.is_owner()
-    async def disable(self, message, *, extension: str = None):
-        """ Disables a specified `extension` or `all` of them. """
-        if extension is None:
-            return await message.send("Do you want me to disable a specific extension or `all`?")
-        elif extension.lower() in settings.EXTENSION_LIST:
-            try:
-                self.log.warn("Disabling {} extension...".format(extension.lower()))
-                self.client.unload_extension(settings.EXTENSION_PATH + extension.lower())
-                return await message.send("{} extension disabled!".format(extension.lower()))
-            except discord.ext.commands.errors.ExtensionNotLoaded:
-                return await message.send("{} extension is already disabled!".format(extension.lower()))
+    @app_commands.command(name="delete", description="Delete a number of messages in a channel. (Max 75)")
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @app_commands.checks.bot_has_permissions(manage_messages=True, read_message_history=True)
+    async def _remove_ac(self, itc: Interaction, amount: app_commands.Range[int, 1, 75]) -> None | Message:
+        if not isinstance(itc.channel, TextChannel) or not itc.guild: return
+        log.info(f"Trying to delete {amount} messages in {itc.guild.name}: {itc.channel.name} for {itc.user.name}#{itc.user.discriminator}.")
+        await itc.response.send_message(f"Deleting {amount} messages.", ephemeral=True, delete_after=16)
+        await itc.channel.purge(limit=amount + 1, bulk=True)
 
-        elif extension.lower() == "all":
-            for ext in settings.EXTENSION_LIST:
-                try:
-                    self.log.warn("Disabling {} extension...".format(ext))
-                    self.client.reload_extension(settings.EXTENSION_PATH + ext)
-                except discord.ext.commands.errors.ExtensionNotLoaded:
-                    pass
-            return await message.send("All extensions disabled, I is small brain now and need to be restarted...")
-
-        else:
-            return await message.send("I don't think I have an extension called {}.".format(extension.lower()))
-        
-
-    @commands.command()
-    @commands.is_owner()
-    async def enable(self, message, *, extension: str = None):
-        """ Enables a specified `extension` or `all` of them. """
-        if extension is None:
-            return await message.send("Do you want me to enable a specific extension or `all`?")
-
-        elif extension.lower() in settings.EXTENSION_LIST:
-            try:
-                self.log.info("Enabling {} extension...".format(extension.lower()))
-                self.client.load_extension(settings.EXTENSION_PATH + extension.lower())
-                return await message.send("{} extension enabled!".format(extension.lower()))
-            except discord.ext.commands.errors.ExtensionAlreadyLoaded:
-                return await message.send("{} extension is already enabled!".format(extension.lower()))
-
-        elif extension.lower() == "all":
-            for ext in settings.EXTENSION_LIST:
-                try:
-                    self.log.info("Enabling {} extension...".format(ext))
-                    self.client.load_extension(settings.EXTENSION_PATH + ext)
-                except discord.ext.commands.errors.ExtensionAlreadyLoaded:
-                    pass
-            return await message.send("All disabled extensions are now enabled!")
-
-        else:
-            return await message.send("I don't think I have an extension called {}.".format(extension.lower()))
-
-
-    @commands.command(aliases=["clear", "delete"])
-    @commands.is_owner()
-    @commands.guild_only()
-    async def remove(self, message, *, number: int = None):
-        """ Removes `number` `+ 1` messages from the channel the command is called in. +1 to also remove 
-        the calling command. Max amount is 50 messages. """
-        if number is None:
-            return await message.send("How many messages do you want me to delete? (max 50 messages)")
-        else:
-            try:
-                amount = int(number)
-                if (amount <= 50) and (amount >= 1):
-                    await message.channel.purge(limit = amount + 1)
-                    return await message.send("{} messages deleted.".format(amount), delete_after = 5)
-                else:
-                    return await message.send("How many messages do you want me to delete? (max 50 messages)")
-            except (TypeError, ValueError):
-                return await message.send("How many messages do you want me to delete? (max 50 messages)")
-
-
-    @commands.command()
-    @commands.is_owner()
-    async def status(self, message, *, activity: str = None):
-        """ Sets the status message of Maon. `activity` has to start with one of the available activity
-        types like `playing / watching / listening` followed by the status text that is to be displayed. """
-        if activity is None:
-            return await message.send("Usage: <prefix> status `listening`/`playing`/`watching` <text>")
-
-        try:
-            if activity.lower().startswith("cancel"):
-                if self.status_task is not None:
-                    self.log.warn("[{}] Cancelling status task...".format(message.guild.name))
-                    self.status_task.cancel()
-                    self.status_task = None
-                return await message.send("Cancelled my status update loop.")
-            elif activity.lower().startswith(("resume", "continue")):
-                if self.status_task is None:
-                    self.log.info("[{}] Resuming status task.".format(message.guild.name))
-                    self.status_task = asyncio.create_task(self.status_loop(), name="activity_rotation_task")
-                return await message.send("Resuming my status update loop.")
-
-            text = activity.split(" ", 1)[1]
-            if activity.lower().startswith("listening"):
-                if text.lower().startswith("to "):
-                    text = text[3:]
-                await self.client.change_presence(
-                    activity=discord.Activity(type=discord.ActivityType.listening, name=text))
-                return await message.send("Changed my status, I'm now listening to {}".format(text))
-            elif activity.lower().startswith("playing"):
-                await self.client.change_presence(
-                    activity=discord.Activity(type=discord.ActivityType.playing, name=text))
-                return await message.send("Changed my status, I'm now playing {}".format(text))
-            elif activity.lower().startswith("watching"):
-                await self.client.change_presence(
-                    activity=discord.Activity(type=discord.ActivityType.watching, name=text))
-                return await message.send("Changed my status, I'm now watching {}".format(text))
-            else:
-                return await message.send("Usage: <prefix> status `listening`/`playing`/`watching` <text>")
-
-        except IndexError:
-            return await message.send("Usage: <prefix> status `listening`/`playing`/`watching` <text>")
-
-
-    @commands.command()
-    @commands.is_owner()
-    async def scrub(self, message):
-        """ Empties the music cache folder. """
-        if path.exists(settings.TEMP_PATH):
-            rmtree(settings.TEMP_PATH)
-        return await message.send("Temp folder has been scrubbed.")
-
-
-    @commands.command()
-    @commands.is_owner()
-    @commands.guild_only()
-    async def admin_echo(self, message, *, args:str = None):
-        if args and message.author.id != self.client.id:
-            await message.channel.send(args)
-            return await message.message.delete()
-
-
-    @commands.command()
-    @commands.guild_only()
-    @commands.has_permissions(manage_messages=True)
-    async def echo(self, message, *, args:str = None):
-        """ Delete the message issuing the command and post the message text """
-        if args and message.author.id != self.client.id:
-            await message.channel.send(args)
-            return await message.message.delete()
-
-
-    @commands.command()
-    async def emojiname(self, message, emoji):
-        """ Returns the ASCII encode of the emoji sent with the message. """
-        return await message.send(emoji.encode('ascii', 'namereplace'))
-
-
-    async def status_loop(self):
-        """ Updates the status message of Maon hourly. """
-        presence_counter:int = 0
-        while self.running:
-            activity = choice(["listening", "watching", "playing"])
-            
-            if presence_counter >= 6:
-                text = "on " + str(len(self.client.guilds)) + " servers!"
-                await self.client.change_presence(activity=discord.Activity(
-                    type=discord.ActivityType.playing, name=text))
-                presence_counter = 0
-
-            elif activity == "listening":
-                text = choice(custom.STATUS_TEXT_LISTENING_TO)
-                await self.client.change_presence(activity=discord.Activity(
-                    type=discord.ActivityType.listening, name=text))
-
-            elif activity == "watching":
-                text = choice(custom.STATUS_TEXT_WATCHING)
-                await self.client.change_presence(activity=discord.Activity(
-                    type=discord.ActivityType.watching, name=text))
-
-            else:
-                text = choice(custom.STATUS_TEXT_PLAYING)
-                await self.client.change_presence(activity=discord.Activity(
-                    type=discord.ActivityType.playing, name=text))
-
-            try:
-                presence_counter += 1
-                await sleep(3600)
-
-            except CancelledError:
-                self.running = False
-                return
-
-
-    # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════════════════════════
-    @commands.Cog.listener()
-    async def on_ready(self):
-        if len(self.client.guilds) <= 10:
-            self.log.info("Member of guilds: ")
-            for g in self.client.guilds:
-                self.log.info(f"{g.id} | {g.name}")
-        if not self.status_task:
-            self.status_task = asyncio.create_task(self.status_loop(), name="activity_rotation_task")
-        self.log.log(logbook.RAW, "\tI'm ready!\n")
-
-
-    @commands.Cog.listener()
-    async def on_message(self, message: Message):
-        if message.guild:
-            return
-        self.log.warn(f"DM received by {message.author.name}#{message.author.discriminator}: {message.content}")
     
+    @_remove_ac.error
+    async def _remove_ac_error(self, itc: Interaction, e: AppCommandError) -> None:
+        if isinstance(e, app_commands.CheckFailure):
+            if "Bot requires Manage" in e.__str__():
+                await itc.response.send_message("I lack the permissions to manage messages.")
+            elif "Bot requires Read Message" in e.__str__():
+                await itc.response.send_message("I lack the permissions to read the message history.")
+            else:
+                await itc.response.send_message("You lack the permissions to manage messages.")
 
-# ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
-async def setup(maon: commands.Bot):
+
+    @command(aliases=["remove", "clear", "delete"])
+    @guild_only()
+    @has_permissions(manage_messages=True)
+    @bot_has_permissions(manage_messages=True, read_message_history=True)
+    async def _remove(self, ctx: Context, amount: int | None) -> None | Message:
+        if not isinstance(ctx.channel, TextChannel) or not ctx.guild: return
+        if not amount:
+            return await ctx.channel.send("How many messages do you want me to purge from the chat? (Max 75 messages)")
+        if amount > 0 and amount < 76:
+            log.info(f"Trying to delete {amount} messages in {ctx.guild.name}: {ctx.channel.name} for {ctx.author.name}#{ctx.author.discriminator}.")
+            await ctx.channel.purge(limit=amount + 1, bulk=True)
+            return await ctx.channel.send(f"{amount} messages deleted.", delete_after=16)
+        else:
+            return await ctx.channel.send("I can only delete 75 messages at a time.")
+        
+    
+    @_remove.error
+    async def _remove_error(self, ctx: Context, e: Exception) -> None:
+        if isinstance(e, CheckFailure):
+            if "Bot requires Manage" in e.__str__():
+                await ctx.channel.send("I lack the permissions to manage messages.")
+            if "Bot requires Read Message" in e.__str__():
+                await ctx.channel.send("I lack the permissions to read the message history.")
+            else:
+                await ctx.channel.send("You don't have permissions to manage messages.")
+
+    
+    @command()
+    async def emojiname(self, ctx: Context, emoji: str | None) -> None | Message:
+        if emoji: return await ctx.channel.send(f"`{str(emoji.encode('ascii', 'namereplace'))}`")
+
+    
+    # ═══ Events ═══════════════════════════════════════════════════════════════════════════════════
+    @Cog.listener()
+    async def on_ready(self) -> None:
+        if len(self.maon.guilds) < 11:
+            log.info("Maon is a member of:")
+            for g in self.maon.guilds:
+                log.info(f"{g.id} | {g.name}")
+        log.log(logbook.RAW, "\n\tI'm ready\n")
+
+
+    @Cog.listener()
+    async def on_guild_join(self, guild: Guild) -> None:
+        log.info(f"Joined a new guild! {guild.id} | {guild.name}")
+
+
+    # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════
+    async def cog_unload(self) -> None:
+        log.info("Cancelling status_task...")
+        self.status_task.cancel()
+
+
+async def setup(maon: Maon) -> None:
     await maon.add_cog(Admin(maon))
 
 
-async def teardown(maon: commands.Bot):
-    await maon.remove_cog(Admin)
+async def teardown(maon: Maon) -> None:
+    await maon.remove_cog("Admin")

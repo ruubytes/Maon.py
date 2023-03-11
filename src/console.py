@@ -1,94 +1,170 @@
-import os
-import sys
-import psutil
-import asyncio
-from src import logbook
+from __future__ import annotations
+import logbook
 from aioconsole import ainput
-from discord.ext import commands
+from asyncio import create_task
+from asyncio import Task
+from discord import Activity
+from discord import ActivityType
+from discord.ext.commands import Cog
+from logging import Logger
+from typing import Callable
 
-from discord import VoiceClient
-from src.audioplayer import AudioPlayer
+from asyncio import CancelledError
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from admin import Admin
+    from maon import Maon
+
+log: Logger = logbook.getLogger("console")
+USAGE: str = """Commands:
+help, usage, info
+        Prints what you are looking at right now.
+
+q, quit, exit, kill, shutdown
+        Closes Maon and exits the program.
+
+reload <extension / settings / custom / all>
+        Reloads a configuration file like settings or
+        custom, or reloads an extension or all of them.
+
+restart
+        Restarts Maon with the same arguments she was
+        launched with.
+
+save <custom / settings>
+        Save the customizations or settings to their
+        respective files in the configs folder.
+
+status <cancel / restart>
+status <listening / playing / watching> <text>
+        Cancel or restart the status message loop, or
+        set your own custom status message.
+"""
 
 
-class Console(commands.Cog):
-    __slots__ = ["client", "log"]
-
-    def __init__(self, client: commands.Bot):
-        self.client: commands.Bot = client
-        self.log = logbook.getLogger(self.__class__.__name__)
-        self.execute: dict = {
+class Console(Cog):
+    def __init__(self, maon: Maon) -> None:
+        self.maon: Maon = maon
+        self.commands: dict[str, Callable] = {
             "help": self.usage,
             "info": self.usage,
             "usage": self.usage,
-            "kill": self.shutdown,
+            "q": self.shutdown,
             "quit": self.shutdown,
-            "stop": self.shutdown,
             "exit": self.shutdown,
-            "restart": self.restart
+            "kill": self.shutdown,
+            "shutdown": self.shutdown,
+            "restart": self.restart,
+            "reload": self.reload,
+            "save": self.save,
+            "status": self.status
         }
-        self.console_task: asyncio.Task = asyncio.create_task(self.console_loop(), name="console_task")
+        self.console_task: Task = create_task(self.console_loop(), name="console_task")
 
-
-    async def console_loop(self):
+    
+    async def console_loop(self) -> None:
         try:
             while True:
-                cmd_str: str = await ainput(loop = self.client.loop)
-                cmd = cmd_str.split(" ")
-                self.log.info(f"> {cmd_str}")
-                try:
-                    await self.execute.get(cmd[0])()
-                except TypeError:
-                    self.log.error(f"Command {cmd_str} not found.")
-                    await self.execute.get("usage")()
+                cmd: str = await ainput(loop = self.maon.loop)
+                log.info(f"> {cmd}")
+                argv: list[str] = cmd.split(" ")
+                call: Callable | None = self.commands.get(argv[0])
+                if not call:
+                    log.error(f"Command {cmd} not found.")
+                    await self.usage()
+                else:
+                    await call(argv)
+        except CancelledError:
+            log.info(f"console_task cancelled.")
 
-        except asyncio.CancelledError as e:
-            pass
+
+    async def usage(self, argv: list[str] | None = None) -> None:
+        log.info(USAGE)
+       
+
+    async def shutdown(self, argv: list[str] | None = None) -> None:
+        log.warning("Shutting down...")
+        await self.maon.close()
+
+
+    async def restart(self, argv: list[str] | None = None) -> None:
+        admin: Admin | None = self.maon.get_cog("Admin") # type: ignore
+        if admin: await admin._restart()
+
+
+    async def reload(self, argv: list[str] | None = None) -> None:
+        if not argv or len(argv) < 2:
+            return await self.usage()
+        if argv[1].lower() in self.maon.extensions_list:
+            log.info(f"Reloading {argv[1].lower()} extension...")
+            await self.maon.reload_extension(f"{argv[1].lower()}")
+            log.info(f"{argv[1].lower()} extension reloaded.")
+            await self.maon.sync_app_cmds()
+        elif argv[1].lower() == "all":
+            for ext in self.maon.extensions_list:
+                log.info(f"Reloading {ext.lower()} extension...")
+                await self.maon.reload_extension(f"{ext.lower()}")
+            log.info("All extensions reloaded.")
+            await self.maon.sync_app_cmds()
+        elif argv[1].lower() == "settings":
+            await self.maon.reload_settings()
+        elif argv[1].lower() in ["custom", "customization"]:
+            await self.maon.reload_customization()
+        else:
+            log.info(f"I can't find an extension or configuration file called {argv[1].lower()}.")
 
     
-    async def usage(self, argv: 'list[str]' = None):
-        self.log.info("Available commands:")
-        for key in self.execute:
-            self.log.info(f"\t{str(key)}")
+    async def save(self, argv: list[str] | None = None) -> None:
+        if not argv or len(argv) < 2:
+            return await self.usage()
+        if argv[1].lower() == "settings":
+            await self.maon.save_settings()
+        elif argv[1].lower() in ["custom", "customization"]:
+            await self.maon.save_customization()  
+        else:
+            log.info("Usage: save <settings/custom>")
 
 
-    async def shutdown(self, argv: 'list[str]' = None):
-        """ Shuts down Maon gracefully by closing all event loops and logging out. """
-        self.log.warn("Shutting down Maon...")
-        player: AudioPlayer
-        for player in self.client.get_cog("Audio").players.values():
-            player.shutdown()
-        vc: VoiceClient
-        for vc in self.client.voice_clients:
-            await vc.disconnect()
-        self.log.log(logbook.RAW, "\nMaybe I'll take over the world some other time.\n")
-        await self.client.close()
+    async def status(self, argv: list[str] | None = None) -> None:
+        if not argv or len(argv) < 2:
+            return log.info("Usage: \n\tstatus <(cancel / restart)>\n\tstatus <listening / playing / watching> <text>")
+        admin: Admin | None = self.maon.get_cog("Admin") # type: ignore
+        if admin and argv[1].lower() == "cancel":
+            await admin._status_cancel()
+        elif admin and argv[1].lower() == "restart":
+            await admin._status_restart()
+        elif admin and len(argv) > 2:
+            if argv[1].lower() == "listening":
+                argv.pop(0)
+                argv.pop(0)
+                text: str = " ".join(argv)
+                await self.maon.change_presence(activity=Activity(type=ActivityType.listening, name=text))
+            elif argv[1].lower() == "playing":
+                argv.pop(0)
+                argv.pop(0)
+                text: str = " ".join(argv)
+                await self.maon.change_presence(activity=Activity(type=ActivityType.playing, name=text))
+            elif argv[1].lower() == "watching":
+                argv.pop(0)
+                argv.pop(0)
+                text: str = " ".join(argv)
+                await self.maon.change_presence(activity=Activity(type=ActivityType.watching, name=text))
+            else:
+                log.info("Usage: \n\tstatus <(cancel / restart)>\n\tstatus <listening / playing / watching> <text>")
+        else:
+            log.info("Usage: \n\tstatus <(cancel / restart)>\n\tstatus <listening / playing / watching> <text>")
 
     
-    async def restart(self, argv: 'list[str]' = None):
-        """ Restarts Maon by killing all connections and then restarts the process with the same arguments. """
-        self.log.warn("Restarting Maon...")
-        player: AudioPlayer
-        for player in self.client.get_cog("Audio").players.values():
-            player.shutdown()
-        vc: VoiceClient
-        for vc in self.client.voice_clients:
-            await vc.disconnect()
-        
-        p = psutil.Process(os.getpid())
-        for handler in p.open_files() + p.connections():
-            try:
-                os.close(handler.fd)
-            except Exception as e:
-                pass
-
-        os.execl(sys.executable, sys.executable, *sys.argv)
+    # ═══ Setup & Cleanup ══════════════════════════════════════════════════════════════════════════
+    async def cog_unload(self) -> None:
+        log.info("Cancelling console_task...")
+        self.console_task.cancel()
 
 
-# ═══ Cog Setup ════════════════════════════════════════════════════════════════════════════════════════════════════════
-async def setup(maon: commands.Bot):
+async def setup(maon: Maon) -> None:
     await maon.add_cog(Console(maon))
 
 
-async def teardown(maon: commands.Bot):
-    maon.get_cog("Console").console_loop.cancel()
-    await maon.remove_cog(Console)
+async def teardown(maon: Maon) -> None:
+    await maon.remove_cog("Console")

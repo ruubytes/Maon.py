@@ -1,6 +1,8 @@
 import logging
+from os import makedirs
+from os.path import exists
+from logging import Logger
 from logging.handlers import TimedRotatingFileHandler
-from configs import settings
 
 
 __all__ = [ "getLogger" ]
@@ -31,15 +33,18 @@ class ColoredFormatter(logging.Formatter):
         return logging.Formatter(self.FORMATS.get(record.levelno), self.DATEFMT).format(record)
 
 
-def getLogger(name: str = None):
-    log = logging.getLogger(name)
+def getLogger(name: str) -> Logger:
+    log: Logger = logging.getLogger(name)
     log.setLevel(logging.DEBUG)
 
     if len(log.handlers) > 1:   # ignore if the NullHandler is in the list
         return log
 
+    if not exists("./src/logs/"):
+        makedirs("./src/logs/")
+
     filehandler = TimedRotatingFileHandler(
-        filename=f"{settings.LOGGING_DISCORD_PATH_FILE}",
+        filename="./src/logs/maon",
         when="midnight",
         interval=1,
         backupCount=30,

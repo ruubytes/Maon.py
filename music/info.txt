@@ -1,2 +1,2 @@
-You can place songs, folders filled with songs, everything music here and Maon will be able to recognize them.
+You can place songs, folders filled with songs, everything that is music here and Maon will be able to recognize them.
 Supported file extensions are mp3 and wav so far.
