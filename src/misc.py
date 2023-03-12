@@ -91,7 +91,7 @@ class Misc(Cog):
     async def get_cmds_embed_owner(self) -> Embed:
         prefix: str = await self.maon.get_prefix_str()
         color: int = await self.maon.get_color_accent()
-        cmds_embed_owner_title: str = f":flag_kp: ***Owner Commands***:"
+        cmds_embed_owner_title: str = f":flag_kp:　***Owner Commands***:"
         cmds_embed_owner_list: list[str] = [
             f"`{prefix}shutdown`　Shuts Maon down.\n",
             f"`{prefix}reload <ext / config / all>`　Reload an extension or all of them, or reload from the custom or settings files.\n",
@@ -104,7 +104,7 @@ class Misc(Cog):
     async def get_cmds_embed_mod(self) -> Embed:
         prefix: str = await self.maon.get_prefix_str()
         color: int = await self.maon.get_color_accent()
-        cmds_embed_mod_title: str = f":rainbow_flag: ***Moderator Commands***:"
+        cmds_embed_mod_title: str = f":rainbow_flag:　***Moderator Commands***:"
         cmds_embed_mod_list: list[str] = [
             f"`{prefix}remove <0 - 75>`　Delete a number of messages in bulk.\n"
         ]
@@ -114,9 +114,18 @@ class Misc(Cog):
     async def get_cmds_embed_music(self) -> Embed:
         prefix: str = await self.maon.get_prefix_str()
         color: int = await self.maon.get_color_accent()
-        cmds_embed_music_title: str = f":notes: ***Music Commands***:"
+        cmds_embed_music_title: str = f":notes:　***Music Commands***:"
         cmds_embed_music_list: list[str] = [
-            f"tba"
+            f"`{prefix}p <link / path>`　Maon joins and plays a Youtube link or file from Maon's music folder.\n",
+            f"`{prefix}s <path>`　Maon joins and plays a sound effect from Maon's sfx folder.\n",
+            f"`{prefix}j`　Maon joins your voice channel.\n",
+            f"`{prefix}stop`　Maon stops playing music and leaves the voice channel.\n",
+            f"`{prefix}v <0 - 100>`　Adjusts the audio player's volume or pauses it.\n",
+            f"`{prefix}n`　Skips to the next song in the playlist or skips over the current song.\n",
+            f"`{prefix}l playlist/song/off`　Loops the playlist, the current song, or turns looping off.\n",
+            f"`{prefix}q`　Displays the current playlist\n",
+            f"`{prefix}pause`　Pauses the audio player. Resume with `{prefix}play`\n\n",
+            f"After summoning Maon into a voice channel from the same text channel 3 or more times, Maon will recognize that channel as the bot channel and the play and sfx command are no longer necessary, a link or file path is all Maon needs."
         ]
         return Embed(title=cmds_embed_music_title, description="".join(cmds_embed_music_list), color=color)
     
@@ -124,11 +133,13 @@ class Misc(Cog):
     async def get_cmds_embed_misc(self) -> Embed:
         prefix: str = await self.maon.get_prefix_str()
         color: int = await self.maon.get_color_accent()
-        cmds_embed_misc_title: str = f":beginner: ***Misc Commands***:"
+        cmds_embed_misc_title: str = f":beginner:　***Misc Commands***:"
         cmds_embed_misc_list: list[str] = [
+            f"`{prefix}help`　What you are looking at right now.\n",
             f"`{prefix}ping`　Displays Maon's websocket latency.\n",
             f"`{prefix}flip`　Flip a coin.\n",
             f"`{prefix}r 1d20`　Roll dices, like a 20-sided die in this example.\n",
+            f"`{prefix}r 9999`　Roll a number, like 0123 in this example.\n",
             f"`{prefix}anime <search query>`　Look up an anime show on MyAnimeList.\n",
             f"`{prefix}manga <search query>`　Look up a manga on MyAnimeList.\n",
             f"`{prefix}<question>`　Maon will reply to a closed (am, is, are, do, can...) question.\n"

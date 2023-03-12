@@ -160,7 +160,7 @@ class Audio(Cog):
             log.error(f"I lost the track I should add to the cache directory... how did that happen.")
 
 
-    @app_commands.command(name="play", description="Play a youtube link or a file from Maon's music folder.")
+    @app_commands.command(name="play", description="Play a youtube link or a file from Maon's music folder, or unpause the audio player.")
     @app_commands.describe(url="This can be a Youtube link or file path inside Maon's music folder.")
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(connect=True)
