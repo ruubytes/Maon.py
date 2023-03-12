@@ -115,10 +115,5 @@ else
 fi
 
 # Run Maon
-python3 ./src/Maon.py
+python3 ./src/maon.py
 exit $?
-
-# In case of tmux: 
-# tmux needs to create a new session and detach and the session needs to run this script.
-# Can't call tmux within this script and keep going, instead needs to do something like this:
-#   tmux new -d -s "maon" /home/user/Maon.py/run
