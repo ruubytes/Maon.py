@@ -12,6 +12,7 @@ from discord import Interaction
 from discord import Message
 from discord import PCMVolumeTransformer
 from discord import TextChannel
+from discord import VoiceChannel
 from discord.ext.commands import Context
 from logging import Logger
 from traceback import format_exc
@@ -33,6 +34,7 @@ class AudioPlayer():
         self.maon: Maon = maon
         self.audio: Audio = self.maon.get_cog("Audio") # type: ignore
         self.channel: TextChannel = cim.channel # type: ignore
+        self.voice_channel: VoiceChannel = cim.guild.voice_client.channel  # type: ignore
         self.cim: Context | Interaction | Message = cim
         self.guild: Guild = cim.guild       # type: ignore
         self.looping: str = "off"
@@ -123,19 +125,21 @@ class AudioPlayer():
     async def _refresh_url(self) -> None:
         if self.track and not self.track.track_type in ["stream", "live"]:
             return
-        return log.info(f"{self.name}: Refreshing streaming url...")
+        #return log.info(f"{self.name}: Refreshing streaming url...")
         
     
     async def _play(self) -> None:
         if not self.track: return
-        log.info(f"{self.name}: Playing {self.track.title if self.track else None}")
+        log.info(f"{self.name}: Playing {self.track.title if self.track else None} in voice channel at {int(self.voice_channel.bitrate / 1000)}kb/s.")
         volume: float = self.volume if self.track.track_type != "sfx" else self.volume_sfx
-        before_options: str = "-re" if self.track.track_type in ["music", "sfx"] else "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 -re"
+        before_options: str = f"-re" if self.track.track_type in ["music", "sfx"] else f"-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 10 -re"
+        options: str = f"-b:a {int(self.voice_channel.bitrate / 1000)}k"
         self.guild.voice_client.play(       # type: ignore
             PCMVolumeTransformer(
                 FFmpegPCMAudio(
                     self.track.url,
-                    before_options=before_options
+                    before_options=before_options,
+                    options=options
                 ),
                 volume
             ),

@@ -47,8 +47,7 @@ log: Logger = logbook.getLogger("audio")
 
 # TODO Music / SFX folder browser is missing -> Use the new interaction view
 # TODO Voice client seems to be stuck inside the channel when closing down Maon. Only with console
-# TODO Max duration missing in background downloader
-# TODO Fetch bitrate of voice channel and adjust ffmpeg stream accordingly
+# TODO Stream url refresh for old tracks in queue still missing
 class Audio(Cog):
     def __init__(self, maon: Maon) -> None:
         self.maon: Maon = maon
@@ -106,7 +105,16 @@ class Audio(Cog):
         except FileNotFoundError:
             log.warning("The '.Cached Tracks' folder does not exist, skipped loading the cache.")
             return {}
+        
 
+    async def get_audio_track_caching_duration_max(self) -> int:
+        duration: int | str | float | None = self.maon.settings.get("audio_track_caching_duration_max")
+        if isinstance(duration, int):
+            return duration
+        else:
+            log.warning(f"The setting for the max duration tracks can have for me to cache them is faulty, please add a number in seconds to audio_track_caching_duration_max in settings.json. Defaulting to 3600 seconds.")
+            return 3600
+        
 
     async def download_loop(self) -> None:
         download_cmd: list[str] = [
@@ -119,8 +127,10 @@ class Audio(Cog):
         try:
             while True:
                 track: Track = await self.download_q.get()
-                if not track.video_id or not track.format or not track.url_original or track.video_id in self.cached_tracks: continue
 
+                if not track.video_id or not track.format or not track.url_original or track.video_id in self.cached_tracks: continue
+                if track.duration > await self.get_audio_track_caching_duration_max() or not track.duration: return
+                
                 download_cmd[16] = track.format[0]
                 download_cmd[17] = track.url_original
                 log.info(f"Beginning background download for {track.title} with command:\n{' '.join(download_cmd)}")

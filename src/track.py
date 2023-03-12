@@ -25,6 +25,7 @@ class Track():
             url: str, 
             track_type: str, 
             *, 
+            duration: int = 0,
             format: tuple[str, str] = ("", ""),
             guild_id: int = 0,
             url_original: str = "",
@@ -33,6 +34,7 @@ class Track():
         self.title: str = title
         self.url: str = url
         self.track_type: str = track_type
+        self.duration: int = duration
         self.format: tuple[str, str] = format
         self.guild_id: int = guild_id
         self.url_original: str = url_original
@@ -83,6 +85,7 @@ async def create_stream_track(audio: Audio, cim: Context | Interaction | Message
             return Track(title, url_stream, "live", guild_id=cim.guild.id, url_original=url_original)
         else:
             log.info(f"Stream track is a normal stream.")
+            duration: int = video_info["duration"] if video_info.get("duration") else await audio.get_audio_track_caching_duration_max()
             format: tuple[str, str] | None = await _get_yt_video_best_audio_format(video_info)
             if not format: 
                 await send_response(cim, "I could not find a suitable audio format to stream.")
@@ -90,7 +93,7 @@ async def create_stream_track(audio: Audio, cim: Context | Interaction | Message
             title: str = video_info["title"]
             url_original: str = url
             url_stream: str = format[1]
-            track: Track = Track(title, url_stream, "stream", format=format, guild_id=cim.guild.id, url_original=url_original, video_id=id)
+            track: Track = Track(title, url_stream, "stream", duration=duration, format=format, guild_id=cim.guild.id, url_original=url_original, video_id=id)
             await audio.download_q.put(track)
             return track
     elif url.startswith("https://open.spotify.com/"):
