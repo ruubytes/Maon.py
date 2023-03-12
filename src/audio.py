@@ -48,6 +48,7 @@ log: Logger = logbook.getLogger("audio")
 # TODO Music / SFX folder browser is missing -> Use the new interaction view
 # TODO Voice client seems to be stuck inside the channel when closing down Maon. Only with console
 # TODO Stream url refresh for old tracks in queue still missing
+# TODO Reintroduce download achievements at some point
 class Audio(Cog):
     def __init__(self, maon: Maon) -> None:
         self.maon: Maon = maon
@@ -172,7 +173,7 @@ class Audio(Cog):
     @command(aliases=["p", "play", "stream", "yt"])
     @has_guild_permissions(connect=True)
     @bot_has_guild_permissions(connect=True, speak=True)
-    async def _play(self, ctx: Context, url: str | None) -> None | Message:
+    async def _play(self, ctx: Context, *, url: str | None) -> None | Message:
         return await self.play(ctx, url)
     
 

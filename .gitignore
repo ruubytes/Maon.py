@@ -23,6 +23,7 @@ src/logs/
 src/data/
 configs/
 .sandbox/
+backups/
 errors/
 Notes.txt
 old/
