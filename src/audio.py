@@ -3,6 +3,7 @@ import logbook
 import subprocess
 from asyncio import create_task
 from asyncio import Queue
+from asyncio import sleep
 from asyncio import Task
 from audio_player import AudioPlayer
 from discord import app_commands
@@ -12,6 +13,7 @@ from discord import Interaction
 from discord import Member
 from discord import Message
 from discord import VoiceClient
+from discord import VoiceState
 from discord.ext.commands import bot_has_guild_permissions
 from discord.ext.commands import Cog
 from discord.ext.commands import command
@@ -541,6 +543,21 @@ class Audio(Cog):
             if exists(f"{self.path_sfx}{msg.content}{ext}"):
                 log.info(f"Command-less sfx play request received in the bot channel!")
                 return await self.play(msg, msg.content)
+            
+
+    @Cog.listener()
+    async def on_voice_state_update(self, member: Member, before: VoiceState, after: VoiceState) -> None:
+        try:
+            if member.guild.id in self.players and len(member.guild.voice_client.channel.voice_states) < 2:     # type: ignore
+                log.info(f"{member.guild.name}: It looks like all users left the voice channel.")
+                await sleep(3)
+                if member.guild.id in self.players and len(member.guild.voice_client.channel.voice_states) < 2: # type: ignore
+                    log.info(f"{member.guild.id}: Users left the voice channel, destroying audio player.")
+                    self.players[member.guild.id].close()
+        except AttributeError as e:
+            log.error(f"{member.guild.name}: Check on voice_states failed, voice_client is gone.")
+            player: AudioPlayer | None = self.players.get(member.guild.id)
+            if player: player.close()
 
 
     @Cog.listener()
